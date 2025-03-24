@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-100 py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">Ejercicios</h1>
+            <a href="{% url 'web:exercises:exercise-create' %}" 
+               class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                Agregar Ejercicio
+            </a>
+        </div>
+
+        {% if messages %}
+        <div class="mb-4">
+            {% for message in messages %}
+            <div class="p-4 rounded-md {% if message.tags == 'success' %}bg-green-50 text-green-700{% else %}bg-red-50 text-red-700{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {% for exercise in exercises %}
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-6">
+                    <h3 class="text-lg font-medium text-gray-900">{{ exercise.name }}</h3>
+                    <p class="mt-2 text-sm text-gray-500">{{ exercise.description|truncatewords:20 }}</p>
+                    
+                    <div class="mt-4">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                            {% if exercise.difficulty == 'Principiante' %}bg-green-100 text-green-800
+                            {% elif exercise.difficulty == 'Intermedio' %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-red-100 text-red-800{% endif %}">
+                            {{ exercise.difficulty }}
+                        </span>
+                        <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {{ exercise.category }}
+                        </span>
+                    </div>
+
+                    <div class="mt-4">
+                        <h4 class="text-sm font-medium text-gray-700">Músculos Principales:</h4>
+                        <p class="mt-1 text-sm text-gray-500">{{ exercise.primary_muscles }}</p>
+                    </div>
+
+                    <div class="mt-6 flex justify-between items-center">
+                        <a href="{% url 'web:exercises:exercise-detail' exercise.pk %}" 
+                           class="text-indigo-600 hover:text-indigo-900 text-sm font-medium">
+                            Ver Detalles
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-span-full text-center py-12">
+                <p class="text-gray-500 text-lg">No hay ejercicios registrados.</p>
+                <a href="{% url 'web:exercises:exercise-create' %}" 
+                   class="mt-4 inline-block bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
+                    Agregar Primer Ejercicio
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

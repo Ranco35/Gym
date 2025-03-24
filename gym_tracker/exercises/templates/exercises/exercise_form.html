@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
+    <div class="relative py-3 sm:max-w-xl sm:mx-auto">
+        <div class="relative px-4 py-10 bg-white shadow-lg sm:rounded-3xl sm:p-20">
+            <div class="max-w-md mx-auto">
+                <div class="divide-y divide-gray-200">
+                    <div class="py-8 text-base leading-6 space-y-4 text-gray-700 sm:text-lg sm:leading-7">
+                        <h2 class="text-2xl font-bold mb-8 text-center text-indigo-600">Agregar Nuevo Ejercicio</h2>
+                        <form method="post" class="space-y-6">
+                            {% csrf_token %}
+                            
+                            <!-- Nombre del Ejercicio -->
+                            <div>
+                                <label for="name" class="block text-sm font-medium text-gray-700">Nombre del Ejercicio</label>
+                                <input type="text" name="name" id="name" required
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                    placeholder="Ej: Press de Banca">
+                            </div>
+
+                            <!-- Descripción -->
+                            <div>
+                                <label for="description" class="block text-sm font-medium text-gray-700">Descripción</label>
+                                <textarea name="description" id="description" rows="3" required
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                    placeholder="Describe el ejercicio..."></textarea>
+                            </div>
+
+                            <!-- Categoría -->
+                            <div>
+                                <label for="category" class="block text-sm font-medium text-gray-700">Categoría</label>
+                                <select name="category" id="category" required
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                    <option value="">Selecciona una categoría</option>
+                                    <option value="Fuerza">Fuerza</option>
+                                    <option value="Cardio">Cardio</option>
+                                    <option value="Flexibilidad">Flexibilidad</option>
+                                    <option value="Equilibrio">Equilibrio</option>
+                                </select>
+                            </div>
+
+                            <!-- Nivel de Dificultad -->
+                            <div>
+                                <label for="difficulty" class="block text-sm font-medium text-gray-700">Nivel de Dificultad</label>
+                                <select name="difficulty" id="difficulty" required
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                    <option value="">Selecciona el nivel</option>
+                                    <option value="Principiante">Principiante</option>
+                                    <option value="Intermedio">Intermedio</option>
+                                    <option value="Avanzado">Avanzado</option>
+                                </select>
+                            </div>
+
+                            <!-- Músculos Principales -->
+                            <div>
+                                <label for="primary_muscles" class="block text-sm font-medium text-gray-700">Músculos Principales</label>
+                                <input type="text" name="primary_muscles" id="primary_muscles" required
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                    placeholder="Ej: Pecho, Tríceps">
+                            </div>
+
+                            <!-- Músculos Secundarios -->
+                            <div>
+                                <label for="secondary_muscles" class="block text-sm font-medium text-gray-700">Músculos Secundarios</label>
+                                <input type="text" name="secondary_muscles" id="secondary_muscles"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                    placeholder="Ej: Hombros, Antebrazos">
+                            </div>
+
+                            <!-- Equipamiento Necesario -->
+                            <div>
+                                <label for="equipment" class="block text-sm font-medium text-gray-700">Equipamiento Necesario</label>
+                                <input type="text" name="equipment" id="equipment"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                    placeholder="Ej: Barra, Banco, Pesas">
+                            </div>
+
+                            <!-- Instrucciones -->
+                            <div>
+                                <label for="instructions" class="block text-sm font-medium text-gray-700">Instrucciones</label>
+                                <textarea name="instructions" id="instructions" rows="4" required
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                    placeholder="Describe los pasos para realizar el ejercicio..."></textarea>
+                            </div>
+
+                            <!-- Consejos -->
+                            <div>
+                                <label for="tips" class="block text-sm font-medium text-gray-700">Consejos</label>
+                                <textarea name="tips" id="tips" rows="3"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                    placeholder="Consejos para realizar el ejercicio correctamente..."></textarea>
+                            </div>
+
+                            <!-- Botones -->
+                            <div class="flex justify-between pt-4">
+                                <button type="submit"
+                                    class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                                    Guardar Ejercicio
+                                </button>
+                                <a href="{% url 'web:exercises:exercise-list' %}"
+                                    class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+                                    Cancelar
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

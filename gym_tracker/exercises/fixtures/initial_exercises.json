@@ -1,0 +1,102 @@
+[
+    {
+        "model": "exercises.exercise",
+        "pk": 1,
+        "fields": {
+            "name": "Press de Banca",
+            "category": "Pecho",
+            "description": "Ejercicio básico para pecho que implica acostarse en un banco plano y levantar una barra",
+            "difficulty": "Medio"
+        }
+    },
+    {
+        "model": "exercises.exercise",
+        "pk": 2,
+        "fields": {
+            "name": "Sentadilla",
+            "category": "Piernas",
+            "description": "Ejercicio básico para piernas que implica flexionar las rodillas con una barra en los hombros",
+            "difficulty": "Medio"
+        }
+    },
+    {
+        "model": "exercises.exercise",
+        "pk": 3,
+        "fields": {
+            "name": "Peso Muerto",
+            "category": "Espalda",
+            "description": "Ejercicio compuesto que implica levantar una barra desde el suelo",
+            "difficulty": "Difícil"
+        }
+    },
+    {
+        "model": "exercises.exercise",
+        "pk": 4,
+        "fields": {
+            "name": "Press Militar",
+            "category": "Hombros",
+            "description": "Ejercicio para hombros que implica levantar una barra sobre la cabeza",
+            "difficulty": "Medio"
+        }
+    },
+    {
+        "model": "exercises.exercise",
+        "pk": 5,
+        "fields": {
+            "name": "Dominadas",
+            "category": "Espalda",
+            "description": "Ejercicio para espalda que implica levantar el cuerpo usando una barra alta",
+            "difficulty": "Difícil"
+        }
+    },
+    {
+        "model": "exercises.exercise",
+        "pk": 6,
+        "fields": {
+            "name": "Curl de Bíceps",
+            "category": "Brazos",
+            "description": "Ejercicio para bíceps que implica flexionar el codo con una mancuerna o barra",
+            "difficulty": "Fácil"
+        }
+    },
+    {
+        "model": "exercises.exercise",
+        "pk": 7,
+        "fields": {
+            "name": "Extensión de Tríceps",
+            "category": "Brazos",
+            "description": "Ejercicio para tríceps que implica extender el codo con una pesa",
+            "difficulty": "Fácil"
+        }
+    },
+    {
+        "model": "exercises.exercise",
+        "pk": 8,
+        "fields": {
+            "name": "Crunch Abdominal",
+            "category": "Abdominales",
+            "description": "Ejercicio básico para abdominales que implica flexionar el torso",
+            "difficulty": "Fácil"
+        }
+    },
+    {
+        "model": "exercises.exercise",
+        "pk": 9,
+        "fields": {
+            "name": "Plancha",
+            "category": "Abdominales",
+            "description": "Ejercicio isométrico para el core que implica mantener una posición estática",
+            "difficulty": "Medio"
+        }
+    },
+    {
+        "model": "exercises.exercise",
+        "pk": 10,
+        "fields": {
+            "name": "Press de Banca Inclinado",
+            "category": "Pecho",
+            "description": "Variación del press de banca en banco inclinado para enfatizar la parte superior del pecho",
+            "difficulty": "Medio"
+        }
+    }
+] 

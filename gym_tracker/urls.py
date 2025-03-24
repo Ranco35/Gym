@@ -1,0 +1,44 @@
+# gym_tracker/urls.py
+from django.contrib import admin
+from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
+from django.contrib.auth import views as auth_views
+from django.shortcuts import render
+from django.views.decorators.csrf import csrf_exempt
+from gym_tracker.views import home_view, csrf_failure
+
+# Página de login personalizada
+def serve_login_page(request):
+    # Usar render en lugar de HttpResponse con template string
+    return render(request, 'login.html')
+
+# Definimos directamente las rutas de autenticación
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    
+    # Usar autenticación estándar de Django con csrf_exempt para desarrollo
+    path('accounts/login/', csrf_exempt(auth_views.LoginView.as_view(template_name='login.html')), name='login'),
+    path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('login/', serve_login_page, name='custom_login'),
+    
+    # Rutas de API
+    path('api/workouts/', include('gym_tracker.workouts.urls')),
+    path('api/exercises/', include('gym_tracker.exercises.urls')),
+    path('api/trainings/', include('gym_tracker.trainings.urls')),
+    
+    # Rutas de la interfaz web
+    path('exercises/', include(('gym_tracker.exercises.urls', 'exercises'), namespace='web')),
+    path('workouts/', include(('gym_tracker.workouts.urls', 'workouts'), namespace='web')),
+    path('trainings/', include(('gym_tracker.trainings.urls', 'trainings'), namespace='web')),
+]
+
+# Archivos estáticos (solo en desarrollo)
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# Añadimos la ruta principal para renderizar la página principal con el dashboard
+urlpatterns += [
+    path('', home_view, name='home'),
+]

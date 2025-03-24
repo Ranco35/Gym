@@ -1,0 +1,121 @@
+{% extends "base_layout.html" %}
+
+{% block title %}Rutina: {{ routine.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Encabezado de la rutina -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-dark text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h3 mb-0">{{ routine.name }}</h1>
+                <a href="{% url 'workout-home' %}" class="btn btn-outline-light btn-sm">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if routine.description %}
+                <p class="lead">{{ routine.description }}</p>
+            {% endif %}
+            
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <p><strong>Creado:</strong> {{ routine.created_at|date:"d/m/Y H:i" }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Última actualización:</strong> {{ routine.updated_at|date:"d/m/Y H:i" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Días de entrenamiento -->
+    <h2 class="h4 mb-3">Días de Entrenamiento</h2>
+    <div class="row">
+        {% for day in routine.days.all %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">{{ day.day_of_week }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <strong>Enfoque:</strong> {{ day.focus|default:"Sin definir" }}
+                        </div>
+                        
+                        <!-- Formulario para actualizar enfoque -->
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#focus-modal-{{ day.id }}">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        
+                        <div class="modal fade" id="focus-modal-{{ day.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <form method="post" action="{% url 'update-routine-focus' day_pk=day.id %}">
+                                        {% csrf_token %}
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Actualizar enfoque - {{ day.day_of_week }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="mb-3">
+                                                <label for="focus" class="form-label">Enfoque del día:</label>
+                                                <input type="text" class="form-control" id="focus" name="focus" value="{{ day.focus|default:'' }}" placeholder="Ej: Pecho, Piernas, Cardio...">
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <button type="submit" class="btn btn-primary">Guardar</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Ejercicios del día -->
+                    {% with day_exercises=day.exercises.all %}
+                        {% if day_exercises %}
+                            <h6 class="mb-3">Ejercicios ({{ day_exercises.count }}):</h6>
+                            <div class="list-group mb-3">
+                                {% for exercise in day_exercises %}
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">{{ exercise.exercise.name }}</h6>
+                                            <p class="mb-1 text-muted">{{ exercise.sets }} series x {{ exercise.reps }} reps</p>
+                                            {% if exercise.weight %}
+                                                <small>Peso: {{ exercise.weight }}</small>
+                                            {% endif %}
+                                        </div>
+                                        <a href="{% url 'delete-routine-exercise' exercise_pk=exercise.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Estás seguro de eliminar este ejercicio?')">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="alert alert-warning">
+                                Aún no has añadido ejercicios para este día.
+                            </div>
+                        {% endif %}
+                    {% endwith %}
+                    
+                    <!-- Botón para ver detalles y agregar ejercicios -->
+                    <a href="{% url 'routine-day-detail' routine_pk=routine.id day_pk=day.id %}" class="btn btn-primary w-100">
+                        {% if day.exercises.count > 0 %}
+                            Ver y editar ejercicios
+                        {% else %}
+                            Añadir ejercicios
+                        {% endif %}
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %} 

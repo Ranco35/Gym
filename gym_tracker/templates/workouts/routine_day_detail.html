@@ -1,0 +1,168 @@
+{% extends "base_layout.html" %}
+
+{% block title %}{{ day.day_of_week }} - {{ routine.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Encabezado -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h3 mb-0">{{ day.day_of_week }} - {{ routine.name }}</h1>
+                <a href="{% url 'routine-detail' pk=routine.id %}" class="btn btn-outline-light btn-sm">
+                    <i class="fas fa-arrow-left"></i> Volver a la rutina
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h5>Enfoque: {{ day.focus|default:"Sin definir" }}</h5>
+                </div>
+                
+                <!-- Botón para editar enfoque -->
+                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#focus-modal">
+                    <i class="fas fa-edit"></i> Cambiar enfoque
+                </button>
+                
+                <!-- Modal para editar enfoque -->
+                <div class="modal fade" id="focus-modal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <form method="post" action="{% url 'update-routine-focus' day_pk=day.id %}">
+                                {% csrf_token %}
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Actualizar enfoque - {{ day.day_of_week }}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label for="focus" class="form-label">Enfoque del día:</label>
+                                        <input type="text" class="form-control" id="focus" name="focus" value="{{ day.focus|default:'' }}" placeholder="Ej: Pecho, Piernas, Cardio...">
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                    <button type="submit" class="btn btn-primary">Guardar</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Lista de ejercicios -->
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Ejercicios para {{ day.day_of_week }}</h5>
+                </div>
+                <div class="card-body">
+                    {% if exercises %}
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Ejercicio</th>
+                                        <th>Series</th>
+                                        <th>Repeticiones</th>
+                                        <th>Peso</th>
+                                        <th>Descanso</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for exercise in exercises %}
+                                    <tr>
+                                        <td>{{ forloop.counter }}</td>
+                                        <td>{{ exercise.exercise.name }}</td>
+                                        <td>{{ exercise.sets }}</td>
+                                        <td>{{ exercise.reps }}</td>
+                                        <td>{{ exercise.weight|default:"-" }}</td>
+                                        <td>{{ exercise.rest_time }}s</td>
+                                        <td>
+                                            <a href="{% url 'delete-routine-exercise' exercise_pk=exercise.id %}" class="btn btn-sm btn-danger" onclick="return confirm('¿Estás seguro de eliminar este ejercicio?')">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Aún no has añadido ejercicios para este día. Utiliza el formulario para añadir ejercicios.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Formulario para añadir ejercicio -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Añadir Ejercicio</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'routine-day-detail' routine_pk=routine.id day_pk=day.id %}">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="exercise_id" class="form-label">Ejercicio:</label>
+                            <select class="form-control" id="exercise_id" name="exercise_id" required>
+                                <option value="">Selecciona un ejercicio</option>
+                                {% for exercise in all_exercises %}
+                                <option value="{{ exercise.id }}">{{ exercise.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="sets" class="form-label">Series:</label>
+                                <input type="number" class="form-control" id="sets" name="sets" min="1" value="3" required>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="reps" class="form-label">Repeticiones:</label>
+                                <input type="text" class="form-control" id="reps" name="reps" value="10" required>
+                                <small class="text-muted">Puedes usar rangos como "8-12"</small>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="weight" class="form-label">Peso (opcional):</label>
+                                <input type="text" class="form-control" id="weight" name="weight" placeholder="Ej: 50kg, A fallo...">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="rest_time" class="form-label">Descanso (segundos):</label>
+                                <input type="number" class="form-control" id="rest_time" name="rest_time" min="10" value="60" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notas (opcional):</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="2"></textarea>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Añadir Ejercicio
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

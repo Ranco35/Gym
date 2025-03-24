@@ -1,0 +1,45 @@
+{% extends "base_layout.html" %}
+
+{% block title %}Selección de Días de Entrenamiento{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h1 class="h3 mb-0">Crea tu Rutina Semanal</h1>
+        </div>
+        <div class="card-body">
+            <p class="lead mb-4">Selecciona los días de la semana en los que entrenarás:</p>
+            
+            <form method="post" action="{% url 'routine-selection' %}">
+                {% csrf_token %}
+                
+                <div class="mb-4">
+                    <label for="routine_name" class="form-label">Nombre de la Rutina:</label>
+                    <input type="text" name="routine_name" id="routine_name" class="form-control" value="Mi Rutina Semanal" required>
+                </div>
+                
+                <div class="mb-4">
+                    <div class="row">
+                        {% for day_code, day_name in days_of_week %}
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="days" value="{{ day_name }}" id="day_{{ day_code }}">
+                                <label class="form-check-label" for="day_{{ day_code }}">
+                                    {{ day_name }}
+                                </label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary btn-lg">Crear Rutina</button>
+                    <a href="{% url 'workout-home' %}" class="btn btn-outline-secondary">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 
