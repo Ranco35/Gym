@@ -93,14 +93,26 @@ TEMPLATES = [
 WSGI_APPLICATION = 'gym_tracker.wsgi.application'
 
 # Configuración de la Base de Datos
+#DATABASES = {
+ #   'default': {
+  #      'ENGINE': 'django.db.backends.sqlite3',
+   #     'NAME': BASE_DIR / 'db.sqlite3',
+    #}
+#}
+# Base da datos diggitalocean
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'gym_db',
+        'USER': 'eduardo',
+        'PASSWORD': '123llifen789.',
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
 
-# Validación de contraseñas
+
+#3 Validación de contraseñas
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
