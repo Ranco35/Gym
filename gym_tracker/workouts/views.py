@@ -2,11 +2,11 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseForbidden
 from django.contrib import messages
 
 from .models import Workout, WeeklyRoutine, RoutineDay, RoutineExercise
@@ -19,6 +19,10 @@ from .serializers import (
     RoutineExerciseSerializer
 )
 from gym_tracker.exercises.models import Exercise
+
+# Función de verificación para comprobar si un usuario es administrador o superusuario
+def is_admin_or_superuser(user):
+    return user.is_authenticated and (user.role == 'ADMIN' or user.is_superuser)
 
 # API REST Views
 class WorkoutListCreateView(generics.ListCreateAPIView):
@@ -244,4 +248,30 @@ def edit_routine(request, pk):
         'routine': routine,
         'days_of_week': days_of_week,
         'selected_days': selected_days
+    })
+
+@login_required
+def delete_routine(request, pk):
+    """
+    Elimina una rutina completa.
+    Solo administradores o superusuarios pueden eliminar rutinas.
+    """
+    # Verificar si el usuario es administrador o superusuario
+    if not is_admin_or_superuser(request.user):
+        messages.error(request, "No tienes permisos para eliminar rutinas. Esta acción solo está permitida para administradores.")
+        return redirect('workouts:workout-list')
+    
+    routine = get_object_or_404(WeeklyRoutine, pk=pk)
+    
+    if request.method == 'POST':
+        # Guardar el nombre para mostrar en mensaje de confirmación
+        routine_name = routine.name
+        # Eliminar la rutina
+        routine.delete()
+        messages.success(request, f"La rutina '{routine_name}' ha sido eliminada.")
+        return redirect('workouts:workout-list')
+    
+    # Si no es un método POST, mostrar página de confirmación
+    return render(request, 'workouts/routine_confirm_delete.html', {
+        'routine': routine
     })

@@ -1,10 +1,11 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import RegisterSerializer, MyTokenObtainPairSerializer, UserSerializer
+from .serializers import RegisterSerializer, MyTokenObtainPairSerializer, UserSerializer, UserAdminSerializer
+from .permissions import IsAdminUser
 from django.contrib.auth import get_user_model, authenticate
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
@@ -28,6 +29,25 @@ class UserProfileView(generics.RetrieveAPIView):
     """
     queryset = User.objects.all()
     serializer_class = UserSerializer
+
+# Vistas de administración de usuarios
+class UserListView(generics.ListCreateAPIView):
+    """
+    Vista para listar todos los usuarios y crear nuevos.
+    Solo accesible para administradores.
+    """
+    queryset = User.objects.all().order_by('-date_joined')
+    serializer_class = UserAdminSerializer
+    permission_classes = [IsAuthenticated, IsAdminUser]
+
+class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Vista para obtener, actualizar o eliminar un usuario específico.
+    Solo accesible para administradores.
+    """
+    queryset = User.objects.all()
+    serializer_class = UserAdminSerializer
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
 # Las siguientes vistas están marcadas como obsoletas pero se mantienen para compatibilidad API
 # Deberían usarse las vistas estándar de Django para autenticación en su lugar

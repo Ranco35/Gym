@@ -10,8 +10,46 @@ class UserSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'role', 'peso', 'cuello', 'cintura', 'cadera', 'pecho', 'brazos', 'muslo', 'muñeca']
+        fields = ['id', 'username', 'email', 'role', 'is_superuser', 'peso', 'cuello', 'cintura', 'cadera', 'pecho', 'brazos', 'muslo', 'muñeca']
         extra_kwargs = {'password': {'write_only': True}}  # No incluir contraseña en las respuestas
+
+class UserAdminSerializer(serializers.ModelSerializer):
+    """
+    Serializer para administración de usuarios.
+    Incluye todos los campos necesarios para la gestión completa de usuarios.
+    """
+    password = serializers.CharField(write_only=True, required=False, style={'input_type': 'password'})
+    
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'password', 'role', 'first_name', 'last_name', 
+                  'is_active', 'is_superuser', 'date_joined', 'last_login', 'peso', 'cuello', 'cintura', 
+                  'cadera', 'pecho', 'brazos', 'muslo', 'muñeca']
+        read_only_fields = ['date_joined', 'last_login']
+    
+    def create(self, validated_data):
+        password = validated_data.pop('password', None)
+        user = User.objects.create(**validated_data)
+        
+        if password:
+            user.set_password(password)
+            user.save()
+        
+        return user
+    
+    def update(self, instance, validated_data):
+        password = validated_data.pop('password', None)
+        
+        # Actualizar todos los campos excepto la contraseña
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        
+        # Si se proporcionó una contraseña, actualizarla de forma segura
+        if password:
+            instance.set_password(password)
+        
+        instance.save()
+        return instance
 
 class RegisterSerializer(serializers.ModelSerializer):
     """
@@ -55,6 +93,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['username'] = user.username
         token['role'] = user.role
         token['email'] = user.email
+        token['is_superuser'] = user.is_superuser
         return token
         
     def validate(self, attrs):
@@ -63,4 +102,5 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         data['username'] = self.user.username
         data['role'] = self.user.role
         data['email'] = self.user.email
+        data['is_superuser'] = self.user.is_superuser
         return data

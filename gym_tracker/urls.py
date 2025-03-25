@@ -6,7 +6,7 @@ from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
-from gym_tracker.views import home_view, csrf_failure
+from gym_tracker.views import home_view, csrf_failure, current_user_view
 
 # Página de login personalizada
 def serve_login_page(request):
@@ -25,6 +25,9 @@ urlpatterns = [
     path('exercises/', include('gym_tracker.exercises.urls', namespace='exercises')),
     path('workouts/', include('gym_tracker.workouts.urls', namespace='workouts')),
     path('trainings/', include('gym_tracker.trainings.urls', namespace='trainings')),
+    
+    # API de gestión de usuarios
+    path('api/users/', include('gym_tracker.users.urls', namespace='users')),
 ]
 
 # Archivos estáticos (solo en desarrollo)
@@ -35,4 +38,5 @@ if settings.DEBUG:
 # Añadimos la ruta principal para renderizar la página principal con el dashboard
 urlpatterns += [
     path('', home_view, name='home'),
+    path('api/user/', current_user_view, name='current-user'),
 ]
