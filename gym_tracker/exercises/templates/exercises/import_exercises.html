@@ -1,0 +1,59 @@
+{% extends 'base_layout.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">Importar Ejercicios</h1>
+        <a href="{% url 'exercises:exercise-list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Volver
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Subir archivo Excel</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <div class="fw-bold">Instrucciones:</div>
+                            <ol class="mb-0 ps-4">
+                                <li>Descarga la <a href="{% url 'exercises:export-template' %}" class="fw-bold">plantilla Excel</a> con el formato requerido.</li>
+                                <li>Completa la información de los ejercicios en el archivo.</li>
+                                <li>Sube el archivo para importar los ejercicios a la base de datos.</li>
+                            </ol>
+                            <hr class="my-2">
+                            <p class="mb-0">También puedes <a href="{% url 'exercises:export-exercises' %}" class="fw-bold">descargar los ejercicios existentes</a> en formato Excel para modificarlos o usarlos como referencia.</p>
+                        </div>
+                    </div>
+
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label for="excel_file" class="form-label">Archivo Excel</label>
+                            <input type="file" class="form-control" id="excel_file" name="excel_file" accept=".xlsx" required>
+                            <div class="form-text">Solo se aceptan archivos con extensión .xlsx</div>
+                        </div>
+                        
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Atención:</strong> Asegúrate de que tu archivo cumpla con el formato requerido y contenga las columnas obligatorias (name, description, category, difficulty).
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-upload me-2"></i>Importar Ejercicios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -223,7 +223,7 @@ def edit_routine(request, pk):
         routine.save()
         
         # Obtener los días actuales y crear un diccionario para facilitar la búsqueda
-        current_days = {day.day_of_week: day for day in routine.routineday_set.all()}
+        current_days = {day.day_of_week: day for day in routine.days.all()}
         
         # Crear nuevos días si no existen
         for day_name in selected_days:
@@ -242,7 +242,7 @@ def edit_routine(request, pk):
         return redirect('workouts:workout-detail', pk=routine.id)
     
     # Obtener los días seleccionados actualmente
-    selected_days = [day.day_of_week for day in routine.routineday_set.all()]
+    selected_days = [day.day_of_week for day in routine.days.all()]
     
     return render(request, 'workouts/routine_edit.html', {
         'routine': routine,

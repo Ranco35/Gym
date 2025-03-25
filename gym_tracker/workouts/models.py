@@ -44,15 +44,15 @@ class WeeklyRoutine(models.Model):
         """
         # Contar los ejercicios en todos los días de la rutina
         total = 0
-        for day in self.routineday_set.all():
-            total += day.routineexercise_set.count()
+        for day in self.days.all():
+            total += day.exercises.count()
         return total
     
     def get_days_display(self):
         """
         Devuelve una cadena con los días de la semana en formato legible.
         """
-        days = self.routineday_set.values_list('day_of_week', flat=True)
+        days = self.days.values_list('day_of_week', flat=True)
         return ", ".join(days)
 
 

@@ -75,7 +75,7 @@
             <h5 class="mb-0">Días de rutina actuales</h5>
         </div>
         <div class="card-body">
-            {% if routine.routineday_set.exists %}
+            {% if routine.days.exists %}
             <div class="table-responsive">
                 <table class="table table-hover">
                     <thead>
@@ -87,7 +87,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for day in routine.routineday_set.all %}
+                        {% for day in routine.days.all %}
                         <tr>
                             <td>{{ day.day_of_week }}</td>
                             <td>
@@ -103,7 +103,7 @@
                                     </div>
                                 </form>
                             </td>
-                            <td>{{ day.routineexercise_set.count }}</td>
+                            <td>{{ day.exercises.count }}</td>
                             <td>
                                 <a href="{% url 'workouts:workout-day-detail' routine.pk day.pk %}" 
                                    class="btn btn-sm btn-primary">

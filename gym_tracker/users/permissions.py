@@ -10,4 +10,13 @@ class IsAdminUser(permissions.BasePermission):
             request.user and 
             request.user.is_authenticated and 
             (request.user.role == 'ADMIN' or request.user.is_superuser)
-        ) 
+        )
+
+def is_admin_or_superuser(user):
+    """
+    Función auxiliar para comprobar si un usuario es administrador o superusuario.
+    Utilizada con el decorador user_passes_test.
+    """
+    return user.is_authenticated and (
+        getattr(user, 'role', None) == 'ADMIN' or user.is_superuser
+    ) 

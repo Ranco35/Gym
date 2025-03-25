@@ -29,7 +29,7 @@
                 <div class="card-header bg-dark text-white">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">{{ routine.created_at|date:"F Y" }}</h5>
-                        <span class="badge bg-primary rounded-pill">{{ routine.routineday_set.count }} días</span>
+                        <span class="badge bg-primary rounded-pill">{{ routine.days.count }} días</span>
                     </div>
                 </div>
                 <div class="card-body">
@@ -41,7 +41,7 @@
                     
                     <h6 class="mb-2">Días de entrenamiento:</h6>
                     <div class="d-flex flex-wrap gap-1 mb-4">
-                        {% for day in routine.routineday_set.all %}
+                        {% for day in routine.days.all %}
                         <span class="badge bg-secondary">{{ day.day_of_week }}</span>
                         {% endfor %}
                     </div>

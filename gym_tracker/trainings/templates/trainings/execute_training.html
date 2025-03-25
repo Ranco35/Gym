@@ -1,0 +1,213 @@
+{% extends 'base_layout.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Entrenamiento en progreso</h1>
+            <p class="text-muted mb-0">{{ routine.name }} - {{ routine_day.day_of_week }} ({{ routine_day.focus }})</p>
+        </div>
+        <div>
+            <a href="{% url 'workouts:workout-detail' routine.pk %}" class="btn btn-outline-secondary">
+                <i class="fas fa-times me-1"></i>Cancelar entrenamiento
+            </a>
+        </div>
+    </div>
+
+    <!-- Barra de progreso -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between mb-2">
+                <p class="mb-0">Progreso: <strong>{{ progress.current }}/{{ progress.total }}</strong></p>
+                <p class="mb-0">{{ progress.percentage }}% completado</p>
+            </div>
+            <div class="progress" style="height: 10px;">
+                <div class="progress-bar bg-success" role="progressbar" style="width: {{ progress.percentage }}%" 
+                     aria-valuenow="{{ progress.percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tarjeta del ejercicio actual -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Ejercicio #{{ progress.current }}: {{ current_exercise.exercise.name }}</h5>
+            <span class="badge bg-light text-dark">{{ current_exercise.exercise.category }}</span>
+        </div>
+        <div class="card-body">
+            <div class="row mb-4">
+                <!-- Columna izquierda: Información del ejercicio -->
+                <div class="col-md-6">
+                    <h6 class="mb-3">Detalles del ejercicio:</h6>
+                    <p class="mb-2">{{ current_exercise.exercise.description }}</p>
+                    
+                    {% if current_exercise.exercise.primary_muscles %}
+                    <p class="mb-1"><strong>Músculos principales:</strong> {{ current_exercise.exercise.primary_muscles }}</p>
+                    {% endif %}
+                    
+                    {% if current_exercise.exercise.secondary_muscles %}
+                    <p class="mb-1"><strong>Músculos secundarios:</strong> {{ current_exercise.exercise.secondary_muscles }}</p>
+                    {% endif %}
+                    
+                    {% if current_exercise.exercise.instructions %}
+                    <div class="mt-3">
+                        <h6 class="mb-2">Instrucciones:</h6>
+                        <p class="mb-0 whitespace-pre-line">{{ current_exercise.exercise.instructions }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if current_exercise.exercise.tips %}
+                    <div class="mt-3">
+                        <h6 class="mb-2">Consejos:</h6>
+                        <p class="mb-0 whitespace-pre-line">{{ current_exercise.exercise.tips }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Columna derecha: Formulario de registro -->
+                <div class="col-md-6">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="exercise_id" value="{{ current_exercise.exercise.id }}">
+                        
+                        <div class="mb-3">
+                            <label for="sets" class="form-label">Series</label>
+                            <input type="number" class="form-control" id="sets" name="sets" 
+                                   value="{{ current_exercise.sets }}" min="1" max="10" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="reps" class="form-label">Repeticiones</label>
+                            <input type="text" class="form-control" id="reps" name="reps" 
+                                   value="{{ current_exercise.reps }}" required>
+                            <small class="text-muted">Ej: 10, 8-12, etc.</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="weight" class="form-label">Peso (kg)</label>
+                            <input type="text" class="form-control" id="weight" name="weight" 
+                                   value="{{ current_exercise.weight|default:'' }}">
+                            <small class="text-muted">Ej: 30, 50.5, etc. (Opcional)</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Descanso:</label>
+                            <p class="mb-0 fw-bold">{{ current_exercise.rest_time }} segundos</p>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                {% if next_index != None %}
+                                <i class="fas fa-check me-1"></i>Completar y continuar
+                                {% else %}
+                                <i class="fas fa-flag-checkered me-1"></i>Finalizar entrenamiento
+                                {% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Navegación entre ejercicios -->
+            <div class="d-flex justify-content-between mt-3">
+                {% if prev_index != None %}
+                <a href="?step={{ prev_index }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Ejercicio anterior
+                </a>
+                {% else %}
+                <div></div>
+                {% endif %}
+                
+                {% if next_index != None %}
+                <a href="?step={{ next_index }}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-right me-1"></i>Saltar al siguiente
+                </a>
+                {% else %}
+                <a href="{% url 'trainings:training-list-create' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-list me-1"></i>Ver todos los entrenamientos
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Temporizador de descanso (opcional, para implementar en JavaScript) -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Temporizador de descanso</h5>
+        </div>
+        <div class="card-body text-center py-3">
+            <div class="mb-3" id="timer-display">
+                <span class="display-4">{{ current_exercise.rest_time }}</span>
+                <span class="fs-4">s</span>
+            </div>
+            <div class="d-flex justify-content-center gap-2">
+                <button id="start-timer" class="btn btn-primary">
+                    <i class="fas fa-play me-1"></i>Iniciar
+                </button>
+                <button id="reset-timer" class="btn btn-secondary">
+                    <i class="fas fa-redo me-1"></i>Reiniciar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Temporizador de descanso
+        const startBtn = document.getElementById('start-timer');
+        const resetBtn = document.getElementById('reset-timer');
+        const timerDisplay = document.getElementById('timer-display').querySelector('.display-4');
+        
+        let timer;
+        let timeLeft = {{ current_exercise.rest_time }};
+        let isRunning = false;
+        
+        startBtn.addEventListener('click', function() {
+            if (isRunning) {
+                // Pausar
+                clearInterval(timer);
+                startBtn.innerHTML = '<i class="fas fa-play me-1"></i>Reanudar';
+                isRunning = false;
+            } else {
+                // Iniciar/Reanudar
+                startBtn.innerHTML = '<i class="fas fa-pause me-1"></i>Pausar';
+                isRunning = true;
+                
+                timer = setInterval(function() {
+                    timeLeft--;
+                    timerDisplay.textContent = timeLeft;
+                    
+                    if (timeLeft <= 0) {
+                        clearInterval(timer);
+                        startBtn.innerHTML = '<i class="fas fa-play me-1"></i>Iniciar';
+                        startBtn.disabled = true;
+                        
+                        // Alertar al usuario
+                        timerDisplay.style.color = 'green';
+                        
+                        // Vibración y sonido (si es soportado)
+                        if ('vibrate' in navigator) {
+                            navigator.vibrate(500);
+                        }
+                    }
+                }, 1000);
+            }
+        });
+        
+        resetBtn.addEventListener('click', function() {
+            clearInterval(timer);
+            timeLeft = {{ current_exercise.rest_time }};
+            timerDisplay.textContent = timeLeft;
+            timerDisplay.style.color = '';
+            startBtn.innerHTML = '<i class="fas fa-play me-1"></i>Iniciar';
+            startBtn.disabled = false;
+            isRunning = false;
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %} 

@@ -5,9 +5,35 @@
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3">Ejercicios</h1>
-        <a href="{% url 'exercises:exercise-create' %}" class="btn btn-primary">
-            <i class="fas fa-plus me-2"></i>Agregar Ejercicio
-        </a>
+        <div class="d-flex gap-2">
+            {% if user.role == 'ADMIN' or user.is_superuser %}
+            <div class="dropdown">
+                <button class="btn btn-outline-primary dropdown-toggle" type="button" id="adminActionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-cog me-2"></i>Administración
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminActionsDropdown">
+                    <li>
+                        <a class="dropdown-item" href="{% url 'exercises:export-exercises' %}">
+                            <i class="fas fa-file-export me-2"></i>Exportar Ejercicios Existentes
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{% url 'exercises:export-template' %}">
+                            <i class="fas fa-download me-2"></i>Descargar Plantilla Excel
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{% url 'exercises:import-exercises' %}">
+                            <i class="fas fa-upload me-2"></i>Importar Ejercicios
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            {% endif %}
+            <a href="{% url 'exercises:exercise-create' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Agregar Ejercicio
+            </a>
+        </div>
     </div>
     
     {% if messages %}

@@ -5,7 +5,8 @@ from .views import (
     delete_training, 
     toggle_complete,
     get_routine_days,
-    create_training_from_routine
+    create_training_from_routine,
+    execute_training
 )
 
 app_name = 'trainings'
@@ -25,4 +26,5 @@ urlpatterns = [
     # Nuevas URLs para entrenamientos basados en rutinas
     path('routine/<int:routine_id>/days/', get_routine_days, name='get-routine-days'),
     path('from-routine/', create_training_from_routine, name='training-from-routine'),
+    path('execute/<int:routine_id>/<int:day_id>/', execute_training, name='execute-training'),
 ]

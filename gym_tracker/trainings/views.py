@@ -6,6 +6,7 @@ from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 import json
 import datetime
+from django.contrib import messages
 
 from .models import Training
 from .serializers import TrainingSerializer
@@ -159,9 +160,9 @@ def get_routine_days(request, routine_id):
     routine = get_object_or_404(WeeklyRoutine, pk=routine_id, user=request.user)
     
     days = []
-    for day in routine.routineday_set.all():
+    for day in routine.days.all():
         exercises = []
-        for routine_exercise in day.routineexercise_set.all():
+        for routine_exercise in day.exercises.all():
             exercises.append({
                 'id': routine_exercise.exercise.id,
                 'name': routine_exercise.exercise.name,
@@ -222,7 +223,7 @@ def create_training_from_routine(request):
     
     # Crear un entrenamiento por cada ejercicio en el día de la rutina
     created_count = 0
-    for routine_exercise in routine_day.routineexercise_set.all():
+    for routine_exercise in routine_day.exercises.all():
         Training.objects.create(
             user=request.user,
             exercise=routine_exercise.exercise,
@@ -240,3 +241,97 @@ def create_training_from_routine(request):
     
     # Redirigir a la lista de entrenamientos
     return redirect('trainings:training-list-create')
+
+@login_required
+def execute_training(request, routine_id, day_id):
+    """
+    Vista para ejecutar un entrenamiento paso a paso.
+    Muestra los ejercicios uno por uno y permite modificar los parámetros.
+    """
+    routine = get_object_or_404(WeeklyRoutine, pk=routine_id, user=request.user)
+    routine_day = get_object_or_404(RoutineDay, pk=day_id, routine=routine)
+    
+    # Obtener todos los ejercicios del día
+    exercises = routine_day.exercises.all().order_by('order')
+    
+    if not exercises.exists():
+        messages.error(request, "No hay ejercicios configurados para este día de entrenamiento.")
+        return redirect('workouts:workout-detail', pk=routine_id)
+    
+    # Obtener el ejercicio actual (por defecto el primero)
+    current_exercise_index = int(request.GET.get('step', 0))
+    
+    # Asegurar que el índice esté dentro de los límites
+    if current_exercise_index < 0:
+        current_exercise_index = 0
+    elif current_exercise_index >= exercises.count():
+        current_exercise_index = exercises.count() - 1
+    
+    current_exercise = exercises[current_exercise_index]
+    
+    # Progreso del entrenamiento
+    progress = {
+        'current': current_exercise_index + 1,
+        'total': exercises.count(),
+        'percentage': int(((current_exercise_index + 1) / exercises.count()) * 100)
+    }
+    
+    # Manejar el envío del formulario para el ejercicio actual
+    if request.method == 'POST':
+        exercise_id = request.POST.get('exercise_id')
+        sets = request.POST.get('sets', current_exercise.sets)
+        reps = request.POST.get('reps', current_exercise.reps)
+        weight = request.POST.get('weight', current_exercise.weight or '')
+        
+        # Guardar el entrenamiento para este ejercicio
+        training_date = datetime.datetime.now().date()
+        
+        # Determinar el día de la semana real
+        real_day_of_week = training_date.strftime('%A')
+        days_translation = {
+            'Monday': 'Lunes',
+            'Tuesday': 'Martes',
+            'Wednesday': 'Miércoles',
+            'Thursday': 'Jueves',
+            'Friday': 'Viernes',
+            'Saturday': 'Sábado',
+            'Sunday': 'Domingo'
+        }
+        real_day_of_week = days_translation.get(real_day_of_week, real_day_of_week)
+        
+        # Crear el registro de entrenamiento
+        Training.objects.create(
+            user=request.user,
+            exercise=current_exercise.exercise,
+            date=training_date,
+            day_of_week=real_day_of_week,
+            sets=sets,
+            reps=reps,
+            weight=weight,
+            rest_time=current_exercise.rest_time,
+            intensity='Moderado',  # Por defecto
+            notes=f"Rutina: {routine.name} - Día: {routine_day.day_of_week} ({routine_day.focus})",
+            completed=True  # Marcado como completado automáticamente
+        )
+        
+        # Ir al siguiente ejercicio
+        next_exercise = current_exercise_index + 1
+        
+        # Si llegamos al final, redirigir a la página de resumen
+        if next_exercise >= exercises.count():
+            messages.success(request, "¡Entrenamiento completado con éxito!")
+            return redirect('trainings:training-list-create')
+        
+        # Redirigir al siguiente ejercicio
+        return redirect(f"{request.path}?step={next_exercise}")
+    
+    return render(request, 'trainings/execute_training.html', {
+        'routine': routine,
+        'routine_day': routine_day,
+        'current_exercise': current_exercise,
+        'progress': progress,
+        'exercise_index': current_exercise_index,
+        'total_exercises': exercises.count(),
+        'next_index': current_exercise_index + 1 if current_exercise_index + 1 < exercises.count() else None,
+        'prev_index': current_exercise_index - 1 if current_exercise_index > 0 else None,
+    })
