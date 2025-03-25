@@ -133,6 +133,7 @@ def export_exercises_template(request):
 def import_exercises(request):
     """
     Vista para importar ejercicios desde un archivo Excel.
+    Verifica si ya existen ejercicios con el mismo nombre para evitar duplicados.
     """
     if request.method == 'POST' and request.FILES.get('excel_file'):
         try:
@@ -146,16 +147,29 @@ def import_exercises(request):
             for col in required_columns:
                 if col not in df.columns:
                     messages.error(request, f'El archivo no contiene la columna requerida: {col}')
-                    return redirect('exercises:exercise-list')
+                    return redirect('exercises:import-exercises')
             
             # Convertir DataFrame a lista de diccionarios
             exercise_data = df.replace({pd.NA: None}).to_dict('records')
             
-            # Contar ejercicios creados
+            # Contar ejercicios creados y duplicados
             created_count = 0
+            duplicated_count = 0
+            duplicated_names = []
             
             # Crear los ejercicios
             for data in exercise_data:
+                # Obtener el nombre del ejercicio
+                exercise_name = data.get('name')
+                if not exercise_name:
+                    continue
+                
+                # Verificar si ya existe un ejercicio con el mismo nombre
+                if Exercise.objects.filter(name__iexact=exercise_name).exists():
+                    duplicated_count += 1
+                    duplicated_names.append(exercise_name)
+                    continue
+                
                 # Filtrar solo los campos que existen en el modelo
                 valid_data = {k: v for k, v in data.items() if v is not None and hasattr(Exercise, k)}
                 
@@ -163,7 +177,24 @@ def import_exercises(request):
                 Exercise.objects.create(**valid_data)
                 created_count += 1
             
-            messages.success(request, f'Se importaron {created_count} ejercicios correctamente.')
+            # Mostrar mensaje de éxito con detalles
+            if created_count > 0:
+                messages.success(request, f'Se importaron {created_count} ejercicios correctamente.')
+            
+            # Mostrar mensaje de advertencia con detalles de duplicados
+            if duplicated_count > 0:
+                duplicated_list = ", ".join(duplicated_names[:5])
+                if duplicated_count > 5:
+                    duplicated_list += f" y {duplicated_count - 5} más."
+                messages.warning(
+                    request, 
+                    f'Se encontraron {duplicated_count} ejercicios duplicados (ya existentes) y se omitieron. '
+                    f'Ejemplos: {duplicated_list}'
+                )
+            
+            # Si no se creó ningún ejercicio pero había datos, todos estaban duplicados
+            if created_count == 0 and exercise_data:
+                messages.warning(request, 'No se importó ningún ejercicio. Todos los ejercicios ya existían en el sistema.')
             
         except Exception as e:
             messages.error(request, f'Error al importar ejercicios: {str(e)}')
