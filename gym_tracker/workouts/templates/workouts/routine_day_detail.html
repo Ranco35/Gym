@@ -1,0 +1,96 @@
+{% extends 'base_layout.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800">{{ routine.name }}</h1>
+            <h2 class="text-xl text-gray-600">{{ day.get_day_of_week_display }} - {{ day.focus }}</h2>
+        </div>
+        <a href="{% url 'workouts:workout-detail' routine.pk %}" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">
+            Volver
+        </a>
+    </div>
+
+    <!-- Lista de ejercicios actuales -->
+    <div class="mb-8">
+        <h3 class="text-2xl font-semibold mb-4">Ejercicios del día</h3>
+        {% for exercise in exercises %}
+        <div class="bg-white rounded-lg shadow-md p-4 mb-4">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h4 class="text-lg font-medium">{{ exercise.exercise.name }}</h4>
+                    <p class="text-gray-600">
+                        {{ exercise.sets }}x{{ exercise.reps }}
+                        {% if exercise.weight %}
+                        @ {{ exercise.weight }}kg
+                        {% endif %}
+                        | Descanso: {{ exercise.rest_time }}s
+                    </p>
+                </div>
+                <form method="POST" action="{% url 'workouts:delete-routine-exercise' exercise.pk %}"
+                    onsubmit="return confirm('¿Estás seguro de que quieres eliminar este ejercicio?');">
+                    {% csrf_token %}
+                    <button type="submit" class="text-red-500 hover:text-red-600 font-medium">
+                        Eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% empty %}
+        <p class="text-gray-500 text-center py-4">No hay ejercicios programados para este día</p>
+        {% endfor %}
+    </div>
+
+    <!-- Formulario para añadir nuevo ejercicio -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-2xl font-semibold mb-4">Añadir nuevo ejercicio</h3>
+        <form method="POST" class="space-y-4">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="exercise_id" class="block text-sm font-medium text-gray-700 mb-2">Ejercicio</label>
+                    <select name="exercise_id" id="exercise_id" required
+                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                        <option value="">Selecciona un ejercicio</option>
+                        {% for exercise in all_exercises %}
+                        <option value="{{ exercise.pk }}">{{ exercise.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label for="sets" class="block text-sm font-medium text-gray-700 mb-2">Series</label>
+                    <input type="number" name="sets" id="sets" value="3" min="1" required
+                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                </div>
+
+                <div>
+                    <label for="reps" class="block text-sm font-medium text-gray-700 mb-2">Repeticiones</label>
+                    <input type="text" name="reps" id="reps" value="10" required
+                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                </div>
+
+                <div>
+                    <label for="weight" class="block text-sm font-medium text-gray-700 mb-2">Peso (kg)</label>
+                    <input type="text" name="weight" id="weight" placeholder="Opcional"
+                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                </div>
+
+                <div>
+                    <label for="rest_time" class="block text-sm font-medium text-gray-700 mb-2">Tiempo de descanso (segundos)</label>
+                    <input type="number" name="rest_time" id="rest_time" value="60" min="0" required
+                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                </div>
+            </div>
+
+            <div class="flex justify-end">
+                <button type="submit"
+                    class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+                    Añadir Ejercicio
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %} 

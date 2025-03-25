@@ -7,6 +7,7 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.http import JsonResponse
+from django.contrib import messages
 
 from .models import Workout, WeeklyRoutine, RoutineDay, RoutineExercise
 from .serializers import (
@@ -81,7 +82,7 @@ def routine_selection(request):
             )
         
         # Redirigir a la vista de detalle de la rutina
-        return redirect('routine-detail', pk=routine.id)
+        return redirect('workouts:workout-detail', pk=routine.id)
     
     return render(request, 'workouts/routine_selection.html', {
         'days_of_week': days_of_week
@@ -148,7 +149,7 @@ def routine_day_detail(request, routine_pk, day_pk):
                 order=next_order
             )
             
-            return redirect('routine-day-detail', routine_pk=routine_pk, day_pk=day_pk)
+            return redirect('workouts:workout-day-detail', routine_pk=routine_pk, day_pk=day_pk)
     
     return render(request, 'workouts/routine_day_detail.html', {
         'routine': routine,
@@ -176,7 +177,7 @@ def delete_routine_exercise(request, exercise_pk):
     exercise.delete()
     
     # Redirigir a la página de detalle del día
-    return redirect('routine-day-detail', routine_pk=routine_pk, day_pk=day_pk)
+    return redirect('workouts:workout-day-detail', routine_pk=routine_pk, day_pk=day_pk)
 
 @login_required
 def update_routine_focus(request, day_pk):
@@ -194,6 +195,53 @@ def update_routine_focus(request, day_pk):
         day.focus = focus
         day.save()
         
-        return redirect('routine-day-detail', routine_pk=day.routine.pk, day_pk=day.pk)
+        return redirect('workouts:workout-day-detail', routine_pk=day.routine.pk, day_pk=day.pk)
     
     return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+@login_required
+def edit_routine(request, pk):
+    """
+    Vista para editar una rutina existente.
+    """
+    routine = get_object_or_404(WeeklyRoutine, pk=pk, user=request.user)
+    days_of_week = WeeklyRoutine.DAYS_OF_WEEK
+    
+    if request.method == 'POST':
+        # Obtener datos del formulario
+        routine_name = request.POST.get('routine_name', 'Mi Rutina Semanal')
+        routine_description = request.POST.get('routine_description', '')
+        selected_days = request.POST.getlist('days')
+        
+        # Actualizar la rutina existente
+        routine.name = routine_name
+        routine.description = routine_description
+        routine.save()
+        
+        # Obtener los días actuales y crear un diccionario para facilitar la búsqueda
+        current_days = {day.day_of_week: day for day in routine.routineday_set.all()}
+        
+        # Crear nuevos días si no existen
+        for day_name in selected_days:
+            if day_name not in current_days:
+                # Crear un nuevo día
+                RoutineDay.objects.create(
+                    routine=routine,
+                    day_of_week=day_name,
+                    focus="Por definir"
+                )
+        
+        # Añadir un mensaje de éxito
+        messages.success(request, "Rutina actualizada correctamente.")
+        
+        # Redirigir a la vista de detalle
+        return redirect('workouts:workout-detail', pk=routine.id)
+    
+    # Obtener los días seleccionados actualmente
+    selected_days = [day.day_of_week for day in routine.routineday_set.all()]
+    
+    return render(request, 'workouts/routine_edit.html', {
+        'routine': routine,
+        'days_of_week': days_of_week,
+        'selected_days': selected_days
+    })

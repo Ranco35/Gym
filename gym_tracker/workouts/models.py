@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings  # Importa settings para acceder al modelo de usuario
+from django.db.models import Count, Sum
 
 class Workout(models.Model):
     """
@@ -36,6 +37,23 @@ class WeeklyRoutine(models.Model):
     
     def __str__(self):
         return f"{self.name} - {self.user.username}"
+    
+    def get_total_exercises(self):
+        """
+        Calcula el número total de ejercicios en toda la rutina.
+        """
+        # Contar los ejercicios en todos los días de la rutina
+        total = 0
+        for day in self.routineday_set.all():
+            total += day.routineexercise_set.count()
+        return total
+    
+    def get_days_display(self):
+        """
+        Devuelve una cadena con los días de la semana en formato legible.
+        """
+        days = self.routineday_set.values_list('day_of_week', flat=True)
+        return ", ".join(days)
 
 
 class RoutineDay(models.Model):

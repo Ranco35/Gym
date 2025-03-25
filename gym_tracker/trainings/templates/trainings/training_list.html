@@ -1,0 +1,430 @@
+{% extends 'base_layout.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">Mis Entrenamientos</h1>
+        <div>
+            <button type="button" class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#routineTrainingModal">
+                <i class="fas fa-dumbbell"></i> Entrenar Rutina
+            </button>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newTrainingModal">
+                <i class="fas fa-plus"></i> Ejercicio Individual
+            </button>
+        </div>
+    </div>
+
+    <!-- Filtros de búsqueda -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="date-filter" class="form-label">Fecha</label>
+                    <input type="date" class="form-control" id="date-filter" name="date">
+                </div>
+                <div class="col-md-3">
+                    <label for="exercise-filter" class="form-label">Ejercicio</label>
+                    <select class="form-select" id="exercise-filter" name="exercise">
+                        <option value="">Todos los ejercicios</option>
+                        {% for exercise in exercises %}
+                        <option value="{{ exercise.id }}">{{ exercise.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="day-filter" class="form-label">Día de la semana</label>
+                    <select class="form-select" id="day-filter" name="day">
+                        <option value="">Todos los días</option>
+                        <option value="Lunes">Lunes</option>
+                        <option value="Martes">Martes</option>
+                        <option value="Miércoles">Miércoles</option>
+                        <option value="Jueves">Jueves</option>
+                        <option value="Viernes">Viernes</option>
+                        <option value="Sábado">Sábado</option>
+                        <option value="Domingo">Domingo</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">Filtrar</button>
+                    <a href="{% url 'trainings:training-list-create' %}" class="btn btn-outline-secondary">Limpiar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista de entrenamientos -->
+    {% if trainings %}
+    <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Registro de Entrenamientos</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Día</th>
+                        <th>Ejercicio</th>
+                        <th>Series</th>
+                        <th>Repeticiones</th>
+                        <th>Peso (kg)</th>
+                        <th>Intensidad</th>
+                        <th>Completado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for training in trainings %}
+                    <tr>
+                        <td>{{ training.date|date:"d/m/Y" }}</td>
+                        <td>{{ training.day_of_week }}</td>
+                        <td>{{ training.exercise.name }}</td>
+                        <td>{{ training.sets }}</td>
+                        <td>{{ training.reps }}</td>
+                        <td>{% if training.weight %}{{ training.weight }}{% else %}-{% endif %}</td>
+                        <td>
+                            <span class="badge 
+                                {% if training.intensity == 'Ligero' %}bg-success{% endif %}
+                                {% if training.intensity == 'Moderado' %}bg-info{% endif %}
+                                {% if training.intensity == 'Intenso' %}bg-warning{% endif %}
+                                {% if training.intensity == 'Muy Intenso' %}bg-danger{% endif %}">
+                                {{ training.intensity }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input training-completed-toggle" type="checkbox" 
+                                       data-id="{{ training.id }}" {% if training.completed %}checked{% endif %}>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="d-flex">
+                                <button class="btn btn-sm btn-outline-primary me-1" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#editTrainingModal{{ training.id }}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger delete-training" 
+                                        data-id="{{ training.id }}"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#deleteTrainingModal">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="card shadow-sm">
+        <div class="card-body text-center py-5">
+            <div class="mb-4">
+                <i class="fas fa-dumbbell fa-4x text-muted"></i>
+            </div>
+            <h4 class="mb-3">No hay entrenamientos registrados</h4>
+            <p class="text-muted mb-4">Comienza a registrar tus entrenamientos para hacer un seguimiento de tu progreso</p>
+            <div class="d-flex justify-content-center">
+                <button class="btn btn-success me-3" data-bs-toggle="modal" data-bs-target="#routineTrainingModal">
+                    <i class="fas fa-dumbbell me-2"></i>Entrenar Rutina
+                </button>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newTrainingModal">
+                    <i class="fas fa-plus me-2"></i>Ejercicio Individual
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Modal para crear entrenamiento basado en rutina -->
+    <div class="modal fade" id="routineTrainingModal" tabindex="-1" aria-labelledby="routineTrainingModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="routineTrainingModalLabel">Entrenar con Rutina Existente</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post" action="{% url 'trainings:training-from-routine' %}">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <!-- Paso 1: Seleccionar rutina -->
+                            <div class="col-md-12 mb-3">
+                                <label for="routine_id" class="form-label">Selecciona una rutina</label>
+                                <select class="form-select" id="routine_id" name="routine_id" required onchange="loadRoutineDays()">
+                                    <option value="">Elige una rutina</option>
+                                    {% for routine in routines %}
+                                    <option value="{{ routine.id }}">{{ routine.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <!-- Paso 2: Seleccionar día de la rutina -->
+                            <div class="col-md-6 mb-3">
+                                <label for="routine_day_id" class="form-label">Día de entrenamiento</label>
+                                <select class="form-select" id="routine_day_id" name="routine_day_id" required disabled>
+                                    <option value="">Primero selecciona una rutina</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="training_date" class="form-label">Fecha del entrenamiento</label>
+                                <input type="date" class="form-control" id="training_date" name="training_date" required>
+                            </div>
+                            
+                            <!-- Información adicional -->
+                            <div class="col-12" id="day_exercises_container" style="display: none;">
+                                <div class="card bg-light">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">Ejercicios en este día de rutina</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <ul class="list-group" id="day_exercises_list">
+                                            <!-- Los ejercicios se cargarán dinámicamente -->
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="form-text mt-2">
+                                    Todos estos ejercicios se registrarán como parte de tu entrenamiento.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-success">Iniciar entrenamiento</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para crear nuevo entrenamiento individual -->
+    <div class="modal fade" id="newTrainingModal" tabindex="-1" aria-labelledby="newTrainingModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="newTrainingModalLabel">Registrar Ejercicio Individual</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="exercise" class="form-label">Ejercicio</label>
+                                <select class="form-select" id="exercise" name="exercise" required>
+                                    <option value="">Selecciona un ejercicio</option>
+                                    {% for exercise in exercises %}
+                                    <option value="{{ exercise.id }}">{{ exercise.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="date" class="form-label">Fecha</label>
+                                <input type="date" class="form-control" id="date" name="date" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="sets" class="form-label">Series</label>
+                                <input type="number" class="form-control" id="sets" name="sets" min="1" value="3" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="reps" class="form-label">Repeticiones</label>
+                                <input type="number" class="form-control" id="reps" name="reps" min="1" value="10" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="weight" class="form-label">Peso (kg)</label>
+                                <input type="number" class="form-control" id="weight" name="weight" step="0.5" min="0">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="rest_time" class="form-label">Tiempo de descanso (segundos)</label>
+                                <input type="number" class="form-control" id="rest_time" name="rest_time" min="0" value="60">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="intensity" class="form-label">Intensidad</label>
+                                <select class="form-select" id="intensity" name="intensity">
+                                    <option value="Ligero">Ligero</option>
+                                    <option value="Moderado" selected>Moderado</option>
+                                    <option value="Intenso">Intenso</option>
+                                    <option value="Muy Intenso">Muy Intenso</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label for="notes" class="form-label">Notas</label>
+                                <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="completed" name="completed">
+                                    <label class="form-check-label" for="completed">
+                                        Marcar como completado
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para confirmar eliminación -->
+    <div class="modal fade" id="deleteTrainingModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar eliminación</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    ¿Estás seguro de que deseas eliminar este entrenamiento? Esta acción no se puede deshacer.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <form id="delete-training-form" method="post" action="">
+                        {% csrf_token %}
+                        <input type="hidden" name="_method" value="DELETE">
+                        <button type="submit" class="btn btn-danger">Eliminar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Configurar fechas actuales por defecto
+    document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date().toISOString().split('T')[0];
+        
+        if (document.getElementById('date')) {
+            document.getElementById('date').value = today;
+        }
+        
+        if (document.getElementById('training_date')) {
+            document.getElementById('training_date').value = today;
+        }
+
+        // Manejar la eliminación de entrenamientos
+        document.querySelectorAll('.delete-training').forEach(button => {
+            button.addEventListener('click', function() {
+                const trainingId = this.getAttribute('data-id');
+                document.getElementById('delete-training-form').action = `/trainings/${trainingId}/delete/`;
+            });
+        });
+
+        // Manejar el cambio en el estado de completado
+        document.querySelectorAll('.training-completed-toggle').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const trainingId = this.getAttribute('data-id');
+                const completed = this.checked;
+                
+                fetch(`/trainings/${trainingId}/toggle-complete/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ completed: completed })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        this.checked = !completed;
+                        alert('Error al actualizar el estado');
+                    }
+                })
+                .catch(error => {
+                    this.checked = !completed;
+                    console.error('Error:', error);
+                });
+            });
+        });
+    });
+    
+    // Cargar los días disponibles para una rutina seleccionada
+    function loadRoutineDays() {
+        const routineId = document.getElementById('routine_id').value;
+        const daySelect = document.getElementById('routine_day_id');
+        const exercisesContainer = document.getElementById('day_exercises_container');
+        const exercisesList = document.getElementById('day_exercises_list');
+        
+        // Resetear el selector de días
+        daySelect.innerHTML = '<option value="">Selecciona un día</option>';
+        daySelect.disabled = !routineId;
+        exercisesContainer.style.display = 'none';
+        exercisesList.innerHTML = '';
+        
+        if (!routineId) return;
+        
+        // Hacer la petición para obtener los días de la rutina
+        fetch(`/trainings/routine/${routineId}/days/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.days && data.days.length > 0) {
+                    data.days.forEach(day => {
+                        const option = document.createElement('option');
+                        option.value = day.id;
+                        option.textContent = `${day.day_of_week} - ${day.focus}`;
+                        daySelect.appendChild(option);
+                    });
+                    
+                    // Escuchar cambios en el día seleccionado
+                    daySelect.addEventListener('change', () => {
+                        const dayId = daySelect.value;
+                        if (!dayId) {
+                            exercisesContainer.style.display = 'none';
+                            return;
+                        }
+                        
+                        // Cargar los ejercicios del día seleccionado
+                        const selectedDay = data.days.find(d => d.id == dayId);
+                        if (selectedDay && selectedDay.exercises) {
+                            exercisesList.innerHTML = '';
+                            
+                            if (selectedDay.exercises.length === 0) {
+                                exercisesList.innerHTML = '<li class="list-group-item text-muted">No hay ejercicios configurados para este día</li>';
+                            } else {
+                                selectedDay.exercises.forEach(exercise => {
+                                    const li = document.createElement('li');
+                                    li.className = 'list-group-item';
+                                    li.innerHTML = `
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong>${exercise.name}</strong>
+                                                <div class="text-muted small">
+                                                    ${exercise.sets}x${exercise.reps} 
+                                                    ${exercise.weight ? '| ' + exercise.weight + 'kg' : ''} 
+                                                    | Descanso: ${exercise.rest_time}s
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `;
+                                    exercisesList.appendChild(li);
+                                });
+                            }
+                            
+                            exercisesContainer.style.display = 'block';
+                        }
+                    });
+                } else {
+                    const option = document.createElement('option');
+                    option.value = "";
+                    option.textContent = "No hay días configurados para esta rutina";
+                    daySelect.appendChild(option);
+                }
+            })
+            .catch(error => {
+                console.error('Error al cargar los días de la rutina:', error);
+                daySelect.innerHTML = '<option value="">Error al cargar días</option>';
+            });
+    }
+</script>
+{% endblock %} 

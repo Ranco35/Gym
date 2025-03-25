@@ -13,7 +13,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 # Variables de entorno
 SECRET_KEY = env('SECRET_KEY', default='your-secret-key-change-in-production')
 DEBUG = env.bool('DEBUG', default=True)
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*'])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['http://134.199.224.217'])
 
 # Configuración de CSRF
 CSRF_TRUSTED_ORIGINS = [

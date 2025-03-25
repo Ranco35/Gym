@@ -10,7 +10,6 @@ from gym_tracker.views import home_view, csrf_failure
 
 # Página de login personalizada
 def serve_login_page(request):
-    # Usar render en lugar de HttpResponse con template string
     return render(request, 'login.html')
 
 # Definimos directamente las rutas de autenticación
@@ -22,15 +21,10 @@ urlpatterns = [
     path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('login/', serve_login_page, name='custom_login'),
     
-    # Rutas de API
-    path('api/workouts/', include('gym_tracker.workouts.urls')),
-    path('api/exercises/', include('gym_tracker.exercises.urls')),
-    path('api/trainings/', include('gym_tracker.trainings.urls')),
-    
     # Rutas de la interfaz web
-    path('exercises/', include(('gym_tracker.exercises.urls', 'exercises'), namespace='web')),
-    path('workouts/', include(('gym_tracker.workouts.urls', 'workouts'), namespace='web')),
-    path('trainings/', include(('gym_tracker.trainings.urls', 'trainings'), namespace='web')),
+    path('exercises/', include('gym_tracker.exercises.urls', namespace='exercises')),
+    path('workouts/', include('gym_tracker.workouts.urls', namespace='workouts')),
+    path('trainings/', include('gym_tracker.trainings.urls', namespace='trainings')),
 ]
 
 # Archivos estáticos (solo en desarrollo)

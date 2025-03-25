@@ -6,10 +6,6 @@ from gym_tracker.workouts.models import Workout
 from gym_tracker.trainings.models import Training
 from django.db.models import Count, Sum
 
-# Vista para servir la plantilla principal de React
-def index(request):
-    return render(request, 'index.html')
-
 def csrf_failure(request, reason=""):
     """
     Vista personalizada para manejar errores CSRF.
@@ -31,22 +27,16 @@ def home_view(request):
     total_exercises = Exercise.objects.count()
     
     # Contar entrenamientos (workouts)
-    try:
-        total_workouts = Workout.objects.filter(user=user).count()
-    except:
-        total_workouts = 0
+    total_workouts = Workout.objects.filter(user=user).count() if hasattr(Workout, 'objects') else 0
     
     # Contar entrenamientos completados
-    try:
+    if hasattr(Training, 'objects'):
         completed_trainings = Training.objects.filter(user=user, completed=True).count()
         total_trainings = Training.objects.filter(user=user).count()
         
         # Calcular porcentaje de progreso
-        if total_trainings > 0:
-            progress_percentage = int((completed_trainings / total_trainings) * 100)
-        else:
-            progress_percentage = 0
-    except:
+        progress_percentage = int((completed_trainings / total_trainings) * 100) if total_trainings > 0 else 0
+    else:
         completed_trainings = 0
         total_trainings = 0
         progress_percentage = 0
@@ -61,4 +51,4 @@ def home_view(request):
         'progress_percentage': progress_percentage,
     }
     
-    return render(request, 'index.html', context)
+    return render(request, 'home.html', context)

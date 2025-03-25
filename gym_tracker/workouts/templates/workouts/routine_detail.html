@@ -1,0 +1,228 @@
+{% extends 'base_layout.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">{{ routine.name }}</h1>
+            <p class="text-muted mb-0">{{ routine.description }}</p>
+        </div>
+        <div>
+            <a href="{% url 'workouts:workout-edit' routine.pk %}" class="btn btn-primary">
+                <i class="fas fa-edit me-1"></i>Editar Rutina
+            </a>
+            <a href="{% url 'workouts:workout-list' %}" class="btn btn-outline-secondary ms-2">
+                <i class="fas fa-arrow-left me-1"></i>Volver
+            </a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Información de la Rutina</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6>Días de entrenamiento:</h6>
+                        <div class="d-flex flex-wrap gap-1">
+                            {% for day in routine.routineday_set.all %}
+                            <span class="badge bg-secondary">{{ day.day_of_week }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>Datos adicionales:</h6>
+                        <p class="text-muted small mb-1">Creada: {{ routine.created_at|date:"d/m/Y" }}</p>
+                        <p class="text-muted small mb-0">Actualizada: {{ routine.updated_at|date:"d/m/Y" }}</p>
+                    </div>
+                    
+                    <div class="mb-0">
+                        <h6>Ejercicios totales:</h6>
+                        <p class="h4 text-primary mb-0">
+                            {{ routine.get_total_exercises }} <span class="small text-muted">ejercicios</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Días y Ejercicios</h5>
+                </div>
+                <div class="card-body">
+                    {% if routine.routineday_set.exists %}
+                    <div class="accordion" id="routineDaysAccordion">
+                        {% for day in routine.routineday_set.all %}
+                        <div class="accordion-item mb-3 border">
+                            <h2 class="accordion-header" id="heading{{ day.id }}">
+                                <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button" 
+                                        data-bs-toggle="collapse" data-bs-target="#collapse{{ day.id }}" 
+                                        aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" 
+                                        aria-controls="collapse{{ day.id }}">
+                                    <div class="d-flex align-items-center justify-content-between w-100 pe-3">
+                                        <span>
+                                            <strong>{{ day.day_of_week }}</strong>
+                                            {% if day.focus %} - {{ day.focus }}{% endif %}
+                                        </span>
+                                        <span class="badge bg-primary rounded-pill ms-2">
+                                            {{ day.routineexercise_set.count }} ejercicios
+                                        </span>
+                                    </div>
+                                </button>
+                            </h2>
+                            <div id="collapse{{ day.id }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" 
+                                 aria-labelledby="heading{{ day.id }}" data-bs-parent="#routineDaysAccordion">
+                                <div class="accordion-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <div>
+                                            <form method="POST" action="{% url 'workouts:update-routine-focus' day.pk %}" 
+                                                  class="d-flex gap-2 align-items-center">
+                                                {% csrf_token %}
+                                                <div class="input-group input-group-sm" style="max-width: 250px;">
+                                                    <span class="input-group-text">Enfoque:</span>
+                                                    <input type="text" class="form-control form-control-sm" name="focus" 
+                                                           value="{{ day.focus }}" placeholder="Ej: Pecho, Piernas...">
+                                                    <button type="submit" class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-check"></i>
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                        <a href="{% url 'workouts:workout-day-detail' routine.pk day.pk %}" 
+                                           class="btn btn-sm btn-primary">
+                                            <i class="fas fa-dumbbell me-1"></i>Gestionar Ejercicios
+                                        </a>
+                                    </div>
+                                    
+                                    {% if day.routineexercise_set.exists %}
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover align-middle">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Ejercicio</th>
+                                                    <th style="width: 80px;">Series</th>
+                                                    <th style="width: 100px;">Repeticiones</th>
+                                                    <th style="width: 100px;">Peso (kg)</th>
+                                                    <th style="width: 120px;">Descanso</th>
+                                                    <th style="width: 80px;">Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for exercise in day.routineexercise_set.all %}
+                                                <tr>
+                                                    <td>{{ exercise.exercise.name }}</td>
+                                                    <td>{{ exercise.sets }}</td>
+                                                    <td>{{ exercise.reps }}</td>
+                                                    <td>{% if exercise.weight %}{{ exercise.weight }}{% else %}-{% endif %}</td>
+                                                    <td>{{ exercise.rest_time }}s</td>
+                                                    <td>
+                                                        <form method="POST" action="{% url 'workouts:delete-routine-exercise' exercise.pk %}"
+                                                              onsubmit="return confirm('¿Estás seguro de eliminar este ejercicio?');"
+                                                              class="d-inline">
+                                                            {% csrf_token %}
+                                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                                <i class="fas fa-trash"></i>
+                                                            </button>
+                                                        </form>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    {% else %}
+                                    <div class="text-center py-4">
+                                        <p class="text-muted mb-3">No hay ejercicios configurados para este día</p>
+                                        <a href="{% url 'workouts:workout-day-detail' routine.pk day.pk %}" 
+                                           class="btn btn-sm btn-primary">
+                                            <i class="fas fa-plus me-1"></i>Añadir ejercicios
+                                        </a>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <p class="text-muted mb-0">No hay días configurados para esta rutina</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Botón para iniciar entrenamiento -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body text-center py-4">
+            <h5 class="mb-3">¿Listo para entrenar con esta rutina?</h5>
+            <button type="button" class="btn btn-success btn-lg" data-bs-toggle="modal" data-bs-target="#startTrainingModal">
+                <i class="fas fa-dumbbell me-2"></i>Iniciar Entrenamiento
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal para iniciar entrenamiento -->
+    <div class="modal fade" id="startTrainingModal" tabindex="-1" aria-labelledby="startTrainingModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="startTrainingModalLabel">Iniciar Entrenamiento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="{% url 'trainings:training-from-routine' %}" method="post">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <input type="hidden" name="routine_id" value="{{ routine.id }}">
+                        
+                        <div class="mb-3">
+                            <label for="routine_day_id" class="form-label">Elige el día a entrenar:</label>
+                            <select class="form-select" id="routine_day_id" name="routine_day_id" required>
+                                <option value="">Selecciona un día</option>
+                                {% for day in routine.routineday_set.all %}
+                                <option value="{{ day.id }}">{{ day.day_of_week }} - {{ day.focus }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="training_date" class="form-label">Fecha del entrenamiento:</label>
+                            <input type="date" class="form-control" id="training_date" name="training_date" required>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Se registrarán todos los ejercicios de este día en tu seguimiento de entrenamientos.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-play me-1"></i>Iniciar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Configurar la fecha actual por defecto
+        if (document.getElementById('training_date')) {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('training_date').value = today;
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %} 

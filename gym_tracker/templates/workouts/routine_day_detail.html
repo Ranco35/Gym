@@ -9,7 +9,7 @@
         <div class="card-header bg-primary text-white">
             <div class="d-flex justify-content-between align-items-center">
                 <h1 class="h3 mb-0">{{ day.day_of_week }} - {{ routine.name }}</h1>
-                <a href="{% url 'routine-detail' pk=routine.id %}" class="btn btn-outline-light btn-sm">
+                <a href="{% url 'workouts:workout-detail' pk=routine.id %}" class="btn btn-outline-light btn-sm">
                     <i class="fas fa-arrow-left"></i> Volver a la rutina
                 </a>
             </div>
@@ -29,7 +29,7 @@
                 <div class="modal fade" id="focus-modal" tabindex="-1" aria-hidden="true">
                     <div class="modal-dialog">
                         <div class="modal-content">
-                            <form method="post" action="{% url 'update-routine-focus' day_pk=day.id %}">
+                            <form method="post" action="{% url 'workouts:update-routine-focus' day_pk=day.id %}">
                                 {% csrf_token %}
                                 <div class="modal-header">
                                     <h5 class="modal-title">Actualizar enfoque - {{ day.day_of_week }}</h5>
@@ -85,7 +85,7 @@
                                         <td>{{ exercise.weight|default:"-" }}</td>
                                         <td>{{ exercise.rest_time }}s</td>
                                         <td>
-                                            <a href="{% url 'delete-routine-exercise' exercise_pk=exercise.id %}" class="btn btn-sm btn-danger" onclick="return confirm('¿Estás seguro de eliminar este ejercicio?')">
+                                            <a href="{% url 'workouts:delete-routine-exercise' exercise_pk=exercise.id %}" class="btn btn-sm btn-danger" onclick="return confirm('¿Estás seguro de eliminar este ejercicio?')">
                                                 <i class="fas fa-trash"></i>
                                             </a>
                                         </td>
@@ -111,7 +111,7 @@
                     <h5 class="mb-0">Añadir Ejercicio</h5>
                 </div>
                 <div class="card-body">
-                    <form method="post" action="{% url 'routine-day-detail' routine_pk=routine.id day_pk=day.id %}">
+                    <form method="post" action="{% url 'workouts:workout-day-detail' routine_pk=routine.id day_pk=day.id %}">
                         {% csrf_token %}
                         
                         <div class="mb-3">

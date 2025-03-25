@@ -1,0 +1,80 @@
+{% extends 'base_layout.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">Mis Rutinas</h1>
+        <a href="{% url 'workouts:workout-new' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Nueva Rutina
+        </a>
+    </div>
+
+    {% if messages %}
+    <div class="mb-4">
+        {% for message in messages %}
+        <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-danger{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if routines %}
+    <div class="row">
+        {% for routine in routines %}
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm h-100 border-0">
+                <!-- Cabecera con mes y año -->
+                <div class="card-header bg-dark text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">{{ routine.created_at|date:"F Y" }}</h5>
+                        <span class="badge bg-primary rounded-pill">{{ routine.routineday_set.count }} días</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <h4 class="mb-3">{{ routine.name }}</h4>
+                    <p class="card-text text-muted mb-4">{{ routine.description }}</p>
+                    
+                    <h6 class="mb-2">Rutina para los días:</h6>
+                    <p class="mb-3">{{ routine.get_days_display }}</p>
+                    
+                    <h6 class="mb-2">Días de entrenamiento:</h6>
+                    <div class="d-flex flex-wrap gap-1 mb-4">
+                        {% for day in routine.routineday_set.all %}
+                        <span class="badge bg-secondary">{{ day.day_of_week }}</span>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="text-muted small mb-2">
+                        <p class="mb-0">Creado: {{ routine.created_at|date:"d/m/Y" }}</p>
+                    </div>
+                </div>
+                <div class="card-footer bg-white border-top text-center p-3">
+                    <a href="{% url 'workouts:workout-detail' routine.pk %}" class="btn btn-primary w-100 mb-2">
+                        Ver detalles
+                    </a>
+                    <a href="{% url 'workouts:workout-edit' routine.pk %}" class="btn btn-outline-secondary w-100">
+                        <i class="fas fa-edit me-1"></i>Editar Rutina
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card shadow-sm">
+        <div class="card-body text-center py-5">
+            <div class="mb-4">
+                <i class="fas fa-dumbbell fa-4x text-muted"></i>
+            </div>
+            <h4 class="mb-3">No tienes rutinas creadas</h4>
+            <p class="text-muted mb-4">Comienza creando tu primera rutina de entrenamiento</p>
+            <a href="{% url 'workouts:workout-new' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Crear mi primera rutina
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

@@ -9,7 +9,7 @@
         <div class="card-header bg-dark text-white">
             <div class="d-flex justify-content-between align-items-center">
                 <h1 class="h3 mb-0">{{ routine.name }}</h1>
-                <a href="{% url 'workout-home' %}" class="btn btn-outline-light btn-sm">
+                <a href="{% url 'workouts:workout-list' %}" class="btn btn-outline-light btn-sm">
                     <i class="fas fa-arrow-left"></i> Volver
                 </a>
             </div>
@@ -53,7 +53,7 @@
                         <div class="modal fade" id="focus-modal-{{ day.id }}" tabindex="-1" aria-hidden="true">
                             <div class="modal-dialog">
                                 <div class="modal-content">
-                                    <form method="post" action="{% url 'update-routine-focus' day_pk=day.id %}">
+                                    <form method="post" action="{% url 'workouts:update-routine-focus' day_pk=day.id %}">
                                         {% csrf_token %}
                                         <div class="modal-header">
                                             <h5 class="modal-title">Actualizar enfoque - {{ day.day_of_week }}</h5>
@@ -90,7 +90,7 @@
                                                 <small>Peso: {{ exercise.weight }}</small>
                                             {% endif %}
                                         </div>
-                                        <a href="{% url 'delete-routine-exercise' exercise_pk=exercise.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Estás seguro de eliminar este ejercicio?')">
+                                        <a href="{% url 'workouts:delete-routine-exercise' exercise_pk=exercise.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Estás seguro de eliminar este ejercicio?')">
                                             <i class="fas fa-trash"></i>
                                         </a>
                                     </div>
@@ -105,7 +105,7 @@
                     {% endwith %}
                     
                     <!-- Botón para ver detalles y agregar ejercicios -->
-                    <a href="{% url 'routine-day-detail' routine_pk=routine.id day_pk=day.id %}" class="btn btn-primary w-100">
+                    <a href="{% url 'workouts:workout-day-detail' routine_pk=routine.id day_pk=day.id %}" class="btn btn-primary w-100">
                         {% if day.exercises.count > 0 %}
                             Ver y editar ejercicios
                         {% else %}

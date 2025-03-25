@@ -11,7 +11,7 @@
         <div class="card-body">
             <p class="lead mb-4">Selecciona los días de la semana en los que entrenarás:</p>
             
-            <form method="post" action="{% url 'routine-selection' %}">
+            <form method="post" action="{% url 'workouts:workout-new' %}">
                 {% csrf_token %}
                 
                 <div class="mb-4">
@@ -36,7 +36,7 @@
                 
                 <div class="d-grid gap-2">
                     <button type="submit" class="btn btn-primary btn-lg">Crear Rutina</button>
-                    <a href="{% url 'workout-home' %}" class="btn btn-outline-secondary">Cancelar</a>
+                    <a href="{% url 'workouts:workout-list' %}" class="btn btn-outline-secondary">Cancelar</a>
                 </div>
             </form>
         </div>

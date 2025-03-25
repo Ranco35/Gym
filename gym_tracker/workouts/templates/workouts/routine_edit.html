@@ -1,0 +1,126 @@
+{% extends 'base_layout.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">Editar Rutina</h1>
+        <a href="{% url 'workouts:workout-detail' routine.pk %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Volver a detalles
+        </a>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Información básica</h5>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="row g-3">
+                    <div class="col-md-12 mb-3">
+                        <label for="routine_name" class="form-label">Nombre de la Rutina</label>
+                        <input type="text" class="form-control" id="routine_name" name="routine_name" 
+                               value="{{ routine.name }}" required>
+                    </div>
+                    
+                    <div class="col-md-12 mb-3">
+                        <label for="routine_description" class="form-label">Descripción</label>
+                        <textarea class="form-control" id="routine_description" name="routine_description" 
+                                  rows="3">{{ routine.description }}</textarea>
+                    </div>
+                </div>
+            
+                <div class="card bg-light mb-4">
+                    <div class="card-header">
+                        <h6 class="mb-0">Días de Entrenamiento</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Los días que selecciones se añadirán a tu rutina. Si deseleccionas días que ya tienen ejercicios, 
+                            esos días se mantendrán en tu rutina con sus ejercicios.
+                        </div>
+                        
+                        <div class="row">
+                            {% for day_code, day_name in days_of_week %}
+                            <div class="col-md-3 mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="days" 
+                                           value="{{ day_name }}" id="day_{{ day_code }}"
+                                           {% if day_name in selected_days %}checked{% endif %}>
+                                    <label class="form-check-label" for="day_{{ day_code }}">
+                                        {{ day_name }}
+                                    </label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <a href="{% url 'workouts:workout-detail' routine.pk %}" class="btn btn-outline-secondary">
+                        Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Días de rutina actuales</h5>
+        </div>
+        <div class="card-body">
+            {% if routine.routineday_set.exists %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Día</th>
+                            <th>Enfoque</th>
+                            <th>Ejercicios</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for day in routine.routineday_set.all %}
+                        <tr>
+                            <td>{{ day.day_of_week }}</td>
+                            <td>
+                                <form method="POST" action="{% url 'workouts:update-routine-focus' day.pk %}" 
+                                      class="d-flex gap-2 align-items-center">
+                                    {% csrf_token %}
+                                    <div class="input-group input-group-sm" style="max-width: 200px;">
+                                        <input type="text" class="form-control form-control-sm" name="focus" 
+                                               value="{{ day.focus }}" placeholder="Enfoque del día">
+                                        <button type="submit" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    </div>
+                                </form>
+                            </td>
+                            <td>{{ day.routineexercise_set.count }}</td>
+                            <td>
+                                <a href="{% url 'workouts:workout-day-detail' routine.pk day.pk %}" 
+                                   class="btn btn-sm btn-primary">
+                                    <i class="fas fa-dumbbell me-1"></i>Gestionar Ejercicios
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <p class="text-muted mb-0">No hay días configurados para esta rutina</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

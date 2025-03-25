@@ -1,0 +1,86 @@
+{% extends 'base_layout.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <h1 class="h3 mb-4">Dashboard</h1>
+  
+  <!-- Estadísticas -->
+  <div class="row mb-4">
+    <div class="col-md-4">
+      <div class="stat-card">
+        <div class="stat-card-icon" style="background-color: var(--primary-color);">
+          <i class="fas fa-running"></i>
+        </div>
+        <div class="stat-card-title">Total Ejercicios</div>
+        <h2 class="stat-card-value">{{ total_exercises }}</h2>
+        <div class="stat-card-subtitle">Ejercicios registrados</div>
+      </div>
+    </div>
+    
+    <div class="col-md-4">
+      <div class="stat-card">
+        <div class="stat-card-icon" style="background-color: var(--success-color);">
+          <i class="fas fa-dumbbell"></i>
+        </div>
+        <div class="stat-card-title">Entrenamientos</div>
+        <h2 class="stat-card-value">{{ total_workouts }}</h2>
+        <div class="stat-card-subtitle">Rutinas creadas</div>
+      </div>
+    </div>
+    
+    <div class="col-md-4">
+      <div class="stat-card">
+        <div class="stat-card-icon" style="background-color: var(--danger-color);">
+          <i class="fas fa-chart-line"></i>
+        </div>
+        <div class="stat-card-title">Progreso</div>
+        <h2 class="stat-card-value">{{ progress_percentage }}%</h2>
+        <div class="stat-card-subtitle">{{ completed_trainings }} de {{ total_trainings }} completados</div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Acciones Rápidas -->
+  <h2 class="h4 mb-4">Acciones Rápidas</h2>
+  <div class="row">
+    <div class="col-md-4 mb-4">
+      <div class="action-card">
+        <div class="action-card-icon" style="background-color: var(--success-color);">
+          <i class="fas fa-dumbbell"></i>
+        </div>
+        <div class="action-card-body">
+          <h3 class="action-card-title">Rutinas Semanales</h3>
+          <p class="action-card-text">Gestiona tus rutinas de entrenamiento y planes personalizados.</p>
+          <a href="{% url 'workouts:workout-list' %}" class="btn btn-primary btn-action">Ver rutinas</a>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+      <div class="action-card">
+        <div class="action-card-icon" style="background-color: var(--primary-color);">
+          <i class="fas fa-running"></i>
+        </div>
+        <div class="action-card-body">
+          <h3 class="action-card-title">Ejercicios</h3>
+          <p class="action-card-text">Explora y gestiona tu catálogo de ejercicios.</p>
+          <a href="{% url 'exercises:exercise-list' %}" class="btn btn-primary btn-action">Ver ejercicios</a>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+      <div class="action-card">
+        <div class="action-card-icon" style="background-color: var(--danger-color);">
+          <i class="fas fa-chart-line"></i>
+        </div>
+        <div class="action-card-body">
+          <h3 class="action-card-title">Mis Entrenamientos</h3>
+          <p class="action-card-text">Registra y haz seguimiento de tus entrenamientos diarios.</p>
+          <a href="{% url 'trainings:training-list-create' %}" class="btn btn-primary btn-action">Ver entrenamientos</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} 

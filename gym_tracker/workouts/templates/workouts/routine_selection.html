@@ -1,0 +1,68 @@
+{% extends 'base_layout.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">Crear Nueva Rutina</h1>
+        <a href="{% url 'workouts:workout-list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Volver
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Configura tu rutina de entrenamiento</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label for="routine_name" class="form-label">Nombre de la Rutina</label>
+                            <input type="text" class="form-control" id="routine_name" name="routine_name" 
+                                   placeholder="Ej: Mi Rutina de Fuerza" required>
+                            <div class="form-text">Dale un nombre descriptivo a tu rutina de entrenamiento.</div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label">Días de Entrenamiento</label>
+                            <div class="bg-light p-3 rounded">
+                                <p class="text-muted small mb-2">Selecciona los días en los que entrenarás:</p>
+                                <div class="row">
+                                    {% for day_code, day_name in days_of_week %}
+                                    <div class="col-md-3 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="days" 
+                                                   value="{{ day_name }}" id="day_{{ day_code }}">
+                                            <label class="form-check-label" for="day_{{ day_code }}">
+                                                {{ day_name }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="form-text mt-2">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Podrás personalizar los ejercicios para cada día después de crear la rutina.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'workouts:workout-list' %}" class="btn btn-outline-secondary me-md-2">
+                                Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Crear Rutina
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -40,19 +40,31 @@ def exercise_create(request):
     """
     if request.method == 'POST':
         try:
-            exercise = Exercise.objects.create(
-                name=request.POST.get('name'),
-                description=request.POST.get('description'),
-                category=request.POST.get('category'),
-                difficulty=request.POST.get('difficulty'),
-                primary_muscles=request.POST.get('primary_muscles'),
-                secondary_muscles=request.POST.get('secondary_muscles'),
-                equipment=request.POST.get('equipment'),
-                instructions=request.POST.get('instructions'),
-                tips=request.POST.get('tips')
-            )
+            # Crear un diccionario con los campos requeridos
+            data = {
+                'name': request.POST.get('name'),
+                'description': request.POST.get('description'),
+                'category': request.POST.get('category'),
+                'difficulty': request.POST.get('difficulty'),
+            }
+            
+            # Añadir campos opcionales si existen en el modelo
+            optional_fields = [
+                'primary_muscles', 
+                'secondary_muscles', 
+                'equipment', 
+                'instructions', 
+                'tips'
+            ]
+            
+            for field in optional_fields:
+                if hasattr(Exercise, field) and request.POST.get(field):
+                    data[field] = request.POST.get(field)
+            
+            # Crear el ejercicio con los datos limpios
+            exercise = Exercise.objects.create(**data)
             messages.success(request, 'Ejercicio creado exitosamente.')
-            return redirect('web:exercises:exercise-list')
+            return redirect('exercises:exercise-list')
         except Exception as e:
             messages.error(request, f'Error al crear el ejercicio: {str(e)}')
     

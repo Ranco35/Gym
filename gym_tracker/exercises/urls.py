@@ -10,12 +10,11 @@ api_patterns = [
 ]
 
 # URLs para la interfaz web
-web_patterns = [
+urlpatterns = [
     path('', ExerciseListView.as_view(), name='exercise-list'),
     path('create/', exercise_create, name='exercise-create'),
     path('<int:pk>/', ExerciseDetailView.as_view(), name='exercise-detail'),
 ]
 
 # URLs específicas para cada tipo de ruta
-urlpatterns = web_patterns  # Para /exercises/
-web_urlpatterns = web_patterns  # Para /web/exercises/
+web_urlpatterns = urlpatterns  # Para /web/exercises/

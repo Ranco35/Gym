@@ -1,111 +1,112 @@
-{% extends 'base.html' %}
+{% extends 'base_layout.html' %}
 {% load static %}
 
 {% block content %}
-<div class="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
-    <div class="relative py-3 sm:max-w-xl sm:mx-auto">
-        <div class="relative px-4 py-10 bg-white shadow-lg sm:rounded-3xl sm:p-20">
-            <div class="max-w-md mx-auto">
-                <div class="divide-y divide-gray-200">
-                    <div class="py-8 text-base leading-6 space-y-4 text-gray-700 sm:text-lg sm:leading-7">
-                        <h2 class="text-2xl font-bold mb-8 text-center text-indigo-600">Agregar Nuevo Ejercicio</h2>
-                        <form method="post" class="space-y-6">
-                            {% csrf_token %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">Agregar Nuevo Ejercicio</h1>
+        <a href="{% url 'exercises:exercise-list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Volver
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Información del ejercicio</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label">Nombre del Ejercicio</label>
+                                <input type="text" class="form-control" id="name" name="name" 
+                                       placeholder="Ej: Press de Banca" required>
+                            </div>
                             
-                            <!-- Nombre del Ejercicio -->
-                            <div>
-                                <label for="name" class="block text-sm font-medium text-gray-700">Nombre del Ejercicio</label>
-                                <input type="text" name="name" id="name" required
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                    placeholder="Ej: Press de Banca">
-                            </div>
-
-                            <!-- Descripción -->
-                            <div>
-                                <label for="description" class="block text-sm font-medium text-gray-700">Descripción</label>
-                                <textarea name="description" id="description" rows="3" required
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                    placeholder="Describe el ejercicio..."></textarea>
-                            </div>
-
-                            <!-- Categoría -->
-                            <div>
-                                <label for="category" class="block text-sm font-medium text-gray-700">Categoría</label>
-                                <select name="category" id="category" required
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            <div class="col-md-6 mb-3">
+                                <label for="category" class="form-label">Categoría</label>
+                                <select class="form-select" id="category" name="category" required>
                                     <option value="">Selecciona una categoría</option>
-                                    <option value="Fuerza">Fuerza</option>
+                                    <option value="Pecho">Pecho</option>
+                                    <option value="Espalda">Espalda</option>
+                                    <option value="Piernas">Piernas</option>
+                                    <option value="Hombros">Hombros</option>
+                                    <option value="Brazos">Brazos</option>
+                                    <option value="Abdominales">Abdominales</option>
+                                    <option value="Core">Core</option>
                                     <option value="Cardio">Cardio</option>
-                                    <option value="Flexibilidad">Flexibilidad</option>
-                                    <option value="Equilibrio">Equilibrio</option>
                                 </select>
                             </div>
-
-                            <!-- Nivel de Dificultad -->
-                            <div>
-                                <label for="difficulty" class="block text-sm font-medium text-gray-700">Nivel de Dificultad</label>
-                                <select name="difficulty" id="difficulty" required
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            
+                            <div class="col-md-12 mb-3">
+                                <label for="description" class="form-label">Descripción</label>
+                                <textarea class="form-control" id="description" name="description" 
+                                          rows="3" placeholder="Describe el ejercicio..." required></textarea>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="difficulty" class="form-label">Nivel de Dificultad</label>
+                                <select class="form-select" id="difficulty" name="difficulty" required>
                                     <option value="">Selecciona el nivel</option>
                                     <option value="Principiante">Principiante</option>
                                     <option value="Intermedio">Intermedio</option>
                                     <option value="Avanzado">Avanzado</option>
                                 </select>
                             </div>
-
-                            <!-- Músculos Principales -->
-                            <div>
-                                <label for="primary_muscles" class="block text-sm font-medium text-gray-700">Músculos Principales</label>
-                                <input type="text" name="primary_muscles" id="primary_muscles" required
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                    placeholder="Ej: Pecho, Tríceps">
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="equipment" class="form-label">Equipamiento Necesario</label>
+                                <input type="text" class="form-control" id="equipment" name="equipment" 
+                                       placeholder="Ej: Barra, Mancuernas, Banco">
                             </div>
-
-                            <!-- Músculos Secundarios -->
-                            <div>
-                                <label for="secondary_muscles" class="block text-sm font-medium text-gray-700">Músculos Secundarios</label>
-                                <input type="text" name="secondary_muscles" id="secondary_muscles"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                    placeholder="Ej: Hombros, Antebrazos">
+                        </div>
+                        
+                        <div class="card bg-light mb-4">
+                            <div class="card-header">
+                                <h6 class="mb-0">Músculos implicados</h6>
                             </div>
-
-                            <!-- Equipamiento Necesario -->
-                            <div>
-                                <label for="equipment" class="block text-sm font-medium text-gray-700">Equipamiento Necesario</label>
-                                <input type="text" name="equipment" id="equipment"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                    placeholder="Ej: Barra, Banco, Pesas">
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="primary_muscles" class="form-label">Músculos Principales</label>
+                                        <input type="text" class="form-control" id="primary_muscles" name="primary_muscles" 
+                                               placeholder="Ej: Pectorales, Deltoides Anterior">
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="secondary_muscles" class="form-label">Músculos Secundarios</label>
+                                        <input type="text" class="form-control" id="secondary_muscles" name="secondary_muscles" 
+                                               placeholder="Ej: Tríceps, Deltoides">
+                                    </div>
+                                </div>
                             </div>
-
-                            <!-- Instrucciones -->
-                            <div>
-                                <label for="instructions" class="block text-sm font-medium text-gray-700">Instrucciones</label>
-                                <textarea name="instructions" id="instructions" rows="4" required
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                    placeholder="Describe los pasos para realizar el ejercicio..."></textarea>
-                            </div>
-
-                            <!-- Consejos -->
-                            <div>
-                                <label for="tips" class="block text-sm font-medium text-gray-700">Consejos</label>
-                                <textarea name="tips" id="tips" rows="3"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                    placeholder="Consejos para realizar el ejercicio correctamente..."></textarea>
-                            </div>
-
-                            <!-- Botones -->
-                            <div class="flex justify-between pt-4">
-                                <button type="submit"
-                                    class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                                    Guardar Ejercicio
-                                </button>
-                                <a href="{% url 'web:exercises:exercise-list' %}"
-                                    class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
-                                    Cancelar
-                                </a>
-                            </div>
-                        </form>
-                    </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="instructions" class="form-label">Instrucciones</label>
+                            <textarea class="form-control" id="instructions" name="instructions" 
+                                      rows="4" placeholder="Pasos detallados para realizar el ejercicio..."></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="tips" class="form-label">Consejos</label>
+                            <textarea class="form-control" id="tips" name="tips" 
+                                      rows="3" placeholder="Consejos para realizar el ejercicio correctamente..."></textarea>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'exercises:exercise-list' %}" class="btn btn-outline-secondary me-md-2">
+                                Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Guardar Ejercicio
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
