@@ -13,12 +13,16 @@ def serve_login_page(request):
     return render(request, 'login.html')
 
 # Definimos directamente las rutas de autenticación
+auth_urlpatterns = [
+    path('login/', csrf_exempt(auth_views.LoginView.as_view(template_name='login.html')), name='login'),
+    path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+]
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     
     # Usar autenticación estándar de Django con csrf_exempt para desarrollo
-    path('accounts/login/', csrf_exempt(auth_views.LoginView.as_view(template_name='login.html')), name='login'),
-    path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('accounts/', include((auth_urlpatterns, 'accounts'), namespace='accounts')),
     path('login/', serve_login_page, name='custom_login'),
     
     # Rutas de la interfaz web

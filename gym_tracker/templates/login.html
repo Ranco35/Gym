@@ -1,8 +1,10 @@
 {% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>GymTracker Login</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Gym Tracker 360 Los Ríos</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -74,7 +76,7 @@
 </head>
 <body>
     <div class="login-container">
-        <h1>GymTracker</h1>
+        <h1>Gym Tracker 360 Los Ríos</h1>
         
         {% if form.errors %}
         <div class="error-message">
@@ -90,7 +92,7 @@
         </div>
         {% endif %}
         
-        <form method="post" action="/accounts/login/">
+        <form method="post" action="{% url 'accounts:login' %}">
             {% csrf_token %}
             <div class="form-group">
                 <label for="id_username">Usuario:</label>
@@ -108,5 +110,8 @@
             Utilizando la autenticación estándar de Django.
         </div>
     </div>
+    <footer class="text-center mt-4">
+        <p>© 2024 by Eduardo Peroboste Furet</p>
+    </footer>
 </body>
 </html> 

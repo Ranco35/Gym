@@ -20,15 +20,15 @@ CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:8000',
     'http://localhost:8000',
     'http://134.199.224.217:8000',
+    'http://134.199.224.217',
 ]
 
 # Configuración estándar de Django para CSRF
 CSRF_COOKIE_HTTPONLY = False
 CSRF_COOKIE_SECURE = False
 SESSION_COOKIE_SECURE = not DEBUG
-# Deshabilitar la protección CSRF para desarrollo
-CSRF_USE_SESSIONS = False 
-CSRF_COOKIE_SAMESITE = None
+CSRF_USE_SESSIONS = True
+CSRF_COOKIE_SAMESITE = 'Lax'
 CSRF_FAILURE_VIEW = 'gym_tracker.views.csrf_failure'
 
 # Application definition
@@ -55,7 +55,7 @@ if DEBUG:
         'django.contrib.sessions.middleware.SessionMiddleware',
         'corsheaders.middleware.CorsMiddleware',
         'django.middleware.common.CommonMiddleware',
-        # 'django.middleware.csrf.CsrfViewMiddleware',  # Comentado temporalmente para desarrollo
+        'django.middleware.csrf.CsrfViewMiddleware',  # Habilitamos CSRF
         'django.contrib.auth.middleware.AuthenticationMiddleware',
         'django.contrib.messages.middleware.MessageMiddleware',
         'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -190,11 +190,11 @@ CORS_ALLOW_CREDENTIALS = True
 # Configuración de Jazzmin
 JAZZMIN_SETTINGS = {
     # título de la página de administración
-    "site_title": "Gym Tracker Admin",
-    "site_header": "Gym Tracker",
-    "site_brand": "Gym Tracker",
+    "site_title": "Gym Tracker 360 Los Ríos",
+    "site_header": "Gym Tracker 360 Los Ríos",
+    "site_brand": "Gym Tracker 360 Los Ríos",
     "welcome_sign": "Bienvenido al Panel de Administración",
-    "copyright": "Gym Tracker",
+    "copyright": "© 2024 by Eduardo Peroboste Furet",
     
     # Personalización del tema
     "theme": "darkly",

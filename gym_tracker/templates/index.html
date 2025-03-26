@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GymTracker</title>
+  <title>Gym Tracker 360 Los Ríos - Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Agregamos Font Awesome para íconos -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -263,7 +263,7 @@
     <!-- Sidebar -->
     <aside class="sidebar">
       <div class="sidebar-header">
-        <h1>GymTracker</h1>
+        <h1>Gym Tracker 360 Los Ríos</h1>
       </div>
       <nav class="sidebar-menu">
         <ul>
@@ -300,7 +300,7 @@
           </li>
           {% endif %}
           <li>
-            <a href="{% url 'logout' %}" class="menu-item">
+            <a href="{% url 'accounts:logout' %}" class="menu-item">
               <i class="fas fa-sign-out-alt"></i>
               <span>Cerrar sesión</span>
             </a>
@@ -388,5 +388,10 @@
       </section>
     </main>
   </div>
+  <footer class="bg-gray-800 text-white py-4 mt-8">
+    <div class="container mx-auto text-center">
+        <p>© 2024 by Eduardo Peroboste Furet</p>
+    </div>
+  </footer>
 </body>
 </html> 

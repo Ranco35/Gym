@@ -201,10 +201,13 @@
           </a>
         </li>
         {% endif %}
-        <li class="nav-item mt-5">
-          <a href="{% url 'logout' %}" class="nav-link">
-            <i class="fas fa-sign-out-alt"></i> Cerrar sesión
-          </a>
+        <li class="nav-item">
+          <form method="post" action="{% url 'accounts:logout' %}" style="display: inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-link nav-link" style="text-decoration: none; color: inherit;">
+              <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+            </button>
+          </form>
         </li>
       </ul>
     </nav>
