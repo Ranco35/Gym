@@ -1,0 +1,483 @@
+{% extends 'base_layout.html' %}
+{% load static %}
+
+<!-- CSRF Token oculto -->
+<form id="csrf-form" style="display:none;">
+    {% csrf_token %}
+</form>
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Barra de progreso global de ejercicios del día -->
+    {% if day_trainings_count > 1 %}
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body py-2">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fs-5">Progreso del entrenamiento</span>
+                        <span class="badge bg-primary">{{ current_exercise_index }}/{{ day_trainings_count }}</span>
+                    </div>
+                    <div class="progress" style="height: 20px;">
+                        <div class="progress-bar bg-info" role="progressbar" 
+                             style="width: {{ current_exercise_index|default:1|floatformat:0 }}0%;" 
+                             aria-valuenow="{{ current_exercise_index|default:1|floatformat:0 }}0" 
+                             aria-valuemin="0" aria-valuemax="100">
+                            {{ current_exercise_index|default:1 }}/{{ day_trainings_count }}
+                        </div>
+                    </div>
+                    
+                    <!-- Botones de navegación -->
+                    <div class="d-flex justify-content-between mt-3">
+                        {% if prev_training %}
+                        <a href="{% url 'trainings:session' training_id=prev_training.id %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Ejercicio anterior
+                        </a>
+                        {% else %}
+                        <div></div>
+                        {% endif %}
+                        
+                        {% if next_training %}
+                        <a href="{% url 'trainings:session' training_id=next_training.id %}" id="nextExerciseBtn" class="btn btn-outline-primary">
+                            Siguiente ejercicio<i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                        {% else %}
+                        <a href="{% url 'trainings:training-list-create' %}" id="finishExerciseBtn" class="btn btn-outline-success">
+                            Finalizar entrenamiento<i class="fas fa-check ms-1"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <!-- Columna izquierda: Información del ejercicio -->
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">{{ exercise.name }}</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-2">{{ exercise.description }}</p>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Series objetivo:</span>
+                        <strong>{{ total_sets }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Tiempo de descanso:</span>
+                        <strong>{{ rest_time }} segundos</strong>
+                    </div>
+                    {% if exercise.video_url %}
+                    <div class="ratio ratio-16x9 mt-3">
+                        <iframe src="{{ exercise.video_url }}" allowfullscreen></iframe>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Botón para avanzar al siguiente ejercicio -->
+                    <div class="mt-3 text-center">
+                        {% if next_training %}
+                        <a id="continueNextBtn" href="{% url 'trainings:session' training_id=next_training.id %}" class="btn btn-primary btn-lg d-none">
+                            <i class="fas fa-arrow-right me-2"></i>Continuar con siguiente ejercicio
+                        </a>
+                        {% else %}
+                        <a id="completeWorkoutBtn" href="{% url 'trainings:training-list-create' %}" class="btn btn-success btn-lg d-none">
+                            <i class="fas fa-check-circle me-2"></i>Completar entrenamiento
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna central: Temporizador y registro de series -->
+        <div class="col-md-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Registro de Series</h5>
+                    <span class="badge bg-primary" id="completionStatus">0/{{ total_sets }}</span>
+                </div>
+                <div class="card-body">
+                    <!-- Temporizador -->
+                    <div class="text-center mb-4">
+                        <h2 id="timer" class="display-1 mb-3">{{ rest_time }}</h2>
+                        <div class="btn-group">
+                            <button id="startTimer" class="btn btn-primary">
+                                <i class="fas fa-play me-1"></i>Iniciar
+                            </button>
+                            <button id="pauseTimer" class="btn btn-warning" disabled>
+                                <i class="fas fa-pause me-1"></i>Pausar
+                            </button>
+                            <button id="resetTimer" class="btn btn-danger" disabled>
+                                <i class="fas fa-undo me-1"></i>Reiniciar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de series -->
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Serie</th>
+                                    <th>Peso (kg)</th>
+                                    <th>Reps</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="setsTableBody">
+                                {% for i in total_sets|rjust:total_sets %}
+                                <tr data-set-number="{{ forloop.counter }}">
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>
+                                        <input type="number" class="form-control form-control-sm weight-input" 
+                                               value="{{ initial_weight|default:'' }}" step="0.5">
+                                    </td>
+                                    <td>
+                                        <input type="number" class="form-control form-control-sm reps-input" 
+                                               value="{{ initial_reps|default:'' }}">
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">Pendiente</span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-success save-set">
+                                            <i class="fas fa-save"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Progreso general -->
+                    <div class="progress mt-4" style="height: 25px;">
+                        <div id="seriesProgress" class="progress-bar bg-success" role="progressbar" style="width: 0%" 
+                             aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Audio para el temporizador -->
+<audio id="beepAudio" src="{% static 'sounds/beep.mp3' %}"></audio>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Variables para seguimiento de series completadas
+    const totalSets = {{ total_sets }};
+    let completedSets = 0;
+    const completionStatus = document.getElementById('completionStatus');
+    const seriesProgress = document.getElementById('seriesProgress');
+    
+    // Botones de navegación
+    const continueNextBtn = document.getElementById('continueNextBtn');
+    const completeWorkoutBtn = document.getElementById('completeWorkoutBtn');
+    
+    // Comprobar si hay series ya completadas previamente
+    const checkCompletedSets = async () => {
+        try {
+            const response = await fetch(`{% url 'trainings:get-completed-sets' training_id=training.id %}`);
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                const completedSetsList = data.completed_sets;
+                
+                // Marcar las series ya completadas
+                completedSetsList.forEach(set => {
+                    const row = document.querySelector(`tr[data-set-number="${set.set_number}"]`);
+                    if (row) {
+                        const weightInput = row.querySelector('.weight-input');
+                        const repsInput = row.querySelector('.reps-input');
+                        const statusCell = row.querySelector('td:nth-child(4)');
+                        const actionButton = row.querySelector('.save-set');
+                        
+                        // Establecer valores
+                        weightInput.value = set.weight;
+                        repsInput.value = set.reps;
+                        
+                        // Deshabilitar inputs y botón
+                        weightInput.disabled = true;
+                        repsInput.disabled = true;
+                        actionButton.disabled = true;
+                        actionButton.innerHTML = '<i class="fas fa-check"></i>';
+                        
+                        // Actualizar estado
+                        statusCell.innerHTML = '<span class="badge bg-success">Completado</span>';
+                        
+                        // Incrementar contador
+                        completedSets++;
+                    }
+                });
+                
+                // Actualizar progreso
+                updateProgress();
+            }
+        } catch (error) {
+            console.error('Error al cargar series completadas:', error);
+        }
+    };
+    
+    // Actualizar el progreso visual
+    const updateProgress = () => {
+        // Actualizar contador
+        completionStatus.textContent = `${completedSets}/${totalSets}`;
+        
+        // Actualizar barra de progreso
+        const percentage = Math.round((completedSets / totalSets) * 100);
+        seriesProgress.style.width = `${percentage}%`;
+        seriesProgress.textContent = `${percentage}%`;
+        seriesProgress.setAttribute('aria-valuenow', percentage);
+        
+        // Mostrar botón de siguiente si todas las series están completadas
+        if (completedSets >= totalSets) {
+            if (continueNextBtn) {
+                continueNextBtn.classList.remove('d-none');
+            }
+            if (completeWorkoutBtn) {
+                completeWorkoutBtn.classList.remove('d-none');
+            }
+            
+            // Marcar el entrenamiento como completado
+            updateTrainingStatus(true);
+        }
+    };
+    
+    // Función para marcar el entrenamiento como completado
+    const updateTrainingStatus = async (completed) => {
+        try {
+            const csrftoken = getCookie('csrftoken');
+            const response = await fetch(`/trainings/{{ training.id }}/toggle-complete/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({ completed: completed }),
+                credentials: 'same-origin'
+            });
+            
+            const data = await response.json();
+            if (data.status !== 'success') {
+                console.warn('No se pudo actualizar el estado del entrenamiento:', data.message);
+            }
+        } catch (error) {
+            console.error('Error al actualizar estado del entrenamiento:', error);
+        }
+    };
+    
+    // Inicializar verificación de series completadas
+    checkCompletedSets();
+
+    let timer;
+    let timeLeft = {{ rest_time }};
+    let isRunning = false;
+    const timerDisplay = document.getElementById('timer');
+    const startButton = document.getElementById('startTimer');
+    const pauseButton = document.getElementById('pauseTimer');
+    const resetButton = document.getElementById('resetTimer');
+    const beepAudio = document.getElementById('beepAudio');
+
+    // Funciones del temporizador
+    function updateTimerDisplay() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    function startTimer() {
+        if (!isRunning) {
+            isRunning = true;
+            startButton.disabled = true;
+            pauseButton.disabled = false;
+            resetButton.disabled = false;
+            
+            timer = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    isRunning = false;
+                    beepAudio.play();
+                    startButton.disabled = false;
+                    pauseButton.disabled = true;
+                }
+            }, 1000);
+        }
+    }
+
+    function pauseTimer() {
+        clearInterval(timer);
+        isRunning = false;
+        startButton.disabled = false;
+        pauseButton.disabled = true;
+    }
+
+    function resetTimer() {
+        clearInterval(timer);
+        isRunning = false;
+        timeLeft = {{ rest_time }};
+        updateTimerDisplay();
+        startButton.disabled = false;
+        pauseButton.disabled = true;
+        resetButton.disabled = true;
+    }
+
+    // Event listeners para los botones del temporizador
+    startButton.addEventListener('click', startTimer);
+    pauseButton.addEventListener('click', pauseTimer);
+    resetButton.addEventListener('click', resetTimer);
+
+    // Manejo de series
+    document.querySelectorAll('.save-set').forEach(button => {
+        button.addEventListener('click', async function() {
+            const row = this.closest('tr');
+            const setNumber = row.dataset.setNumber;
+            const weightInput = row.querySelector('.weight-input');
+            const repsInput = row.querySelector('.reps-input');
+            const weight = weightInput.value.trim();
+            const reps = repsInput.value.trim();
+
+            // Validación más estricta
+            if (!weight || !reps || isNaN(weight) || isNaN(reps)) {
+                alert('Por favor, ingresa valores numéricos válidos para peso y repeticiones');
+                return;
+            }
+
+            // Deshabilitar el botón mientras se procesa
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+            try {
+                const csrftoken = getCookie('csrftoken');
+                if (!csrftoken) {
+                    throw new Error('No se encontró el token CSRF');
+                }
+
+                // Depurar y mostrar más información
+                console.log('CSRF token:', csrftoken);
+                
+                // Construir datos manualmente para evitar manipulación
+                const trainingId = {{ training.id }};
+                const setNum = parseInt(setNumber);
+                const weightVal = parseFloat(weight);
+                const repsVal = parseInt(reps);
+                
+                console.log('Valores a enviar:');
+                console.log('- training_id:', trainingId);
+                console.log('- set_number:', setNum);
+                console.log('- weight:', weightVal);
+                console.log('- reps:', repsVal);
+                
+                // Probamos con FormData en lugar de JSON
+                const formData = new FormData();
+                formData.append('training_id', trainingId);
+                formData.append('set_number', setNum);
+                formData.append('weight', weightVal);
+                formData.append('reps', repsVal);
+                
+                // Para debugging:
+                console.log('FormData creado');
+                for (let [key, value] of formData.entries()) {
+                    console.log(`${key}: ${value}`);
+                }
+
+                const response = await fetch('{% url "trainings:save-set-simple" %}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrftoken
+                    },
+                    body: formData,
+                    credentials: 'same-origin'
+                });
+
+                console.log('Respuesta status:', response.status);
+                const data = await response.json();
+                console.log('Respuesta data:', data);
+
+                if (!response.ok) {
+                    throw new Error(data.message || `Error ${response.status}: ${response.statusText}`);
+                }
+
+                if (data.status === 'success') {
+                    // Actualizar el estado de la serie
+                    row.querySelector('td:nth-child(4)').innerHTML = 
+                        '<span class="badge bg-success">Completado</span>';
+                    
+                    // Deshabilitar los inputs y el botón
+                    weightInput.disabled = true;
+                    repsInput.disabled = true;
+                    this.disabled = true;
+                    this.innerHTML = '<i class="fas fa-check"></i>';
+                    
+                    // Incrementar el contador de series completadas
+                    completedSets++;
+                    updateProgress();
+                    
+                    // Iniciar el temporizador automáticamente
+                    resetTimer();
+                    startTimer();
+                } else {
+                    throw new Error(data.message || 'Error al guardar la serie');
+                }
+            } catch (error) {
+                console.error('Error completo:', error);
+                alert('Error al guardar la serie: ' + error.message);
+                // Restaurar el botón
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-save"></i>';
+            }
+        });
+    });
+
+    // Función para obtener el token CSRF
+    function getCookie(name) {
+        let cookieValue = null;
+        console.log('Buscando cookie:', name);
+        console.log('Cookies disponibles:', document.cookie);
+        
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            console.log('Cookies encontradas:', cookies.length);
+            
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                console.log('Analizando cookie:', cookie);
+                
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    console.log('Cookie encontrada:', cookieValue);
+                    break;
+                }
+            }
+        }
+        
+        if (!cookieValue) {
+            console.warn('Cookie no encontrada en cookies, buscando en el formulario');
+            
+            // Intentar obtener del DOM (Django a veces añade el token como un campo oculto)
+            const csrfInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+            if (csrfInput) {
+                cookieValue = csrfInput.value;
+                console.log('Token CSRF encontrado en el DOM:', cookieValue);
+            } else {
+                console.error('CSRF token no encontrado en ninguna parte. Asegúrate de que estás autenticado.');
+                alert('Error de autenticación. Por favor, recarga la página o vuelve a iniciar sesión.');
+            }
+        }
+        
+        return cookieValue;
+    }
+});
+</script>
+{% endblock %} 

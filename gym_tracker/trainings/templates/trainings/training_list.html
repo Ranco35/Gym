@@ -79,35 +79,42 @@
                         <td>{{ training.date|date:"d/m/Y" }}</td>
                         <td>{{ training.day_of_week }}</td>
                         <td>{{ training.exercise.name }}</td>
-                        <td>{{ training.sets }}</td>
+                        <td>{{ training.total_sets }}</td>
                         <td>{{ training.reps }}</td>
-                        <td>{% if training.weight %}{{ training.weight }}{% else %}-{% endif %}</td>
+                        <td>{{ training.weight|default:"-" }}</td>
                         <td>
-                            <span class="badge 
-                                {% if training.intensity == 'Ligero' %}bg-success{% endif %}
-                                {% if training.intensity == 'Moderado' %}bg-info{% endif %}
-                                {% if training.intensity == 'Intenso' %}bg-warning{% endif %}
-                                {% if training.intensity == 'Muy Intenso' %}bg-danger{% endif %}">
+                            <span class="badge {% if training.intensity == 'Ligero' %}bg-info{% elif training.intensity == 'Moderado' %}bg-primary{% elif training.intensity == 'Intenso' %}bg-warning{% else %}bg-danger{% endif %}">
                                 {{ training.intensity }}
                             </span>
                         </td>
                         <td>
                             <div class="form-check form-switch">
-                                <input class="form-check-input training-completed-toggle" type="checkbox" 
-                                       data-id="{{ training.id }}" {% if training.completed %}checked{% endif %}>
+                                <input class="form-check-input toggle-complete" type="checkbox" 
+                                       data-training-id="{{ training.id }}" 
+                                       {% if training.completed %}checked{% endif %}>
                             </div>
                         </td>
                         <td>
-                            <div class="d-flex">
-                                <button class="btn btn-sm btn-outline-primary me-1" 
-                                        data-bs-toggle="modal" 
-                                        data-bs-target="#editTrainingModal{{ training.id }}">
+                            <div class="btn-group">
+                                <a href="{% url 'trainings:session' training.id %}" 
+                                   class="btn btn-sm btn-success"
+                                   data-bs-toggle="tooltip" 
+                                   data-bs-placement="top" 
+                                   title="Iniciar sesión de entrenamiento con temporizador y registro de series">
+                                    <i class="fas fa-dumbbell me-1"></i>Entrenar
+                                </a>
+                                <button class="btn btn-sm btn-outline-primary edit-training" 
+                                        data-training-id="{{ training.id }}"
+                                        data-bs-toggle="tooltip"
+                                        data-bs-placement="top"
+                                        title="Editar entrenamiento">
                                     <i class="fas fa-edit"></i>
                                 </button>
                                 <button class="btn btn-sm btn-outline-danger delete-training" 
-                                        data-id="{{ training.id }}"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#deleteTrainingModal">
+                                        data-training-id="{{ training.id }}"
+                                        data-bs-toggle="tooltip"
+                                        data-bs-placement="top"
+                                        title="Eliminar entrenamiento">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
@@ -301,8 +308,20 @@
 
 {% block extra_js %}
 <script>
-    // Configurar fechas actuales por defecto
+    // Inicializar todos los tooltips y modales
     document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+
+        // Inicializar modales
+        var routineModal = new bootstrap.Modal(document.getElementById('routineTrainingModal'));
+        var newTrainingModal = new bootstrap.Modal(document.getElementById('newTrainingModal'));
+        var deleteModal = new bootstrap.Modal(document.getElementById('deleteTrainingModal'));
+
+        // Configurar fecha actual por defecto
         const today = new Date().toISOString().split('T')[0];
         
         if (document.getElementById('date')) {
@@ -313,18 +332,32 @@
             document.getElementById('training_date').value = today;
         }
 
+        // Inicializar el selector de rutinas
+        const routineSelect = document.getElementById('routine_id');
+        if (routineSelect) {
+            routineSelect.addEventListener('change', loadRoutineDays);
+        }
+
+        // Manejar el botón de entrenar rutina
+        const trainRoutineBtn = document.querySelector('[data-bs-target="#routineTrainingModal"]');
+        if (trainRoutineBtn) {
+            trainRoutineBtn.addEventListener('click', function() {
+                routineModal.show();
+            });
+        }
+
         // Manejar la eliminación de entrenamientos
         document.querySelectorAll('.delete-training').forEach(button => {
             button.addEventListener('click', function() {
-                const trainingId = this.getAttribute('data-id');
+                const trainingId = this.getAttribute('data-training-id');
                 document.getElementById('delete-training-form').action = `/trainings/${trainingId}/delete/`;
             });
         });
 
         // Manejar el cambio en el estado de completado
-        document.querySelectorAll('.training-completed-toggle').forEach(checkbox => {
+        document.querySelectorAll('.toggle-complete').forEach(checkbox => {
             checkbox.addEventListener('change', function() {
-                const trainingId = this.getAttribute('data-id');
+                const trainingId = this.getAttribute('data-training-id');
                 const completed = this.checked;
                 
                 fetch(`/trainings/${trainingId}/toggle-complete/`, {
@@ -365,66 +398,81 @@
         if (!routineId) return;
         
         // Hacer la petición para obtener los días de la rutina
-        fetch(`/trainings/routine/${routineId}/days/`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.days && data.days.length > 0) {
-                    data.days.forEach(day => {
-                        const option = document.createElement('option');
-                        option.value = day.id;
-                        option.textContent = `${day.day_of_week} - ${day.focus}`;
-                        daySelect.appendChild(option);
-                    });
+        fetch(`/trainings/routine/${routineId}/days/`, {
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error al cargar los días de la rutina');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.days && data.days.length > 0) {
+                data.days.forEach(day => {
+                    const option = document.createElement('option');
+                    option.value = day.id;
+                    option.textContent = `${day.day_of_week} - ${day.focus || 'Sin enfoque'}`;
+                    daySelect.appendChild(option);
+                });
+                
+                // Habilitar el selector de días
+                daySelect.disabled = false;
+                
+                // Escuchar cambios en el día seleccionado
+                daySelect.addEventListener('change', () => {
+                    const dayId = daySelect.value;
+                    if (!dayId) {
+                        exercisesContainer.style.display = 'none';
+                        return;
+                    }
                     
-                    // Escuchar cambios en el día seleccionado
-                    daySelect.addEventListener('change', () => {
-                        const dayId = daySelect.value;
-                        if (!dayId) {
-                            exercisesContainer.style.display = 'none';
-                            return;
-                        }
+                    // Cargar los ejercicios del día seleccionado
+                    const selectedDay = data.days.find(d => d.id == dayId);
+                    if (selectedDay && selectedDay.exercises) {
+                        exercisesList.innerHTML = '';
                         
-                        // Cargar los ejercicios del día seleccionado
-                        const selectedDay = data.days.find(d => d.id == dayId);
-                        if (selectedDay && selectedDay.exercises) {
-                            exercisesList.innerHTML = '';
-                            
-                            if (selectedDay.exercises.length === 0) {
-                                exercisesList.innerHTML = '<li class="list-group-item text-muted">No hay ejercicios configurados para este día</li>';
-                            } else {
-                                selectedDay.exercises.forEach(exercise => {
-                                    const li = document.createElement('li');
-                                    li.className = 'list-group-item';
-                                    li.innerHTML = `
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <strong>${exercise.name}</strong>
-                                                <div class="text-muted small">
-                                                    ${exercise.sets}x${exercise.reps} 
-                                                    ${exercise.weight ? '| ' + exercise.weight + 'kg' : ''} 
-                                                    | Descanso: ${exercise.rest_time}s
-                                                </div>
+                        if (selectedDay.exercises.length === 0) {
+                            exercisesList.innerHTML = '<li class="list-group-item text-muted">No hay ejercicios configurados para este día</li>';
+                        } else {
+                            selectedDay.exercises.forEach(exercise => {
+                                const li = document.createElement('li');
+                                li.className = 'list-group-item';
+                                li.innerHTML = `
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>${exercise.name}</strong>
+                                            <div class="text-muted small">
+                                                ${exercise.sets}x${exercise.reps} 
+                                                ${exercise.weight ? '| ' + exercise.weight + 'kg' : ''} 
+                                                | Descanso: ${exercise.rest_time}s
                                             </div>
                                         </div>
-                                    `;
-                                    exercisesList.appendChild(li);
-                                });
-                            }
-                            
-                            exercisesContainer.style.display = 'block';
+                                    </div>
+                                `;
+                                exercisesList.appendChild(li);
+                            });
                         }
-                    });
-                } else {
-                    const option = document.createElement('option');
-                    option.value = "";
-                    option.textContent = "No hay días configurados para esta rutina";
-                    daySelect.appendChild(option);
-                }
-            })
-            .catch(error => {
-                console.error('Error al cargar los días de la rutina:', error);
-                daySelect.innerHTML = '<option value="">Error al cargar días</option>';
-            });
+                        
+                        exercisesContainer.style.display = 'block';
+                    }
+                });
+            } else {
+                const option = document.createElement('option');
+                option.value = "";
+                option.textContent = "No hay días configurados para esta rutina";
+                daySelect.appendChild(option);
+                daySelect.disabled = true;
+            }
+        })
+        .catch(error => {
+            console.error('Error al cargar los días de la rutina:', error);
+            daySelect.innerHTML = '<option value="">Error al cargar días</option>';
+            daySelect.disabled = true;
+        });
     }
 </script>
 {% endblock %} 

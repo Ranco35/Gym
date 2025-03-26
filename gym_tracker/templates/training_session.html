@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="bg-white rounded-lg shadow-lg p-6">
+        <!-- Ejercicio Actual -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold mb-4" id="current-exercise">{{ exercise.name }}</h2>
+            <div class="flex items-center mb-4">
+                <span class="text-lg font-semibold mr-4">Serie actual: <span id="current-set">1</span>/{{ total_sets }}</span>
+            </div>
+        </div>
+
+        <!-- Cronómetro -->
+        <div class="mb-8 text-center">
+            <div class="text-4xl font-bold mb-4" id="timer">00:00</div>
+            <div class="flex justify-center gap-4">
+                <button id="start-timer" class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600">
+                    Iniciar
+                </button>
+                <button id="pause-timer" class="bg-yellow-500 text-white px-6 py-2 rounded-lg hover:bg-yellow-600">
+                    Pausar
+                </button>
+                <button id="reset-timer" class="bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600">
+                    Reiniciar
+                </button>
+            </div>
+        </div>
+
+        <!-- Registro de Serie Actual -->
+        <div class="mb-8">
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Peso (kg)</label>
+                    <input type="number" id="weight-input" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Repeticiones</label>
+                    <input type="number" id="reps-input" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
+                </div>
+            </div>
+            <button id="save-set" class="w-full bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600">
+                Guardar Serie
+            </button>
+        </div>
+
+        <!-- Historial de Series -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Serie</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Peso (kg)</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Repeticiones</th>
+                    </tr>
+                </thead>
+                <tbody id="sets-history" class="bg-white divide-y divide-gray-200">
+                    <!-- Las series se agregarán aquí dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Navegación entre ejercicios -->
+        <div class="flex justify-between mt-8">
+            <button id="prev-exercise" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600">
+                Ejercicio Anterior
+            </button>
+            <button id="next-exercise" class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600">
+                Siguiente Ejercicio
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let timer;
+    let seconds = 0;
+    let isRunning = false;
+    let currentSet = 1;
+    let restTime = {{ rest_time }}; // Tiempo de descanso en segundos
+
+    // Funciones del cronómetro
+    function startTimer() {
+        if (!isRunning) {
+            isRunning = true;
+            timer = setInterval(updateTimer, 1000);
+            document.getElementById('start-timer').textContent = 'Pausar';
+        } else {
+            pauseTimer();
+        }
+    }
+
+    function pauseTimer() {
+        isRunning = false;
+        clearInterval(timer);
+        document.getElementById('start-timer').textContent = 'Iniciar';
+    }
+
+    function resetTimer() {
+        pauseTimer();
+        seconds = 0;
+        updateTimerDisplay();
+    }
+
+    function updateTimer() {
+        seconds++;
+        updateTimerDisplay();
+    }
+
+    function updateTimerDisplay() {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        document.getElementById('timer').textContent = 
+            `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }
+
+    // Guardar serie
+    document.getElementById('save-set').addEventListener('click', function() {
+        const weight = document.getElementById('weight-input').value;
+        const reps = document.getElementById('reps-input').value;
+        
+        if (weight && reps) {
+            // Agregar al historial
+            const tbody = document.getElementById('sets-history');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap">${currentSet}</td>
+                <td class="px-6 py-4 whitespace-nowrap">${weight}</td>
+                <td class="px-6 py-4 whitespace-nowrap">${reps}</td>
+            `;
+            tbody.appendChild(row);
+
+            // Preparar siguiente serie
+            currentSet++;
+            document.getElementById('current-set').textContent = currentSet;
+            
+            // Reiniciar cronómetro y comenzar descanso
+            resetTimer();
+            startTimer();
+
+            // Limpiar inputs pero mantener el último peso
+            document.getElementById('reps-input').value = '';
+        }
+    });
+
+    // Event listeners para el cronómetro
+    document.getElementById('start-timer').addEventListener('click', startTimer);
+    document.getElementById('pause-timer').addEventListener('click', pauseTimer);
+    document.getElementById('reset-timer').addEventListener('click', resetTimer);
+});
+</script>
+{% endblock %} 
