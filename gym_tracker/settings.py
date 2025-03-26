@@ -33,7 +33,8 @@ CSRF_FAILURE_VIEW = 'gym_tracker.views.csrf_failure'
 
 # Application definition
 INSTALLED_APPS = [
-    'jazzmin',  # Debe estar antes de django.contrib.admin
+    'admin_interface',  # debe estar antes de django.contrib.admin
+    'colorfield',  # requerido por admin_interface
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -187,75 +188,64 @@ CORS_ALLOWED_ORIGINS = [
 ]
 CORS_ALLOW_CREDENTIALS = True
 
-# Configuración de Jazzmin
-JAZZMIN_SETTINGS = {
-    # título de la página de administración
-    "site_title": "Gym Tracker 360 Los Ríos",
-    "site_header": "Gym Tracker 360 Los Ríos",
-    "site_brand": "Gym Tracker 360 Los Ríos",
-    "welcome_sign": "Bienvenido al Panel de Administración",
-    "copyright": "© 2024 by Eduardo Peroboste Furet",
-    
-    # Personalización del tema
-    "theme": "darkly",
-    "dark_mode_theme": "darkly",
-    
-    # Personalización de colores
-    "custom_css": None,
-    "custom_js": None,
-    
-    # Iconos para los modelos
-    "icons": {
-        "users.User": "fas fa-users",
-        "auth.Group": "fas fa-users-cog",
-        "users.TrainerUser": "fas fa-dumbbell",
-    },
-    
-    # Configuración del menú
-    "order_with_respect_to": ["users", "auth"],
-    
-    # Elementos del menú superior
-    "topmenu_links": [
-        {"name": "Inicio", "url": "admin:index", "permissions": ["auth.view_user"]},
-        {"name": "Ver Sitio", "url": "/", "new_window": True},
-    ],
-    
-    # Personalización de la lista de usuarios
-    "show_ui_builder": True,
-    
-    # Personalización del dashboard
-    "changeform_format": "horizontal_tabs",
-    "related_modal_active": True,
-}
+# Configuración del tema de admin-interface
+X_FRAME_OPTIONS = 'SAMEORIGIN'
+SILENCED_SYSTEM_CHECKS = ['security.W019']
 
-JAZZMIN_UI_TWEAKS = {
-    "navbar_small_text": False,
-    "footer_small_text": False,
-    "body_small_text": False,
-    "brand_small_text": False,
-    "brand_colour": "navbar-success",
-    "accent": "accent-teal",
-    "navbar": "navbar-dark",
-    "no_navbar_border": False,
-    "navbar_fixed": False,
-    "layout_boxed": False,
-    "footer_fixed": False,
-    "sidebar_fixed": False,
-    "sidebar": "sidebar-dark-success",
-    "sidebar_nav_small_text": False,
-    "sidebar_disable_expand": False,
-    "sidebar_nav_child_indent": False,
-    "sidebar_nav_compact_style": False,
-    "sidebar_nav_legacy_style": False,
-    "sidebar_nav_flat_style": False,
-    "theme": "darkly",
-    "dark_mode_theme": "darkly",
-    "button_classes": {
-        "primary": "btn-primary",
-        "secondary": "btn-secondary",
-        "info": "btn-info",
-        "warning": "btn-warning",
-        "danger": "btn-danger",
-        "success": "btn-success"
-    }
+# Configuración de admin-interface
+ADMIN_INTERFACE_THEME_SETTINGS = {
+    'name': 'Gym Tracker 360 Los Ríos',
+    'title': 'Gym Tracker 360 Los Ríos',
+    'logo': None,
+    'copyright': '© 2024 by Eduardo Peroboste Furet',
+    
+    # Colores principales
+    'css_header_background_color': '#2C3E50',
+    'css_header_text_color': '#FFFFFF',
+    'css_header_link_color': '#FFFFFF',
+    'css_header_link_hover_color': '#18BC9C',
+    
+    # Colores de módulos
+    'css_module_background_color': '#18BC9C',
+    'css_module_text_color': '#FFFFFF',
+    'css_module_link_color': '#FFFFFF',
+    'css_module_link_hover_color': '#2C3E50',
+    'css_module_rounded_corners': True,
+    
+    # Colores de enlaces y botones
+    'css_generic_link_color': '#18BC9C',
+    'css_generic_link_hover_color': '#2C3E50',
+    'css_generic_link_active_color': '#15967D',
+    'css_save_button_background_color': '#18BC9C',
+    'css_save_button_background_hover_color': '#2C3E50',
+    'css_save_button_text_color': '#FFFFFF',
+    
+    # Configuración de la interfaz
+    'list_filter_dropdown': True,
+    'list_filter_sticky': True,
+    'related_modal_active': True,
+    'related_modal_background_color': '#2C3E50',
+    'related_modal_background_opacity': '0.8',
+    'show_fieldsets_as_tabs': True,
+    'show_ui_builder': True,
+    
+    # Características adicionales
+    'form_sticky': True,
+    'foldable_apps': True,
+    'language_chooser_active': False,
+    'list_filter_highlight': True,
+    'list_filter_removal_links': True,
+    'collapsible_stacked_inlines': True,
+    'recent_actions_visible': True,
+    
+    # Personalización de la navegación
+    'show_nav_sidebar': True,
+    'navigation_expanded': True,
+    
+    # Mensaje de bienvenida
+    'welcome_sign': 'Bienvenido al Panel de Administración de Gym Tracker 360 Los Ríos',
+    
+    # Configuración del tema
+    'theme': 'default',
+    'dark_mode_theme': True
 }
