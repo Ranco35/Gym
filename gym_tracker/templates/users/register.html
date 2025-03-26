@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Registro de Usuario{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
+    <div class="relative py-3 sm:max-w-xl sm:mx-auto">
+        <div class="relative px-4 py-10 bg-white shadow-lg sm:rounded-3xl sm:p-20">
+            <div class="max-w-md mx-auto">
+                <div class="divide-y divide-gray-200">
+                    <div class="py-8 text-base leading-6 space-y-4 text-gray-700 sm:text-lg sm:leading-7">
+                        <h2 class="text-2xl font-bold mb-8 text-center text-indigo-600">Registro de Usuario</h2>
+                        <form method="post" class="space-y-6">
+                            {% csrf_token %}
+                            
+                            {% if form.errors %}
+                            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                                <strong class="font-bold">Error!</strong>
+                                <span class="block sm:inline">Por favor, corrija los errores a continuación.</span>
+                            </div>
+                            {% endif %}
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Nombre de Usuario</label>
+                                {{ form.username }}
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Email</label>
+                                {{ form.email }}
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Contraseña</label>
+                                {{ form.password1 }}
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Confirmar Contraseña</label>
+                                {{ form.password2 }}
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Rol</label>
+                                {{ form.role }}
+                            </div>
+
+                            <div class="flex items-center justify-between">
+                                <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                                    Registrar
+                                </button>
+                                <a href="{% url 'users:user-list' %}" class="text-indigo-600 hover:text-indigo-500">
+                                    Volver a la lista
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
