@@ -45,10 +45,10 @@ class Set(models.Model):
     exercise = models.ForeignKey(Exercise, on_delete=models.CASCADE)
     training = models.ForeignKey(Training, on_delete=models.CASCADE, related_name='training_sets')
     set_number = models.IntegerField()
-    weight = models.FloatField()
+    weight = models.FloatField(null=True, blank=True)  # Permitimos valores nulos
     reps = models.IntegerField()
     completed = models.BooleanField(default=True)
-    created_at = models.DateTimeField(default=timezone.now)  # Cambiado a default
+    created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
         ordering = ['training', 'set_number']
