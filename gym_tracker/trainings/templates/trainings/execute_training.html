@@ -1,5 +1,6 @@
 {% extends 'base_layout.html' %}
 {% load static %}
+{% load training_tags %}
 
 {% block content %}
 <div class="container-fluid py-4">
@@ -34,9 +35,41 @@
         </div>
     </div>
 
-    <!-- Ejercicio actual -->
+    <!-- Navegación entre ejercicios -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            {% if prev_exercise %}
+            <div class="card shadow-sm bg-light">
+                <div class="card-body">
+                    <h6 class="text-muted mb-1">Ejercicio Anterior</h6>
+                    <p class="mb-0">{{ prev_exercise.exercise.name }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm bg-primary text-white">
+                <div class="card-body">
+                    <h6 class="mb-1">Ejercicio Actual</h6>
+                    <p class="mb-0">{{ current_exercise.exercise.name }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            {% if next_exercise %}
+            <div class="card shadow-sm bg-light">
+                <div class="card-body">
+                    <h6 class="text-muted mb-1">Siguiente Ejercicio</h6>
+                    <p class="mb-0">{{ next_exercise.exercise.name }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
     <div class="row">
-        <div class="col-md-8 mx-auto">
+        <!-- Columna principal -->
+        <div class="col-md-8">
             <div class="card shadow-sm">
                 <div class="card-header bg-light">
                     <div class="d-flex justify-content-between align-items-center">
@@ -127,6 +160,67 @@
                             </div>
                         </div>
                     </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna lateral -->
+        <div class="col-md-4">
+            <!-- Historial del ejercicio -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Historial del Ejercicio</h5>
+                </div>
+                <div class="card-body">
+                    {% if exercise_history %}
+                        {% for training in exercise_history %}
+                        <div class="mb-3">
+                            <h6 class="mb-2">{{ training.date|date:"d/m/Y" }}</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Serie</th>
+                                            <th>Peso</th>
+                                            <th>Reps</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for set in history_sets|get_item:training.id %}
+                                        <tr>
+                                            <td>{{ set.set_number }}</td>
+                                            <td>{{ set.weight|default:'-' }}</td>
+                                            <td>{{ set.reps }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted mb-0">No hay historial previo para este ejercicio.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Rutina completa del día -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Rutina del Día</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% for exercise in all_exercises %}
+                        <div class="list-group-item {% if exercise == current_exercise %}active{% endif %}">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ exercise.exercise.name }}</h6>
+                                <small>{{ exercise.sets }} series</small>
+                            </div>
+                            <small class="d-block">{{ exercise.reps }} reps {% if exercise.weight %}- {{ exercise.weight }}kg{% endif %}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
         </div>

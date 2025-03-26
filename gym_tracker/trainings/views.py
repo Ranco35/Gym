@@ -49,13 +49,33 @@ class TrainingListCreateView(generics.ListCreateAPIView):
                 trainings = trainings.filter(exercise_id=exercise_filter)
             if day_filter:
                 trainings = trainings.filter(day_of_week=day_filter)
+            
+            # Agrupar entrenamientos por fecha y rutina
+            grouped_trainings = {}
+            for training in trainings:
+                date_str = training.date.strftime('%Y-%m-%d')
+                # Extraer el nombre de la rutina de las notas o usar 'Ejercicios Individuales'
+                routine_name = 'Ejercicios Individuales'
+                if training.notes and 'Rutina:' in training.notes:
+                    try:
+                        routine_name = training.notes.split('Rutina: ')[1].split(' - ')[0]
+                    except:
+                        pass
                 
+                if date_str not in grouped_trainings:
+                    grouped_trainings[date_str] = {}
+                
+                if routine_name not in grouped_trainings[date_str]:
+                    grouped_trainings[date_str][routine_name] = []
+                
+                grouped_trainings[date_str][routine_name].append(training)
+            
             exercises = GymExercise.objects.all()
             # Obtener rutinas del usuario para el formulario de entrenamiento basado en rutina
             routines = WeeklyRoutine.objects.filter(user=request.user).order_by('-created_at')
             
             return render(request, 'trainings/training_list.html', {
-                'trainings': trainings,
+                'grouped_trainings': grouped_trainings,
                 'exercises': exercises,
                 'routines': routines
             })
@@ -249,6 +269,28 @@ def execute_training(request, routine_id, day_id):
     
     current_exercise = exercises[current_exercise_index]
     
+    # Obtener ejercicio anterior y siguiente
+    prev_exercise = None
+    next_exercise = None
+    if current_exercise_index > 0:
+        prev_exercise = exercises[current_exercise_index - 1]
+    if current_exercise_index < exercises.count() - 1:
+        next_exercise = exercises[current_exercise_index + 1]
+    
+    # Obtener historial de entrenamientos para este ejercicio
+    exercise_history = Training.objects.filter(
+        user=request.user,
+        exercise=current_exercise.exercise,
+        completed=True
+    ).order_by('-date')[:5]  # Últimas 5 sesiones
+    
+    # Obtener las series del historial
+    history_sets = {}
+    for training in exercise_history:
+        history_sets[training.id] = Set.objects.filter(
+            training=training
+        ).order_by('set_number')
+    
     # Procesar el peso del ejercicio actual
     exercise_weight = current_exercise.weight
     if exercise_weight == '' or exercise_weight is None:
@@ -263,7 +305,7 @@ def execute_training(request, routine_id, day_id):
             'day_of_week': training_date.strftime('%A'),
             'total_sets': current_exercise.sets,
             'reps': current_exercise.reps,
-            'weight': exercise_weight,  # Usamos el peso procesado
+            'weight': exercise_weight,
             'rest_time': current_exercise.rest_time,
             'intensity': 'Moderado',
             'notes': f"Rutina: {routine.name} - Día: {routine_day.day_of_week} ({routine_day.focus})",
@@ -303,7 +345,7 @@ def execute_training(request, routine_id, day_id):
             user=request.user,
             exercise=current_exercise.exercise,
             set_number=set_number,
-            weight=weight,  # Usamos el peso procesado
+            weight=weight,
             reps=reps,
             completed=True
         )
@@ -315,13 +357,13 @@ def execute_training(request, routine_id, day_id):
             training.save()
             
             # Ir al siguiente ejercicio
-            next_exercise = current_exercise_index + 1
-            if next_exercise >= exercises.count():
+            next_exercise_index = current_exercise_index + 1
+            if next_exercise_index >= exercises.count():
                 messages.success(request, "¡Entrenamiento completado con éxito!")
                 return redirect('trainings:training-list-create')
             
             # Redirigir al siguiente ejercicio
-            return redirect(f"{request.path}?step={next_exercise}")
+            return redirect(f"{request.path}?step={next_exercise_index}")
         else:
             # Redirigir a la siguiente serie del mismo ejercicio
             messages.success(request, f"Serie {set_number} completada. ¡Continúa con la siguiente!")
@@ -338,6 +380,8 @@ def execute_training(request, routine_id, day_id):
         'routine': routine,
         'routine_day': routine_day,
         'current_exercise': current_exercise,
+        'prev_exercise': prev_exercise,
+        'next_exercise': next_exercise,
         'progress': progress,
         'exercise_index': current_exercise_index,
         'total_exercises': exercises.count(),
@@ -346,6 +390,9 @@ def execute_training(request, routine_id, day_id):
         'training_date': training_date,
         'current_set': current_set,
         'completed_sets': completed_sets,
+        'exercise_history': exercise_history,
+        'history_sets': history_sets,
+        'all_exercises': exercises,  # Para mostrar la rutina completa
     })
 
 @login_required
