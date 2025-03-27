@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block title %}Crear Nueva Rutina para {{ trainer_student.student.get_full_name|default:trainer_student.student.username }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'trainers:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'trainers:student_list' %}">Estudiantes</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'trainers:student_detail' trainer_student.student.id %}">{{ trainer_student.student.get_full_name|default:trainer_student.student.username }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'trainers:student_trainings' trainer_student.student.id %}">Rutinas</a></li>
+            <li class="breadcrumb-item active">Crear Rutina</li>
+        </ol>
+    </nav>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1>Crear Nueva Rutina</h1>
+            <p class="text-muted">
+                Estudiante: {{ trainer_student.student.get_full_name|default:trainer_student.student.username }}
+            </p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Información Básica</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'trainers:create_training' trainer_student.student.id %}">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Nombre de la Rutina *</label>
+                            <input type="text" class="form-control" id="name" name="name" placeholder="Ej: Rutina de Fuerza, Día de Piernas..." required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="date" class="form-label">Fecha *</label>
+                            <input type="date" class="form-control" id="date" name="date" required value="{{ now|date:'Y-m-d' }}">
+                            <div class="form-text">Fecha programada para esta rutina.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Descripción</label>
+                            <textarea class="form-control" id="description" name="description" rows="3" placeholder="Descripción o detalles de la rutina..."></textarea>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'trainers:student_trainings' trainer_student.student.id %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Crear Rutina
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Establecer la fecha actual como predeterminada
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!document.getElementById('date').value) {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            const formattedDate = `${yyyy}-${mm}-${dd}`;
+            document.getElementById('date').value = formattedDate;
+        }
+    });
+</script>
+{% endblock %} 

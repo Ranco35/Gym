@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Rutina: {{ training.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'trainers:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'trainers:student_list' %}">Estudiantes</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'trainers:student_detail' trainer_student.student.id %}">{{ trainer_student.student.get_full_name|default:trainer_student.student.username }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'trainers:student_trainings' trainer_student.student.id %}">Rutinas</a></li>
+            <li class="breadcrumb-item active">Editar: {{ training.name }}</li>
+        </ol>
+    </nav>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1>Editar Rutina</h1>
+            <p class="text-muted">
+                Estudiante: {{ trainer_student.student.get_full_name|default:trainer_student.student.username }}
+            </p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Información básica de la rutina -->
+        <div class="col-md-12 mb-4">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Información Básica</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'trainers:edit_training' trainer_student.student.id training.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="update_training" value="1">
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label">Nombre de la Rutina *</label>
+                                <input type="text" class="form-control" id="name" name="name" value="{{ training.name }}" required>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="date" class="form-label">Fecha *</label>
+                                <input type="date" class="form-control" id="date" name="date" value="{{ training.date|date:'Y-m-d' }}" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Descripción</label>
+                            <textarea class="form-control" id="description" name="description" rows="3">{{ training.description }}</textarea>
+                        </div>
+                        
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Actualizar Información
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Ejercicios de la rutina -->
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Ejercicios</h5>
+                    <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addExerciseModal">
+                        <i class="fas fa-plus me-1"></i> Añadir Ejercicio
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if sets %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Ejercicio</th>
+                                    <th>Series</th>
+                                    <th>Repeticiones</th>
+                                    <th>Peso (kg)</th>
+                                    <th>Notas</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="exercises-list">
+                                {% for set in sets %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td><strong>{{ set.exercise }}</strong></td>
+                                    <td>{{ set.sets_count }}</td>
+                                    <td>{{ set.reps }}</td>
+                                    <td>{{ set.weight }}</td>
+                                    <td>{{ set.notes|default:"-" }}</td>
+                                    <td>
+                                        <form method="post" action="{% url 'trainers:edit_training' trainer_student.student.id training.id %}" class="d-inline" onsubmit="return confirm('¿Estás seguro de eliminar este ejercicio?');">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="delete_set" value="1">
+                                            <input type="hidden" name="set_id" value="{{ set.id }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-dumbbell text-muted fa-4x mb-3"></i>
+                        <h5>No hay ejercicios en esta rutina</h5>
+                        <p class="text-muted">Añade ejercicios para completar la rutina.</p>
+                        <button class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#addExerciseModal">
+                            <i class="fas fa-plus-circle me-2"></i>Añadir Primer Ejercicio
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between">
+                <a href="{% url 'trainers:training_detail' trainer_student.student.id training.id %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Volver a Detalles
+                </a>
+                <a href="{% url 'trainers:start_session' trainer_student.student.id %}?training_id={{ training.id }}" class="btn btn-success">
+                    <i class="fas fa-play me-2"></i>Iniciar Entrenamiento
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para añadir ejercicio -->
+<div class="modal fade" id="addExerciseModal" tabindex="-1" aria-labelledby="addExerciseModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addExerciseModalLabel">Añadir Nuevo Ejercicio</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'trainers:edit_training' trainer_student.student.id training.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="add_set" value="1">
+                
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="exercise" class="form-label">Nombre del Ejercicio *</label>
+                        <input type="text" class="form-control" id="exercise" name="exercise" placeholder="Ej: Press de Banca, Sentadillas..." required>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="sets_count" class="form-label">Series *</label>
+                            <input type="number" class="form-control" id="sets_count" name="sets_count" min="1" value="3" required>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="reps" class="form-label">Repeticiones *</label>
+                            <input type="number" class="form-control" id="reps" name="reps" min="1" value="10" required>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="weight" class="form-label">Peso (kg)</label>
+                            <input type="number" class="form-control" id="weight" name="weight" min="0" step="0.5" value="0">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notas</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="2" placeholder="Instrucciones o notas sobre la ejecución..."></textarea>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Añadir Ejercicio</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Permitir reordenar ejercicios (para futura implementación)
+        const exercisesList = document.getElementById('exercises-list');
+        
+        // Aquí se podría añadir funcionalidad para reordenar ejercicios con drag and drop
+    });
+</script>
+{% endblock %} 

@@ -18,5 +18,7 @@ def is_admin_or_superuser(user):
     Utilizada con el decorador user_passes_test.
     """
     return user.is_authenticated and (
-        getattr(user, 'role', None) == 'ADMIN' or user.is_superuser
+        getattr(user, 'role', None) == 'ADMIN' or 
+        getattr(user, 'role', None) == 'TRAINER' or 
+        user.is_superuser
     ) 

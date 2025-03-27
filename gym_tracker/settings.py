@@ -47,6 +47,8 @@ INSTALLED_APPS = [
     'gym_tracker.workouts',
     'gym_tracker.exercises',
     'gym_tracker.trainings',
+    'gym_tracker.stats',  # Nueva aplicación de estadísticas
+    'trainers.apps.TrainersConfig',  # Usar la configuración completa de la app
 ]
 
 # Middleware - Deshabilitamos CSRF temporalmente en desarrollo
@@ -175,8 +177,8 @@ SIMPLE_JWT = {
     'TOKEN_TYPE_CLAIM': 'token_type',
 }
 
-# Configuración de autenticación estándar de Django
-LOGIN_URL = '/accounts/login/'
+# Configuración de autenticación
+LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 

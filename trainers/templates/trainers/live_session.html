@@ -1,0 +1,241 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sesión en Vivo - {{ session.training.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .set-card {
+        transition: all 0.3s ease;
+    }
+    .set-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .set-completed {
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+    }
+    .timer {
+        font-size: 2rem;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Encabezado -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2>{{ session.training.name }}</h2>
+                    <p class="text-muted">
+                        Estudiante: {{ session.trainer_student.student.get_full_name }}
+                    </p>
+                </div>
+                <div class="d-flex align-items-center">
+                    <div class="timer me-3" id="session-timer">00:00:00</div>
+                    <form method="post" action="{% url 'trainers:end_session' session.id %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('¿Seguro que deseas finalizar la sesión?')">
+                            Finalizar Sesión
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Panel de Sets -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Sets del Entrenamiento</h5>
+                    <div class="row" id="sets-container">
+                        {% for set in session.training.set_set.all %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card set-card {% if set.id in completed_sets %}set-completed{% endif %}" 
+                                 id="set-card-{{ set.id }}">
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ set.exercise.name }}</h6>
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span>Series: {{ set.sets }}</span>
+                                        <span>Repeticiones: {{ set.reps }}</span>
+                                    </div>
+                                    {% if not set.id in completed_sets %}
+                                        <form class="set-form" data-set-id="{{ set.id }}">
+                                            <div class="row g-2">
+                                                <div class="col-md-4">
+                                                    <input type="number" class="form-control form-control-sm" 
+                                                           name="weight" placeholder="Peso" required>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <input type="number" class="form-control form-control-sm" 
+                                                           name="reps" placeholder="Reps" required>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <select class="form-select form-select-sm" name="form_rating">
+                                                        <option value="">Forma</option>
+                                                        <option value="1">⭐</option>
+                                                        <option value="2">⭐⭐</option>
+                                                        <option value="3">⭐⭐⭐</option>
+                                                        <option value="4">⭐⭐⭐⭐</option>
+                                                        <option value="5">⭐⭐⭐⭐⭐</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="mt-2">
+                                                <input type="text" class="form-control form-control-sm" 
+                                                       name="feedback" placeholder="Feedback (opcional)">
+                                            </div>
+                                            <button type="submit" class="btn btn-primary btn-sm mt-2">
+                                                Completar Set
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        <div class="alert alert-success py-1 mb-0">
+                                            <small>Completado</small>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel de Progreso -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Progreso de la Sesión</h5>
+                    <div class="progress mb-3">
+                        <div class="progress-bar" role="progressbar" 
+                             style="width: {{ completed_sets|length|default:0 }}%" 
+                             aria-valuenow="{{ completed_sets|length|default:0 }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="{{ session.training.set_set.count }}">
+                            {{ completed_sets|length|default:0 }}/{{ session.training.set_set.count }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sets Completados -->
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Sets Completados</h5>
+                    <div class="list-group list-group-flush" id="completed-sets-list">
+                        {% for completed_set in completed_sets %}
+                        <div class="list-group-item px-0">
+                            <h6 class="mb-1">{{ completed_set.set.exercise.name }}</h6>
+                            <p class="mb-1">
+                                <small>
+                                    Peso: {{ completed_set.weight }}kg | 
+                                    Reps: {{ completed_set.reps }} | 
+                                    Forma: {{ completed_set.form_rating }}/5
+                                </small>
+                            </p>
+                            {% if completed_set.trainer_feedback %}
+                                <small class="text-muted">{{ completed_set.trainer_feedback }}</small>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Temporizador de sesión
+    function updateTimer() {
+        const startTime = new Date("{{ session.start_time|date:'c' }}").getTime();
+        const now = new Date().getTime();
+        const diff = now - startTime;
+        
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        
+        document.getElementById('session-timer').textContent = 
+            `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+    
+    setInterval(updateTimer, 1000);
+    updateTimer();
+
+    // Manejo de formularios de sets
+    document.querySelectorAll('.set-form').forEach(form => {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const setId = form.dataset.setId;
+            const formData = new FormData(form);
+            formData.append('session_id', '{{ session.id }}');
+            formData.append('set_id', setId);
+
+            try {
+                const response = await fetch("{% url 'trainers:save_live_set' %}", {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    // Actualizar UI
+                    const card = document.getElementById(`set-card-${setId}`);
+                    card.classList.add('set-completed');
+                    card.innerHTML = `
+                        <div class="card-body">
+                            <h6 class="card-title">${form.closest('.card').querySelector('.card-title').textContent}</h6>
+                            <div class="alert alert-success py-1 mb-0">
+                                <small>Completado</small>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Actualizar lista de sets completados
+                    const completedSetsList = document.getElementById('completed-sets-list');
+                    const newSet = document.createElement('div');
+                    newSet.className = 'list-group-item px-0';
+                    newSet.innerHTML = `
+                        <h6 class="mb-1">${form.closest('.card').querySelector('.card-title').textContent}</h6>
+                        <p class="mb-1">
+                            <small>
+                                Peso: ${formData.get('weight')}kg | 
+                                Reps: ${formData.get('reps')} | 
+                                Forma: ${formData.get('form_rating')}/5
+                            </small>
+                        </p>
+                        ${formData.get('feedback') ? `<small class="text-muted">${formData.get('feedback')}</small>` : ''}
+                    `;
+                    completedSetsList.insertBefore(newSet, completedSetsList.firstChild);
+                    
+                    // Actualizar barra de progreso
+                    const progressBar = document.querySelector('.progress-bar');
+                    const totalSets = {{ session.training.set_set.count }};
+                    const completedSets = document.querySelectorAll('.set-completed').length;
+                    const progress = (completedSets / totalSets) * 100;
+                    progressBar.style.width = `${progress}%`;
+                    progressBar.setAttribute('aria-valuenow', completedSets);
+                    progressBar.textContent = `${completedSets}/${totalSets}`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al guardar el set');
+            }
+        });
+    });
+</script>
+{% endblock %} 

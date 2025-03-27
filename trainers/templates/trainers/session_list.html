@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sesiones de Entrenamiento{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h2">Sesiones de Entrenamiento</h1>
+            <p class="text-muted">Administra las sesiones de entrenamiento con tus estudiantes.</p>
+        </div>
+        <div class="col-auto">
+            <a href="/trainers/dashboard/" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Volver al Dashboard
+            </a>
+        </div>
+    </div>
+
+    {% if sessions %}
+    <div class="card">
+        <div class="card-header bg-light">
+            <h5 class="card-title mb-0">Tus Sesiones de Entrenamiento</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Estudiante</th>
+                            <th>Entrenamiento</th>
+                            <th>Fecha de inicio</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for session in sessions %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% if session.trainer_student.student.userprofile.photo %}
+                                    <img src="{{ session.trainer_student.student.userprofile.photo.url }}" class="rounded-circle me-2" width="40" height="40">
+                                    {% else %}
+                                    <div class="avatar-placeholder me-2">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <h6 class="mb-0">{{ session.trainer_student.student.get_full_name }}</h6>
+                                        <small class="text-muted">{{ session.trainer_student.student.email }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ session.training.exercise.name }}</td>
+                            <td>{{ session.started_at|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                {% if session.status == 'active' %}
+                                <span class="badge bg-success">Activa</span>
+                                {% elif session.status == 'completed' %}
+                                <span class="badge bg-primary">Completada</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ session.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="/trainers/sessions/{{ session.id }}/" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-eye"></i> Ver
+                                </a>
+                                {% if session.status == 'active' %}
+                                <form method="post" action="/trainers/end-session/{{ session.id }}/" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-danger">
+                                        <i class="fas fa-stop-circle"></i> Finalizar
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <div class="mb-4">
+                <i class="fas fa-clipboard-list fa-4x text-muted"></i>
+            </div>
+            <h4>No hay sesiones de entrenamiento</h4>
+            <p class="text-muted">Aún no has iniciado ninguna sesión de entrenamiento con tus estudiantes.</p>
+            <a href="/trainers/students/" class="btn btn-primary">
+                <i class="fas fa-users"></i> Ver Estudiantes
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

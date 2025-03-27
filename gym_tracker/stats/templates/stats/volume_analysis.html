@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load stats_filters %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/apexcharts@3.41.0/dist/apexcharts.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">Análisis de Volumen</h1>
+        <a href="{% url 'stats:dashboard' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Volver al Dashboard
+        </a>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-6">
+                    <label for="period" class="form-label">Período</label>
+                    <select name="period" id="period" class="form-select">
+                        <option value="week" {% if period == 'week' %}selected{% endif %}>Última semana</option>
+                        <option value="month" {% if period == 'month' %}selected{% endif %}>Último mes</option>
+                        <option value="year" {% if period == 'year' %}selected{% endif %}>Último año</option>
+                    </select>
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-2"></i>Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="row">
+        <!-- Gráfico de Volumen por Período -->
+        <div class="col-md-8 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Volumen Total por {{ period|title }}</h5>
+                </div>
+                <div class="card-body">
+                    <div id="volumeChart"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico de Distribución por Grupo Muscular -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Distribución por Grupo Muscular</h5>
+                </div>
+                <div class="card-body">
+                    <div id="muscleGroupChart"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas Detalladas -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="card-title mb-0">Estadísticas Detalladas</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="mb-3">Volumen Total</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr>
+                                    <td>Total</td>
+                                    <td class="text-end">{{ total_volume|floatformat:1 }} kg</td>
+                                </tr>
+                                <tr>
+                                    <td>Promedio</td>
+                                    <td class="text-end">{{ avg_volume|floatformat:1 }} kg</td>
+                                </tr>
+                                <tr>
+                                    <td>Máximo</td>
+                                    <td class="text-end">{{ max_volume|floatformat:1 }} kg</td>
+                                </tr>
+                                <tr>
+                                    <td>Mínimo</td>
+                                    <td class="text-end">{{ min_volume|floatformat:1 }} kg</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="mb-3">Por Grupo Muscular</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Grupo</th>
+                                    <th class="text-end">Volumen</th>
+                                    <th class="text-end">%</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for group, data in muscle_group_stats.items %}
+                                <tr>
+                                    <td>{{ group }}</td>
+                                    <td class="text-end">{{ data.volume|floatformat:1 }} kg</td>
+                                    <td class="text-end">{{ data.percentage|floatformat:1 }}%</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.41.0/dist/apexcharts.min.js"></script>
+<script>
+    // Configuración del gráfico de volumen
+    var volumeOptions = {
+        series: [{
+            name: 'Volumen Total',
+            data: [
+                {% for date, volume in volume_data.items %}
+                    {{ volume }},
+                {% endfor %}
+            ]
+        }],
+        chart: {
+            type: 'bar',
+            height: 350,
+            toolbar: {
+                show: false
+            }
+        },
+        plotOptions: {
+            bar: {
+                borderRadius: 4,
+                horizontal: false,
+                columnWidth: '40%'
+            }
+        },
+        xaxis: {
+            categories: [
+                {% for date, volume in volume_data.items %}
+                    '{{ date }}',
+                {% endfor %}
+            ]
+        },
+        yaxis: {
+            title: {
+                text: 'Volumen (kg)'
+            }
+        },
+        tooltip: {
+            y: {
+                formatter: function(val) {
+                    return val + ' kg'
+                }
+            }
+        }
+    };
+
+    // Configuración del gráfico de grupos musculares
+    var muscleGroupOptions = {
+        series: [
+            {% for group, data in muscle_group_stats.items %}
+                {{ data.volume }},
+            {% endfor %}
+        ],
+        chart: {
+            type: 'donut',
+            height: 350
+        },
+        labels: [
+            {% for group, data in muscle_group_stats.items %}
+                '{{ group }}',
+            {% endfor %}
+        ],
+        tooltip: {
+            y: {
+                formatter: function(val) {
+                    return val + ' kg'
+                }
+            }
+        }
+    };
+
+    // Renderizar los gráficos
+    var volumeChart = new ApexCharts(document.querySelector("#volumeChart"), volumeOptions);
+    var muscleGroupChart = new ApexCharts(document.querySelector("#muscleGroupChart"), muscleGroupOptions);
+    
+    volumeChart.render();
+    muscleGroupChart.render();
+</script>
+{% endblock %} 

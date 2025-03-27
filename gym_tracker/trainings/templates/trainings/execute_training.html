@@ -1,4 +1,4 @@
-{% extends 'base_layout.html' %}
+{% extends 'base.html' %}
 {% load static %}
 {% load training_tags %}
 
@@ -51,7 +51,7 @@
             <div class="card shadow-sm bg-primary text-white">
                 <div class="card-body">
                     <h6 class="mb-1">Ejercicio Actual</h6>
-                    <p class="mb-0">{{ current_exercise.exercise.name }}</p>
+                    <p class="mb-0">{{ exercise.exercise.name }}</p>
                 </div>
             </div>
         </div>
@@ -73,8 +73,8 @@
             <div class="card shadow-sm">
                 <div class="card-header bg-light">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">{{ current_exercise.exercise.name }}</h5>
-                        <span class="badge bg-primary">Serie {{ current_set }} de {{ current_exercise.sets }}</span>
+                        <h5 class="mb-0">{{ exercise.exercise.name }}</h5>
+                        <span class="badge bg-primary">Serie {{ current_set }} de {{ exercise.sets }}</span>
                     </div>
                 </div>
                 <div class="card-body">
@@ -146,7 +146,7 @@
                                     {% endif %}
 
                                     <button type="submit" class="btn btn-success">
-                                        {% if current_set < current_exercise.sets %}
+                                        {% if current_set < exercise.sets %}
                                         Siguiente serie<i class="fas fa-arrow-right ms-2"></i>
                                         {% else %}
                                             {% if next_index is not None %}
@@ -231,49 +231,82 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Variables del temporizador
         const timerDisplay = document.getElementById('timer');
         const startButton = document.getElementById('startTimer');
         const resetButton = document.getElementById('resetTimer');
-        let initialTime = {{ current_exercise.rest_time }};
+        const initialTime = {{ current_exercise.rest_time|default:60 }};
         let timeLeft = initialTime;
         let timerId = null;
+        let isRunning = false;
 
-        function updateTimerDisplay() {
-            timerDisplay.textContent = timeLeft + 's';
+        // Función para formatear el tiempo (mm:ss)
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
         }
 
-        function startTimer() {
-            if (timerId === null) {
+        // Función para actualizar el display del temporizador
+        function updateTimerDisplay() {
+            timerDisplay.textContent = formatTime(timeLeft);
+        }
+
+        // Función para iniciar/pausar el temporizador
+        function toggleTimer() {
+            if (!isRunning) {
+                // Iniciar el temporizador
+                isRunning = true;
                 startButton.innerHTML = '<i class="fas fa-pause me-2"></i>Pausar';
                 timerId = setInterval(() => {
                     if (timeLeft > 0) {
                         timeLeft--;
                         updateTimerDisplay();
                     } else {
+                        // Cuando el tiempo llega a cero
                         clearInterval(timerId);
-                        timerId = null;
+                        isRunning = false;
                         startButton.innerHTML = '<i class="fas fa-play me-2"></i>Iniciar descanso';
-                        // Reproducir sonido o notificación
-                        new Audio('/static/sounds/beep.mp3').play().catch(e => console.log('Error al reproducir sonido:', e));
+                        // Reproducir sonido
+                        try {
+                            const audio = new Audio('/static/sounds/beep.mp3');
+                            audio.play();
+                        } catch (e) {
+                            console.log('Error al reproducir sonido:', e);
+                        }
+                        // Vibrar el dispositivo si está soportado
+                        if ('vibrate' in navigator) {
+                            navigator.vibrate([200, 100, 200]);
+                        }
                     }
                 }, 1000);
             } else {
+                // Pausar el temporizador
                 clearInterval(timerId);
-                timerId = null;
-                startButton.innerHTML = '<i class="fas fa-play me-2"></i>Iniciar descanso';
+                isRunning = false;
+                startButton.innerHTML = '<i class="fas fa-play me-2"></i>Reanudar';
             }
         }
 
+        // Función para reiniciar el temporizador
         function resetTimer() {
             clearInterval(timerId);
-            timerId = null;
+            isRunning = false;
             timeLeft = initialTime;
             updateTimerDisplay();
             startButton.innerHTML = '<i class="fas fa-play me-2"></i>Iniciar descanso';
         }
 
-        startButton.addEventListener('click', startTimer);
-        resetButton.addEventListener('click', resetTimer);
+        // Event listeners
+        if (startButton) {
+            startButton.addEventListener('click', toggleTimer);
+        }
+        if (resetButton) {
+            resetButton.addEventListener('click', resetTimer);
+        }
+
+        // Inicializar el display
+        updateTimerDisplay();
     });
 </script>
 {% endblock %} 

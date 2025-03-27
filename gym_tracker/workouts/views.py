@@ -108,6 +108,37 @@ def routine_detail(request, pk):
     Muestra los detalles de una rutina.
     """
     routine = get_object_or_404(WeeklyRoutine, pk=pk, user=request.user)
+    
+    # Si la solicitud es AJAX, devolver JSON
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        days = []
+        for day in routine.days.all():
+            exercises = []
+            for routine_exercise in day.exercises.all():
+                exercises.append({
+                    'id': routine_exercise.exercise.id,
+                    'name': routine_exercise.exercise.name,
+                    'sets': routine_exercise.sets,
+                    'reps': routine_exercise.reps,
+                    'weight': routine_exercise.weight,
+                    'rest_time': routine_exercise.rest_time
+                })
+            
+            days.append({
+                'id': day.id,
+                'day_of_week': day.day_of_week,
+                'focus': day.focus,
+                'exercises': exercises
+            })
+        
+        return JsonResponse({
+            'routine': {
+                'id': routine.id,
+                'name': routine.name
+            },
+            'days': days
+        })
+    
     return render(request, 'workouts/routine_detail.html', {
         'routine': routine
     })

@@ -15,7 +15,7 @@ def serve_login_page(request):
 # Definimos directamente las rutas de autenticación
 auth_urlpatterns = [
     path('login/', csrf_exempt(auth_views.LoginView.as_view(template_name='login.html')), name='login'),
-    path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('logout/', auth_views.LogoutView.as_view(next_page='/'), name='logout'),
 ]
 
 urlpatterns = [
@@ -30,8 +30,12 @@ urlpatterns = [
     path('workouts/', include('gym_tracker.workouts.urls', namespace='workouts')),
     path('trainings/', include('gym_tracker.trainings.urls', namespace='trainings')),
     
+    # Ruta para el área de entrenadores
+    path('trainers/', include('trainers.urls')),
+    
     # API de gestión de usuarios
     path('api/users/', include('gym_tracker.users.urls', namespace='users')),
+    path('stats/', include('gym_tracker.stats.urls')),  # Nueva URL para estadísticas
 ]
 
 # Archivos estáticos (solo en desarrollo)

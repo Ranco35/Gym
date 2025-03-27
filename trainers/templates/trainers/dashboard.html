@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard de Entrenador{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="mb-4">Panel de Entrenador</h1>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Resumen de Actividad</h5>
+                </div>
+                <div class="card-body">
+                    <p class="lead">Bienvenido al panel de entrenador.</p>
+                    <p>Desde aquí puedes gestionar tus estudiantes, ver sus progresos y proporcionar retroalimentación.</p>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Funcionalidad en desarrollo</strong>
+                        <p class="mb-0">Esta sección está en construcción. Pronto tendrás acceso a más estadísticas y herramientas.</p>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-start mt-4">
+                        <a href="{% url 'trainers:student_list' %}" class="btn btn-primary">
+                            <i class="fas fa-users me-2"></i>Ver Estudiantes
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">Acciones Rápidas</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        <a href="{% url 'trainers:student_list' %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">Gestionar Estudiantes</h6>
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                            <small class="text-muted">Ver y administrar tus estudiantes</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">Consejos para Entrenadores</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>Mantén comunicación regular con tus estudiantes</li>
+                        <li>Revisa sus progresos semanalmente</li>
+                        <li>Proporciona retroalimentación detallada</li>
+                        <li>Ajusta sus rutinas según su evolución</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

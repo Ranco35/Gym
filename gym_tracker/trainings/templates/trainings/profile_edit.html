@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Editar Perfil{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Editar Perfil</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <!-- Foto de Perfil -->
+                        <div class="text-center mb-4">
+                            <div class="position-relative d-inline-block">
+                                {% if profile.photo %}
+                                    <img src="{{ profile.photo.url }}" alt="Foto de perfil" class="rounded-circle" style="width: 150px; height: 150px; object-fit: cover;">
+                                {% else %}
+                                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 150px; height: 150px;">
+                                        <i class="fas fa-user fa-4x"></i>
+                                    </div>
+                                {% endif %}
+                                <label for="photo" class="position-absolute bottom-0 end-0 bg-primary text-white rounded-circle p-2" style="cursor: pointer;">
+                                    <i class="fas fa-camera"></i>
+                                </label>
+                                <input type="file" id="photo" name="photo" class="d-none" accept="image/*">
+                            </div>
+                        </div>
+
+                        <!-- Información Personal -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Nombre</label>
+                                <input type="text" name="first_name" class="form-control" value="{{ user.first_name }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Apellido</label>
+                                <input type="text" name="last_name" class="form-control" value="{{ user.last_name }}" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Correo Electrónico</label>
+                            <input type="email" name="email" class="form-control" value="{{ user.email }}" required>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Teléfono</label>
+                                <input type="tel" name="phone" class="form-control" value="{{ profile.phone|default:'' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Fecha de Nacimiento</label>
+                                <input type="date" name="birth_date" class="form-control" value="{{ profile.birth_date|date:'Y-m-d'|default:'' }}">
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Guardar Cambios
+                            </button>
+                            <a href="{% url 'trainings:dashboard' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.getElementById('photo').addEventListener('change', function(e) {
+    if (this.files && this.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = document.querySelector('.rounded-circle');
+            if (img.tagName === 'IMG') {
+                img.src = e.target.result;
+            } else {
+                const newImg = document.createElement('img');
+                newImg.src = e.target.result;
+                newImg.alt = 'Foto de perfil';
+                newImg.className = 'rounded-circle';
+                newImg.style.width = '150px';
+                newImg.style.height = '150px';
+                newImg.style.objectFit = 'cover';
+                img.parentNode.replaceChild(newImg, img);
+            }
+        }
+        reader.readAsDataURL(this.files[0]);
+    }
+});
+</script>
+{% endblock %}
+{% endblock %} 

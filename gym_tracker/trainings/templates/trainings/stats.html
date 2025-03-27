@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Estadísticas de Entrenamiento{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="mb-4">Estadísticas de Entrenamiento</h1>
+    
+    <div class="row mb-5">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Entrenamientos Totales</h5>
+                    <h2 class="display-4">{{ total_trainings }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Entrenamientos Completados</h5>
+                    <h2 class="display-4">{{ completed_trainings }}</h2>
+                    <div class="progress mt-2">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ completion_percentage }}%;" 
+                            aria-valuenow="{{ completion_percentage }}" aria-valuemin="0" aria-valuemax="100">
+                            {{ completion_percentage }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Series Completadas</h5>
+                    <h2 class="display-4">{{ completed_sets }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    Progreso Mensual
+                </div>
+                <div class="card-body">
+                    {% if total_trainings > 0 %}
+                    <div id="monthlyChart" style="height: 300px;">
+                        <!-- Aquí irá el gráfico cuando implementemos Chart.js -->
+                        <p class="text-center pt-5">Gráfico de progreso mensual</p>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <p>Aún no hay datos suficientes para mostrar el progreso mensual.</p>
+                        <p>Completa algunos entrenamientos para ver tu progreso aquí.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    Ejercicios Más Frecuentes
+                </div>
+                <div class="card-body">
+                    {% if total_trainings > 0 %}
+                    <ul class="list-group">
+                        <li class="list-group-item">Implementación pendiente</li>
+                    </ul>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <p>Aún no hay datos suficientes para mostrar los ejercicios más frecuentes.</p>
+                        <p>Completa algunos entrenamientos para ver esta información.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            Progreso de Peso
+        </div>
+        <div class="card-body">
+            {% if total_trainings > 0 %}
+            <div id="weightChart" style="height: 300px;">
+                <!-- Aquí irá el gráfico cuando implementemos Chart.js -->
+                <p class="text-center pt-5">Gráfico de progreso de peso</p>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <p>Aún no hay datos suficientes para mostrar el progreso de peso.</p>
+                <p>Registra varios entrenamientos del mismo ejercicio para ver tu progreso.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Aquí podríamos agregar Chart.js en el futuro -->
+{% endblock %} 

@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - GymTracker{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="mb-4">Dashboard</h1>
+
+    <!-- Estadísticas Generales -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Ejercicios</h5>
+                    <p class="display-4">{{ total_exercises|default:"27" }}</p>
+                    <p class="card-text">Ejercicios registrados</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Entrenamientos</h5>
+                    <p class="display-4">{{ total_trainings|default:"0" }}</p>
+                    <p class="card-text">Rutinas creadas</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Progreso</h5>
+                    <p class="display-4">{{ progress_percentage|default:"0" }}%</p>
+                    <p class="card-text">{{ completed_trainings|default:"0" }} de {{ total_trainings|default:"0" }} completados</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acciones Rápidas -->
+    <h2 class="h4 mb-4">Acciones Rápidas</h2>
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-dumbbell fa-3x text-success"></i>
+                    </div>
+                    <h3 class="h5">Rutinas Semanales</h3>
+                    <p class="text-muted">Gestiona tus rutinas de entrenamiento y planes personalizados.</p>
+                    <div class="text-center mt-3">
+                        <a href="{% url 'workouts:workout-list' %}" class="btn btn-success">
+                            <i class="fas fa-calendar-alt me-2"></i>Ver Mis Rutinas
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-running fa-3x text-primary"></i>
+                    </div>
+                    <h3 class="h5">Ejercicios</h3>
+                    <p class="text-muted">Explora y gestiona tu catálogo de ejercicios.</p>
+                    <a href="{% url 'trainings:exercise_list' %}" class="btn btn-primary">
+                        <i class="fas fa-search me-2"></i>Ver ejercicios
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-chart-line fa-3x text-info"></i>
+                    </div>
+                    <h3 class="h5">Mis Entrenamientos</h3>
+                    <p class="text-muted">Registra y haz seguimiento de tus entrenamientos diarios.</p>
+                    <a href="{% url 'trainings:training-list-create' %}" class="btn btn-info text-white">
+                        <i class="fas fa-clipboard-list me-2"></i>Ver entrenamientos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if user.trainerprofile %}
+    <!-- Sección específica para entrenadores -->
+    <h2 class="h4 mb-4 mt-4">Área de Entrenador</h2>
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-users fa-3x text-warning"></i>
+                    </div>
+                    <h3 class="h5">Mis Estudiantes</h3>
+                    <p class="text-muted">Gestiona tus estudiantes y sus programas de entrenamiento.</p>
+                    <a href="{% url 'trainers:student_list' %}" class="btn btn-warning">
+                        <i class="fas fa-user-friends me-2"></i>Ver estudiantes
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-dumbbell fa-3x text-danger"></i>
+                    </div>
+                    <h3 class="h5">Sesiones de Entrenamiento</h3>
+                    <p class="text-muted">Supervisa las sesiones de entrenamiento de tus estudiantes.</p>
+                    <a href="{% url 'trainers:session_list' %}" class="btn btn-danger">
+                        <i class="fas fa-clipboard-check me-2"></i>Ver sesiones
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-comments fa-3x text-purple"></i>
+                    </div>
+                    <h3 class="h5">Retroalimentación</h3>
+                    <p class="text-muted">Gestiona la retroalimentación y seguimiento de tus estudiantes.</p>
+                    <a href="{% url 'trainers:feedback_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-comment-dots me-2"></i>Ver feedback
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

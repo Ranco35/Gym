@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}Ejercicios{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Catálogo de Ejercicios</h1>
+        <a href="#" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i> Nuevo Ejercicio
+        </a>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="muscle_group" class="form-label">Grupo Muscular</label>
+                    <select name="muscle_group" id="muscle_group" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="pecho">Pecho</option>
+                        <option value="espalda">Espalda</option>
+                        <option value="hombros">Hombros</option>
+                        <option value="brazos">Brazos</option>
+                        <option value="piernas">Piernas</option>
+                        <option value="abdominales">Abdominales</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="difficulty" class="form-label">Dificultad</label>
+                    <select name="difficulty" id="difficulty" class="form-select">
+                        <option value="">Todas</option>
+                        <option value="principiante">Principiante</option>
+                        <option value="intermedio">Intermedio</option>
+                        <option value="avanzado">Avanzado</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="search" class="form-label">Buscar</label>
+                    <div class="input-group">
+                        <input type="text" name="search" id="search" class="form-control" placeholder="Nombre del ejercicio">
+                        <button type="submit" class="btn btn-outline-primary">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if exercises %}
+    <div class="row">
+        {% for exercise in exercises %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">{{ exercise.name }}</h5>
+                    <span class="badge bg-light text-dark">{{ exercise.muscle_group }}</span>
+                </div>
+                {% if exercise.image %}
+                <img src="{{ exercise.image.url }}" class="card-img-top" alt="{{ exercise.name }}" style="height: 200px; object-fit: cover;">
+                {% else %}
+                <div class="card-img-top bg-light d-flex justify-content-center align-items-center" style="height: 200px;">
+                    <i class="fas fa-dumbbell fa-4x text-secondary"></i>
+                </div>
+                {% endif %}
+                <div class="card-body">
+                    <p class="card-text">{{ exercise.description|truncatewords:15 }}</p>
+                    <div class="d-flex justify-content-between">
+                        <span class="badge bg-info">{{ exercise.difficulty }}</span>
+                        <span class="badge bg-success">{{ exercise.equipment }}</span>
+                    </div>
+                </div>
+                <div class="card-footer bg-white">
+                    <div class="btn-group w-100">
+                        <a href="#" class="btn btn-outline-primary">
+                            <i class="fas fa-eye"></i> Ver
+                        </a>
+                        <a href="#" class="btn btn-outline-secondary">
+                            <i class="fas fa-edit"></i> Editar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info text-center p-5">
+        <i class="fas fa-info-circle fa-3x mb-3"></i>
+        <h4>No se encontraron ejercicios</h4>
+        <p>Usa los filtros para buscar o crea un nuevo ejercicio.</p>
+        <a href="#" class="btn btn-primary mt-3">
+            <i class="fas fa-plus me-2"></i> Crear ejercicio
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Rutinas de Entrenamiento{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Mis Rutinas</h1>
+        <a href="#" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i> Nueva Rutina
+        </a>
+    </div>
+
+    {% if routines %}
+    <div class="row">
+        {% for routine in routines %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">{{ routine.name }}</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">{{ routine.description|truncatewords:20 }}</p>
+                    <p><strong>Ejercicios:</strong> {{ routine.exercises.count }}</p>
+                    <p><small class="text-muted">Creada: {{ routine.created_at|date:"d/m/Y" }}</small></p>
+                </div>
+                <div class="card-footer bg-white">
+                    <div class="btn-group w-100">
+                        <a href="#" class="btn btn-outline-primary">
+                            <i class="fas fa-eye"></i> Ver
+                        </a>
+                        <a href="#" class="btn btn-outline-secondary">
+                            <i class="fas fa-edit"></i> Editar
+                        </a>
+                        <a href="#" class="btn btn-success">
+                            <i class="fas fa-play"></i> Iniciar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info text-center p-5">
+        <i class="fas fa-info-circle fa-3x mb-3"></i>
+        <h4>Aún no tienes rutinas</h4>
+        <p>Crea tu primera rutina para comenzar a entrenar.</p>
+        <a href="#" class="btn btn-primary mt-3">
+            <i class="fas fa-plus me-2"></i> Crear mi primera rutina
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

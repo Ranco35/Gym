@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load stats_filters %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">Frecuencia de Entrenamiento</h1>
+        <a href="{% url 'stats:dashboard' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Volver al Dashboard
+        </a>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-6">
+                    <label for="period" class="form-label">Período</label>
+                    <select name="period" id="period" class="form-select">
+                        <option value="week" {% if period == 'week' %}selected{% endif %}>Última semana</option>
+                        <option value="month" {% if period == 'month' %}selected{% endif %}>Último mes</option>
+                        <option value="year" {% if period == 'year' %}selected{% endif %}>Último año</option>
+                    </select>
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-2"></i>Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Calendario de Frecuencia -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <h5 class="card-title mb-0">Calendario de Entrenamientos</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Hora</th>
+                            {% for day in days_of_week %}
+                            <th class="text-center">{{ day }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for hour in hours %}
+                        <tr>
+                            <td>{{ hour }}:00</td>
+                            {% for day in days_of_week %}
+                            <td class="text-center">
+                                {% with count=frequency_data|get_item:day|get_item:hour %}
+                                {% if count > 0 %}
+                                <span class="badge bg-primary">{{ count }}</span>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                                {% endwith %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas de Duración -->
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Duración de Entrenamientos</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr>
+                                    <td>Duración Promedio</td>
+                                    <td class="text-end">{{ avg_duration|floatformat:1 }} minutos</td>
+                                </tr>
+                                <tr>
+                                    <td>Duración Máxima</td>
+                                    <td class="text-end">{{ max_duration|floatformat:1 }} minutos</td>
+                                </tr>
+                                <tr>
+                                    <td>Duración Mínima</td>
+                                    <td class="text-end">{{ min_duration|floatformat:1 }} minutos</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Distribución por Día</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Día</th>
+                                    <th class="text-end">Entrenamientos</th>
+                                    <th class="text-end">%</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for day, data in day_distribution.items %}
+                                <tr>
+                                    <td>{{ day }}</td>
+                                    <td class="text-end">{{ data.count }}</td>
+                                    <td class="text-end">{{ data.percentage|floatformat:1 }}%</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfico de Tendencia -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="card-title mb-0">Tendencia de Entrenamientos</h5>
+        </div>
+        <div class="card-body">
+            <div id="trendChart"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.41.0/dist/apexcharts.min.js"></script>
+<script>
+    // Configuración del gráfico de tendencia
+    var options = {
+        series: [{
+            name: 'Entrenamientos',
+            data: [
+                {% for date, count in trend_data.items %}
+                    {{ count }},
+                {% endfor %}
+            ]
+        }],
+        chart: {
+            type: 'line',
+            height: 350,
+            toolbar: {
+                show: false
+            }
+        },
+        stroke: {
+            curve: 'smooth',
+            width: 3
+        },
+        xaxis: {
+            categories: [
+                {% for date, count in trend_data.items %}
+                    '{{ date|date:"d/m/Y" }}',
+                {% endfor %}
+            ]
+        },
+        yaxis: {
+            title: {
+                text: 'Número de Entrenamientos'
+            }
+        },
+        tooltip: {
+            y: {
+                formatter: function(val) {
+                    return val + ' entrenamientos'
+                }
+            }
+        }
+    };
+
+    // Renderizar el gráfico
+    var chart = new ApexCharts(document.querySelector("#trendChart"), options);
+    chart.render();
+</script>
+{% endblock %} 

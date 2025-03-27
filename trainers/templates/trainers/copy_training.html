@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Copiar Rutina: {{ source_training.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'trainers:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'trainers:student_list' %}">Estudiantes</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'trainers:student_detail' trainer_student.student.id %}">{{ trainer_student.student.get_full_name|default:trainer_student.student.username }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'trainers:student_trainings' trainer_student.student.id %}">Rutinas</a></li>
+            <li class="breadcrumb-item active">Copiar: {{ source_training.name }}</li>
+        </ol>
+    </nav>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1>Copiar Rutina</h1>
+            <p class="text-muted">
+                Estudiante: {{ trainer_student.student.get_full_name|default:trainer_student.student.username }}
+            </p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Información de la Nueva Rutina</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <span>Estás creando una copia de la rutina <strong>"{{ source_training.name }}"</strong> con todos sus ejercicios.</span>
+                    </div>
+                    
+                    <form method="post" action="{% url 'trainers:copy_training' trainer_student.student.id source_training.id %}">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Nombre de la Nueva Rutina *</label>
+                            <input type="text" class="form-control" id="name" name="name" value="Copia de {{ source_training.name }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="date" class="form-label">Fecha *</label>
+                            <input type="date" class="form-control" id="date" name="date" required>
+                            <div class="form-text">Fecha programada para esta rutina.</div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'trainers:training_detail' trainer_student.student.id source_training.id %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-copy me-2"></i>Crear Copia
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Establecer la fecha actual como predeterminada
+    document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const formattedDate = `${yyyy}-${mm}-${dd}`;
+        document.getElementById('date').value = formattedDate;
+    });
+</script>
+{% endblock %} 

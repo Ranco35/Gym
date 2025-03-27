@@ -1,0 +1,386 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestión de Estudiantes{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="mb-4">Gestión de Estudiantes</h1>
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <p class="text-muted">Administra a los estudiantes asignados a tu perfil de entrenador.</p>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStudentModal">
+            <i class="fas fa-user-plus me-2"></i>Añadir Estudiante
+        </button>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Mis Estudiantes</h5>
+            <div class="input-group" style="width: 300px;">
+                <input type="text" id="studentSearch" class="form-control" placeholder="Buscar estudiante...">
+                <button class="btn btn-outline-secondary" type="button">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if trainer_students %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Estudiante</th>
+                            <th>Correo</th>
+                            <th>Fecha de inicio</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ts in trainer_students %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">{{ ts.student.get_full_name|default:ts.student.username }}</h6>
+                                        <small class="text-muted">{{ ts.notes|truncatechars:30 }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ ts.student.email }}</td>
+                            <td>{{ ts.start_date|date:"d/m/Y" }}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{% url 'trainers:student_detail' ts.student.id %}" class="btn btn-sm btn-outline-primary" title="Ver detalle">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="#" class="btn btn-sm btn-outline-success start-training-btn" 
+                                       data-student-id="{{ ts.student.id }}" 
+                                       data-student-name="{{ ts.student.get_full_name|default:ts.student.username }}"
+                                       title="Iniciar entrenamiento">
+                                        <i class="fas fa-play"></i>
+                                    </a>
+                                    <a href="#" class="btn btn-sm btn-outline-secondary edit-student-btn"
+                                       data-student-id="{{ ts.student.id }}"
+                                       data-notes="{{ ts.notes }}"
+                                       title="Editar notas">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-users text-muted fa-2x mb-3"></i>
+                <p>No tienes estudiantes asignados todavía</p>
+                <button class="btn btn-outline-primary mt-2" data-bs-toggle="modal" data-bs-target="#addStudentModal">
+                    <i class="fas fa-user-plus me-2"></i>Añadir tu primer estudiante
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal para añadir estudiante -->
+<div class="modal fade" id="addStudentModal" tabindex="-1" aria-labelledby="addStudentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addStudentModalLabel">Añadir Nuevo Estudiante</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'trainers:add_student' %}" id="addStudentForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Buscar Usuario</label>
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" id="userSearchInput" placeholder="Buscar por nombre o correo...">
+                            <button class="btn btn-outline-secondary" type="button" id="searchUserBtn">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                        <div class="form-text">Busca y selecciona un usuario para añadirlo como estudiante.</div>
+                    </div>
+                    
+                    <div id="userSearchResults" class="d-none mb-3">
+                        <h6 class="mb-2">Resultados:</h6>
+                        <div class="list-group" id="userResultsList">
+                            <!-- Aquí se insertarán los resultados -->
+                        </div>
+                    </div>
+                    
+                    <div id="selectedUserContainer" class="d-none mb-3">
+                        <label class="form-label">Usuario Seleccionado</label>
+                        <div class="card">
+                            <div class="card-body py-2">
+                                <div class="d-flex align-items-center">
+                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 32px; height: 32px;">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0" id="selectedUserName"></h6>
+                                        <small class="text-muted" id="selectedUserEmail"></small>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger ms-auto" id="clearSelectedUserBtn">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="selectedUserId" name="student_id">
+                    </div>
+                    
+                    <div class="mb-3" id="emailInputContainer">
+                        <label for="studentEmail" class="form-label">O ingresa el correo directamente</label>
+                        <input type="email" class="form-control" id="studentEmail" name="student_email" placeholder="correo@ejemplo.com">
+                        <div class="form-text">Si conoces el correo del estudiante, puedes introducirlo directamente.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="studentNotes" class="form-label">Notas</label>
+                        <textarea class="form-control" id="studentNotes" name="notes" rows="3" placeholder="Notas iniciales sobre el estudiante..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Añadir Estudiante</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para iniciar entrenamiento -->
+<div class="modal fade" id="startTrainingModal" tabindex="-1" aria-labelledby="startTrainingModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="startTrainingModalLabel">Iniciar Entrenamiento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="startTrainingForm" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>Selecciona el entrenamiento que deseas iniciar para <span id="studentNamePlaceholder"></span>:</p>
+                    <div id="trainingsLoadingSpinner" class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                        <p class="mt-2">Cargando entrenamientos disponibles...</p>
+                    </div>
+                    <div id="trainingsContainer" class="d-none">
+                        <select class="form-select" id="trainingSelect" name="training_id" required></select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Iniciar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Filtrado de estudiantes en la tabla
+        const searchInput = document.getElementById('studentSearch');
+        if (searchInput) {
+            searchInput.addEventListener('keyup', function() {
+                const searchValue = this.value.toLowerCase();
+                const rows = document.querySelectorAll('tbody tr');
+                
+                rows.forEach(row => {
+                    const text = row.textContent.toLowerCase();
+                    if (text.includes(searchValue)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+        }
+        
+        // Búsqueda de usuarios para añadir como estudiantes
+        const userSearchInput = document.getElementById('userSearchInput');
+        const searchUserBtn = document.getElementById('searchUserBtn');
+        const userSearchResults = document.getElementById('userSearchResults');
+        const userResultsList = document.getElementById('userResultsList');
+        const selectedUserContainer = document.getElementById('selectedUserContainer');
+        const selectedUserName = document.getElementById('selectedUserName');
+        const selectedUserEmail = document.getElementById('selectedUserEmail');
+        const selectedUserId = document.getElementById('selectedUserId');
+        const clearSelectedUserBtn = document.getElementById('clearSelectedUserBtn');
+        const emailInputContainer = document.getElementById('emailInputContainer');
+        
+        // Función para buscar usuarios
+        function searchUsers() {
+            const query = userSearchInput.value.trim();
+            if (query.length < 2) {
+                userSearchResults.classList.add('d-none');
+                return;
+            }
+            
+            // Mostrar loading
+            userResultsList.innerHTML = '<div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary" role="status"></div><p class="mt-2">Buscando usuarios...</p></div>';
+            userSearchResults.classList.remove('d-none');
+            
+            // Realizar búsqueda
+            fetch(`/trainers/users/search/?q=${encodeURIComponent(query)}`, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                userResultsList.innerHTML = '';
+                
+                if (data.status === 'success' && data.users.length > 0) {
+                    data.users.forEach(user => {
+                        const userItem = document.createElement('button');
+                        userItem.type = 'button';
+                        userItem.className = 'list-group-item list-group-item-action';
+                        userItem.innerHTML = `
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">${user.name}</h6>
+                                <small>${user.username}</small>
+                            </div>
+                            <small class="text-muted">${user.email}</small>
+                        `;
+                        
+                        userItem.addEventListener('click', function() {
+                            selectUser(user);
+                        });
+                        
+                        userResultsList.appendChild(userItem);
+                    });
+                } else {
+                    userResultsList.innerHTML = '<div class="alert alert-info">No se encontraron usuarios con ese criterio.</div>';
+                }
+            })
+            .catch(error => {
+                console.error('Error al buscar usuarios:', error);
+                userResultsList.innerHTML = '<div class="alert alert-danger">Error al buscar usuarios.</div>';
+            });
+        }
+        
+        // Función para seleccionar un usuario
+        function selectUser(user) {
+            selectedUserName.textContent = user.name;
+            selectedUserEmail.textContent = user.email;
+            selectedUserId.value = user.id;
+            
+            selectedUserContainer.classList.remove('d-none');
+            userSearchResults.classList.add('d-none');
+            userSearchInput.value = '';
+            
+            // Ocultar campo de email si hay un usuario seleccionado
+            emailInputContainer.classList.add('d-none');
+        }
+        
+        // Función para limpiar el usuario seleccionado
+        function clearSelectedUser() {
+            selectedUserName.textContent = '';
+            selectedUserEmail.textContent = '';
+            selectedUserId.value = '';
+            
+            selectedUserContainer.classList.add('d-none');
+            emailInputContainer.classList.remove('d-none');
+        }
+        
+        // Escuchar eventos
+        if (searchUserBtn) {
+            searchUserBtn.addEventListener('click', searchUsers);
+        }
+        
+        if (userSearchInput) {
+            userSearchInput.addEventListener('keyup', function(e) {
+                if (e.key === 'Enter') {
+                    searchUsers();
+                }
+            });
+        }
+        
+        if (clearSelectedUserBtn) {
+            clearSelectedUserBtn.addEventListener('click', clearSelectedUser);
+        }
+        
+        // Configuración de botones para iniciar entrenamiento
+        const startTrainingBtns = document.querySelectorAll('.start-training-btn');
+        const startTrainingForm = document.getElementById('startTrainingForm');
+        const studentNamePlaceholder = document.getElementById('studentNamePlaceholder');
+        const trainingsContainer = document.getElementById('trainingsContainer');
+        const trainingsLoadingSpinner = document.getElementById('trainingsLoadingSpinner');
+        const trainingSelect = document.getElementById('trainingSelect');
+        
+        startTrainingBtns.forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const studentId = this.dataset.studentId;
+                const studentName = this.dataset.studentName;
+                
+                // Configurar el formulario
+                startTrainingForm.action = `/trainers/sessions/start/${studentId}/`;
+                studentNamePlaceholder.textContent = studentName;
+                
+                // Resetear y mostrar el spinner
+                trainingSelect.innerHTML = '';
+                trainingsContainer.classList.add('d-none');
+                trainingsLoadingSpinner.classList.remove('d-none');
+                
+                // Cargar entrenamientos reales desde la API
+                fetch(`/trainers/students/${studentId}/trainings/`, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    trainingsLoadingSpinner.classList.add('d-none');
+                    trainingsContainer.classList.remove('d-none');
+                    
+                    if (data.status === 'success' && data.trainings.length > 0) {
+                        // Agregar opción por defecto
+                        let options = `<option value="" disabled selected>Selecciona un entrenamiento</option>`;
+                        
+                        // Agregar opciones de entrenamientos
+                        data.trainings.forEach(training => {
+                            options += `<option value="${training.id}">${training.name} (${training.date})</option>`;
+                        });
+                        
+                        trainingSelect.innerHTML = options;
+                    } else {
+                        // Sin entrenamientos disponibles
+                        trainingSelect.innerHTML = `<option value="" disabled selected>No hay entrenamientos disponibles</option>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al cargar entrenamientos:', error);
+                    trainingsLoadingSpinner.classList.add('d-none');
+                    trainingsContainer.classList.remove('d-none');
+                    trainingSelect.innerHTML = `<option value="" disabled selected>Error al cargar entrenamientos</option>`;
+                });
+                
+                // Mostrar el modal
+                const modal = new bootstrap.Modal(document.getElementById('startTrainingModal'));
+                modal.show();
+            });
+        });
+    });
+</script>
+{% endblock %} 

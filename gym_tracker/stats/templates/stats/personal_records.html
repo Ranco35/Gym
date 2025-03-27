@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load stats_filters %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">Récords Personales</h1>
+        <a href="{% url 'stats:dashboard' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Volver al Dashboard
+        </a>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-6">
+                    <label for="period" class="form-label">Período</label>
+                    <select name="period" id="period" class="form-select">
+                        <option value="week" {% if period == 'week' %}selected{% endif %}>Última semana</option>
+                        <option value="month" {% if period == 'month' %}selected{% endif %}>Último mes</option>
+                        <option value="year" {% if period == 'year' %}selected{% endif %}>Último año</option>
+                    </select>
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-2"></i>Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Récords por Ejercicio -->
+    <div class="row">
+        {% for exercise_name, records in exercise_records.items %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">{{ exercise_name }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr>
+                                    <td>Peso Máximo</td>
+                                    <td class="text-end">
+                                        {{ records.max_weight|floatformat:1 }} kg
+                                        <small class="text-muted d-block">
+                                            {{ records.max_weight_date|date:"d/m/Y" }}
+                                        </small>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Repeticiones Máximas</td>
+                                    <td class="text-end">
+                                        {{ records.max_reps }} reps
+                                        <small class="text-muted d-block">
+                                            {{ records.max_reps_date|date:"d/m/Y" }}
+                                        </small>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Volumen Total</td>
+                                    <td class="text-end">
+                                        {{ records.total_volume|floatformat:1 }} kg
+                                        <small class="text-muted d-block">
+                                            {{ records.total_volume_date|date:"d/m/Y" }}
+                                        </small>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Peso Promedio</td>
+                                    <td class="text-end">
+                                        {{ records.avg_weight|floatformat:1 }} kg
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    {% if records.progress %}
+                    <div class="mt-3">
+                        <h6 class="mb-2">Progreso</h6>
+                        <div class="progress" style="height: 5px;">
+                            <div class="progress-bar {% if records.progress > 0 %}bg-success{% else %}bg-danger{% endif %}" 
+                                 role="progressbar" 
+                                 style="width: {{ records.progress|abs_value }}%">
+                            </div>
+                        </div>
+                        <small class="text-muted">
+                            {{ records.progress|floatformat:1 }}% desde el inicio del período
+                        </small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                No hay récords disponibles para el período seleccionado.
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Resumen de Récords -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="card-title mb-0">Resumen de Récords</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="text-center">
+                        <h6 class="text-muted mb-2">Peso Total Máximo</h6>
+                        <h3 class="mb-0">{{ total_max_weight|floatformat:1 }} kg</h3>
+                        <small class="text-muted">{{ total_max_weight_date|date:"d/m/Y" }}</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-center">
+                        <h6 class="text-muted mb-2">Repeticiones Máximas</h6>
+                        <h3 class="mb-0">{{ total_max_reps }}</h3>
+                        <small class="text-muted">{{ total_max_reps_date|date:"d/m/Y" }}</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-center">
+                        <h6 class="text-muted mb-2">Volumen Total Máximo</h6>
+                        <h3 class="mb-0">{{ total_max_volume|floatformat:1 }} kg</h3>
+                        <small class="text-muted">{{ total_max_volume_date|date:"d/m/Y" }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

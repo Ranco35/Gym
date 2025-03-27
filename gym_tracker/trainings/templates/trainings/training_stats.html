@@ -1,0 +1,247 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/apexcharts@3.41.0/dist/apexcharts.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Filtros de período -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form method="get" class="d-flex gap-3">
+                        <div class="btn-group" role="group">
+                            <input type="radio" class="btn-check" name="period" id="week" value="week" {% if period == 'week' %}checked{% endif %}>
+                            <label class="btn btn-outline-primary" for="week">Última Semana</label>
+
+                            <input type="radio" class="btn-check" name="period" id="month" value="month" {% if period == 'month' %}checked{% endif %}>
+                            <label class="btn btn-outline-primary" for="month">Último Mes</label>
+
+                            <input type="radio" class="btn-check" name="period" id="year" value="year" {% if period == 'year' %}checked{% endif %}>
+                            <label class="btn btn-outline-primary" for="year">Último Año</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Actualizar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tarjetas de resumen -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-muted mb-1">Total Entrenamientos</h6>
+                    <h3 class="mb-0">{{ total_trainings }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-muted mb-1">Días Activos</h6>
+                    <h3 class="mb-0">{{ active_days }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-muted mb-1">Promedio Semanal</h6>
+                    <h3 class="mb-0">{{ active_days|divisibleby:7|floatformat:1 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-muted mb-1">Volumen Total (kg)</h6>
+                    <h3 class="mb-0">{{ weekly_volume.0.total_volume|default:0|floatformat:0 }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="row">
+        <!-- Progreso de Peso por Ejercicio -->
+        <div class="col-md-8 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Progreso de Peso por Ejercicio</h5>
+                </div>
+                <div class="card-body">
+                    <div id="weightProgressChart" style="height: 400px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Grupos Musculares -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Grupos Musculares</h5>
+                </div>
+                <div class="card-body">
+                    <div id="muscleGroupsChart" style="height: 400px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Volumen Semanal -->
+        <div class="col-md-12 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Volumen Semanal</h5>
+                </div>
+                <div class="card-body">
+                    <div id="weeklyVolumeChart" style="height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de Ejercicios -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Resumen por Ejercicio</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Ejercicio</th>
+                                    <th>Peso Máximo (kg)</th>
+                                    <th>Peso Promedio (kg)</th>
+                                    <th>Volumen Total (kg)</th>
+                                    <th>Progreso</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for exercise, data in exercise_progress.items %}
+                                <tr>
+                                    <td>{{ exercise }}</td>
+                                    <td>{{ data.0.max_weight|default:0|floatformat:1 }}</td>
+                                    <td>{{ data.0.avg_weight|default:0|floatformat:1 }}</td>
+                                    <td>{{ data.0.total_volume|default:0|floatformat:0 }}</td>
+                                    <td style="width: 150px;">
+                                        <div class="progress" style="height: 5px;">
+                                            {% with progress=data.0.max_weight|default:0|div:data.0.avg_weight|default:1|mul:100 %}
+                                            <div class="progress-bar bg-success" role="progressbar" 
+                                                 style="width: {{ progress|floatformat:0 }}%"></div>
+                                            {% endwith %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.41.0/dist/apexcharts.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Datos para los gráficos
+    const exerciseProgress = {{ exercise_progress|safe }};
+    const weeklyVolume = {{ weekly_volume|safe }};
+    const muscleGroups = {{ muscle_groups|safe }};
+
+    // Gráfico de progreso de peso
+    const weightProgressOptions = {
+        series: Object.entries(exerciseProgress).map(([name, data]) => ({
+            name: name,
+            data: data.map(d => ({
+                x: new Date(d.date).getTime(),
+                y: d.max_weight || 0
+            }))
+        })),
+        chart: {
+            type: 'line',
+            height: 400,
+            animations: {
+                enabled: true
+            },
+            toolbar: {
+                show: false
+            }
+        },
+        stroke: {
+            curve: 'smooth',
+            width: 2
+        },
+        xaxis: {
+            type: 'datetime'
+        },
+        yaxis: {
+            title: {
+                text: 'Peso (kg)'
+            }
+        },
+        tooltip: {
+            shared: true,
+            intersect: false
+        },
+        legend: {
+            position: 'top'
+        }
+    };
+
+    // Gráfico de volumen semanal
+    const weeklyVolumeOptions = {
+        series: [{
+            name: 'Volumen Total',
+            data: weeklyVolume.map(w => w.total_volume || 0)
+        }],
+        chart: {
+            type: 'bar',
+            height: 300
+        },
+        plotOptions: {
+            bar: {
+                borderRadius: 4
+            }
+        },
+        xaxis: {
+            categories: weeklyVolume.map(w => `Semana ${w.week}`)
+        },
+        yaxis: {
+            title: {
+                text: 'Volumen (kg)'
+            }
+        }
+    };
+
+    // Gráfico de grupos musculares
+    const muscleGroupsOptions = {
+        series: muscleGroups.map(g => g.total_volume || 0),
+        chart: {
+            type: 'donut',
+            height: 400
+        },
+        labels: muscleGroups.map(g => g.exercise__muscle_group),
+        legend: {
+            position: 'bottom'
+        }
+    };
+
+    // Inicializar gráficos
+    new ApexCharts(document.querySelector("#weightProgressChart"), weightProgressOptions).render();
+    new ApexCharts(document.querySelector("#weeklyVolumeChart"), weeklyVolumeOptions).render();
+    new ApexCharts(document.querySelector("#muscleGroupsChart"), muscleGroupsOptions).render();
+});
+</script>
+{% endblock %} 
