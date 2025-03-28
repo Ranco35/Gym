@@ -723,22 +723,8 @@ def get_completed_sets(request, training_id):
 @login_required
 def training_stats(request):
     """Vista para mostrar estadísticas de entrenamiento."""
-    # Obtener estadísticas básicas
-    total_trainings = Training.objects.filter(user=request.user).count()
-    completed_trainings = Training.objects.filter(user=request.user, completed=True).count()
-    completed_sets = Set.objects.filter(training__user=request.user, completed=True).count()
-    
-    # Calcular porcentaje de completitud
-    completion_percentage = (completed_trainings / total_trainings * 100) if total_trainings > 0 else 0
-    
-    context = {
-        'total_trainings': total_trainings,
-        'completed_trainings': completed_trainings,
-        'completed_sets': completed_sets,
-        'completion_percentage': round(completion_percentage, 1),
-    }
-    
-    return render(request, 'trainings/stats.html', context)
+    # Redirigir a la aplicación completa de estadísticas
+    return redirect('stats:dashboard')
 
 @login_required
 def dashboard(request):
