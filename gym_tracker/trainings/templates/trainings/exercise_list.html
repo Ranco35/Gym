@@ -67,9 +67,19 @@
                 {% endif %}
                 <div class="card-body">
                     <p class="card-text">{{ exercise.description|truncatewords:15 }}</p>
-                    <div class="d-flex justify-content-between">
-                        <span class="badge bg-info">{{ exercise.difficulty }}</span>
-                        <span class="badge bg-success">{{ exercise.equipment }}</span>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="badge bg-info">{{ exercise.difficulty }}</span>
+                            <span class="badge bg-success">{{ exercise.equipment }}</span>
+                        </div>
+                        <div class="small text-muted">
+                            <i class="fas fa-user-edit me-1"></i>
+                            {% if exercise.creator %}
+                                {{ exercise.creator.first_name|default:exercise.creator.username }}
+                            {% else %}
+                                Eduardo
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
                 <div class="card-footer bg-white">

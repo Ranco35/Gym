@@ -85,6 +85,12 @@ def exercise_create(request):
             
             # Crear el ejercicio con los datos limpios
             exercise = Exercise.objects.create(**data)
+            
+            # Verificar que el creador se guardó correctamente
+            if not exercise.creator and hasattr(exercise, 'creator'):
+                exercise.creator = request.user
+                exercise.save()
+                
             messages.success(request, 'Ejercicio creado exitosamente.')
             return redirect('exercises:exercise-list')
         except Exception as e:
@@ -237,8 +243,17 @@ def import_exercises(request):
                 # Filtrar solo los campos que existen en el modelo
                 valid_data = {k: v for k, v in data.items() if v is not None and hasattr(Exercise, k)}
                 
+                # Asignar el creador como el usuario actual
+                valid_data['creator'] = request.user
+                
                 # Crear el ejercicio
-                Exercise.objects.create(**valid_data)
+                exercise = Exercise.objects.create(**valid_data)
+                
+                # Verificar que el creador se guardó correctamente
+                if not exercise.creator and hasattr(exercise, 'creator'):
+                    exercise.creator = request.user
+                    exercise.save()
+                
                 created_count += 1
             
             # Mostrar mensaje de éxito con detalles
@@ -260,10 +275,9 @@ def import_exercises(request):
             if created_count == 0 and exercise_data:
                 messages.warning(request, 'No se importó ningún ejercicio. Todos los ejercicios ya existían en el sistema.')
             
+            return redirect('exercises:exercise-list')
         except Exception as e:
             messages.error(request, f'Error al importar ejercicios: {str(e)}')
-        
-        return redirect('exercises:exercise-list')
     
     return render(request, 'exercises/import_exercises.html')
 
