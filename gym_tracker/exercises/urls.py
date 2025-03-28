@@ -3,6 +3,7 @@ from .views import (
     ExerciseListView, 
     ExerciseDetailView, 
     exercise_create,
+    exercise_edit,
     export_exercises_template,
     import_exercises,
     export_exercises
@@ -21,6 +22,7 @@ urlpatterns = [
     path('', ExerciseListView.as_view(), name='exercise-list'),
     path('create/', exercise_create, name='exercise-create'),
     path('<int:pk>/', ExerciseDetailView.as_view(), name='exercise-detail'),
+    path('<int:pk>/edit/', exercise_edit, name='exercise-edit'),
     path('export-template/', export_exercises_template, name='export-template'),
     path('export/', export_exercises, name='export-exercises'),
     path('import/', import_exercises, name='import-exercises'),

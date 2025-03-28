@@ -13,7 +13,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 # Variables de entorno
 SECRET_KEY = env('SECRET_KEY', default='your-secret-key-change-in-production')
 DEBUG = env.bool('DEBUG', default=True)
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1', '134.199.224.217', '0.0.0.0'])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1', '134.199.224.217', '0.0.0.0', 'gym.360losrios.cl'])
 
 # Configuración de CSRF
 CSRF_TRUSTED_ORIGINS = [
@@ -21,6 +21,8 @@ CSRF_TRUSTED_ORIGINS = [
     'http://localhost:8000',
     'http://134.199.224.217:8000',
     'http://134.199.224.217',
+    'http://gym.360losrios.cl',
+    'https://gym.360losrios.cl',
 ]
 
 # Configuración estándar de Django para CSRF
@@ -187,6 +189,8 @@ CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8000",
     "http://127.0.0.1:8000",
+    "http://gym.360losrios.cl",
+    "https://gym.360losrios.cl",
 ]
 CORS_ALLOW_CREDENTIALS = True
 

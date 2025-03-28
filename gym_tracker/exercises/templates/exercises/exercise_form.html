@@ -4,8 +4,8 @@
 {% block content %}
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3">Agregar Nuevo Ejercicio</h1>
-        <a href="{% url 'exercises:exercise-list' %}" class="btn btn-outline-secondary">
+        <h1 class="h3">{% if editing %}Editar Ejercicio{% else %}Agregar Nuevo Ejercicio{% endif %}</h1>
+        <a href="{% if editing %}{% url 'exercises:exercise-detail' exercise.id %}{% else %}{% url 'exercises:exercise-list' %}{% endif %}" class="btn btn-outline-secondary">
             <i class="fas fa-arrow-left me-2"></i>Volver
         </a>
     </div>
@@ -20,90 +20,83 @@
                     <form method="post">
                         {% csrf_token %}
                         
-                        <div class="row g-3">
-                            <div class="col-md-6 mb-3">
-                                <label for="name" class="form-label">Nombre del Ejercicio</label>
-                                <input type="text" class="form-control" id="name" name="name" 
-                                       placeholder="Ej: Press de Banca" required>
-                            </div>
-                            
-                            <div class="col-md-6 mb-3">
-                                <label for="category" class="form-label">Categoría</label>
-                                <select class="form-select" id="category" name="category" required>
-                                    <option value="">Selecciona una categoría</option>
-                                    <option value="Pecho">Pecho</option>
-                                    <option value="Espalda">Espalda</option>
-                                    <option value="Piernas">Piernas</option>
-                                    <option value="Hombros">Hombros</option>
-                                    <option value="Brazos">Brazos</option>
-                                    <option value="Abdominales">Abdominales</option>
-                                    <option value="Core">Core</option>
-                                    <option value="Cardio">Cardio</option>
-                                </select>
-                            </div>
-                            
-                            <div class="col-md-12 mb-3">
-                                <label for="description" class="form-label">Descripción</label>
-                                <textarea class="form-control" id="description" name="description" 
-                                          rows="3" placeholder="Describe el ejercicio..." required></textarea>
-                            </div>
-                            
-                            <div class="col-md-6 mb-3">
-                                <label for="difficulty" class="form-label">Nivel de Dificultad</label>
-                                <select class="form-select" id="difficulty" name="difficulty" required>
-                                    <option value="">Selecciona el nivel</option>
-                                    <option value="Principiante">Principiante</option>
-                                    <option value="Intermedio">Intermedio</option>
-                                    <option value="Avanzado">Avanzado</option>
-                                </select>
-                            </div>
-                            
-                            <div class="col-md-6 mb-3">
-                                <label for="equipment" class="form-label">Equipamiento Necesario</label>
-                                <input type="text" class="form-control" id="equipment" name="equipment" 
-                                       placeholder="Ej: Barra, Mancuernas, Banco">
-                            </div>
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Nombre del Ejercicio</label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                  placeholder="Ej. Press de Banca" required
+                                  value="{% if editing %}{{ exercise.name }}{% endif %}">
                         </div>
                         
-                        <div class="card bg-light mb-4">
-                            <div class="card-header">
-                                <h6 class="mb-0">Músculos implicados</h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="row g-3">
-                                    <div class="col-md-6 mb-3">
-                                        <label for="primary_muscles" class="form-label">Músculos Principales</label>
-                                        <input type="text" class="form-control" id="primary_muscles" name="primary_muscles" 
-                                               placeholder="Ej: Pectorales, Deltoides Anterior">
-                                    </div>
-                                    
-                                    <div class="col-md-6 mb-3">
-                                        <label for="secondary_muscles" class="form-label">Músculos Secundarios</label>
-                                        <input type="text" class="form-control" id="secondary_muscles" name="secondary_muscles" 
-                                               placeholder="Ej: Tríceps, Deltoides">
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="mb-3">
+                            <label for="category" class="form-label">Categoría</label>
+                            <select class="form-select" id="category" name="category" required>
+                                <option value="" {% if not editing %}selected{% endif %}>Selecciona una categoría</option>
+                                <option value="Pecho" {% if editing and exercise.category == 'Pecho' %}selected{% endif %}>Pecho</option>
+                                <option value="Espalda" {% if editing and exercise.category == 'Espalda' %}selected{% endif %}>Espalda</option>
+                                <option value="Piernas" {% if editing and exercise.category == 'Piernas' %}selected{% endif %}>Piernas</option>
+                                <option value="Hombros" {% if editing and exercise.category == 'Hombros' %}selected{% endif %}>Hombros</option>
+                                <option value="Brazos" {% if editing and exercise.category == 'Brazos' %}selected{% endif %}>Brazos</option>
+                                <option value="Abdominales" {% if editing and exercise.category == 'Abdominales' %}selected{% endif %}>Abdominales</option>
+                                <option value="Core" {% if editing and exercise.category == 'Core' %}selected{% endif %}>Core</option>
+                                <option value="Cardio" {% if editing and exercise.category == 'Cardio' %}selected{% endif %}>Cardio</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="difficulty" class="form-label">Dificultad</label>
+                            <select class="form-select" id="difficulty" name="difficulty" required>
+                                <option value="" {% if not editing %}selected{% endif %}>Selecciona el nivel de dificultad</option>
+                                <option value="Principiante" {% if editing and exercise.difficulty == 'Principiante' %}selected{% endif %}>Principiante</option>
+                                <option value="Intermedio" {% if editing and exercise.difficulty == 'Intermedio' %}selected{% endif %}>Intermedio</option>
+                                <option value="Avanzado" {% if editing and exercise.difficulty == 'Avanzado' %}selected{% endif %}>Avanzado</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Descripción</label>
+                            <textarea class="form-control" id="description" name="description" 
+                                     rows="3" placeholder="Descripción detallada del ejercicio..." required>{% if editing %}{{ exercise.description }}{% endif %}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="primary_muscles" class="form-label">Músculos Principales</label>
+                            <input type="text" class="form-control" id="primary_muscles" name="primary_muscles" 
+                                  placeholder="Ej. Pectorales, Tríceps"
+                                  value="{% if editing %}{{ exercise.primary_muscles }}{% endif %}">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="secondary_muscles" class="form-label">Músculos Secundarios</label>
+                            <input type="text" class="form-control" id="secondary_muscles" name="secondary_muscles" 
+                                  placeholder="Ej. Deltoides Anterior"
+                                  value="{% if editing %}{{ exercise.secondary_muscles }}{% endif %}">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="equipment" class="form-label">Equipamiento Necesario</label>
+                            <input type="text" class="form-control" id="equipment" name="equipment" 
+                                  placeholder="Ej. Mancuernas, Banco"
+                                  value="{% if editing %}{{ exercise.equipment }}{% endif %}">
                         </div>
                         
                         <div class="mb-3">
                             <label for="instructions" class="form-label">Instrucciones</label>
                             <textarea class="form-control" id="instructions" name="instructions" 
-                                      rows="4" placeholder="Pasos detallados para realizar el ejercicio..."></textarea>
+                                     rows="4" placeholder="Instrucciones paso a paso...">{% if editing %}{{ exercise.instructions }}{% endif %}</textarea>
                         </div>
                         
                         <div class="mb-3">
                             <label for="tips" class="form-label">Consejos</label>
                             <textarea class="form-control" id="tips" name="tips" 
-                                      rows="3" placeholder="Consejos para realizar el ejercicio correctamente..."></textarea>
+                                     rows="3" placeholder="Consejos para realizar el ejercicio correctamente...">{% if editing %}{{ exercise.tips }}{% endif %}</textarea>
                         </div>
                         
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <a href="{% url 'exercises:exercise-list' %}" class="btn btn-outline-secondary me-md-2">
+                            <a href="{% if editing %}{% url 'exercises:exercise-detail' exercise.id %}{% else %}{% url 'exercises:exercise-list' %}{% endif %}" class="btn btn-outline-secondary me-md-2">
                                 Cancelar
                             </a>
                             <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save me-2"></i>Guardar Ejercicio
+                                <i class="fas fa-save me-2"></i>{% if editing %}Actualizar{% else %}Guardar{% endif %} Ejercicio
                             </button>
                         </div>
                     </form>

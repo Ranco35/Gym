@@ -46,44 +46,51 @@
     </div>
     {% endif %}
     
-    {% if exercises %}
+    {% if exercises_with_permissions %}
     <div class="row">
-        {% for exercise in exercises %}
+        {% for item in exercises_with_permissions %}
         <div class="col-md-4 mb-4">
             <div class="card shadow-sm h-100">
-                <div class="card-header {% if exercise.difficulty == 'Principiante' %}bg-success{% elif exercise.difficulty == 'Intermedio' %}bg-warning{% else %}bg-danger{% endif %} text-white">
+                <div class="card-header {% if item.exercise.difficulty == 'Principiante' %}bg-success{% elif item.exercise.difficulty == 'Intermedio' %}bg-warning{% else %}bg-danger{% endif %} text-white">
                     <div class="d-flex justify-content-between">
-                        <h5 class="mb-0">{{ exercise.name }}</h5>
-                        <span class="badge bg-light text-dark">{{ exercise.category }}</span>
+                        <h5 class="mb-0">{{ item.exercise.name }}</h5>
+                        <span class="badge bg-light text-dark">{{ item.exercise.category }}</span>
                     </div>
                 </div>
                 <div class="card-body">
-                    <p class="card-text">{{ exercise.description }}</p>
+                    <p class="card-text">{{ item.exercise.description }}</p>
                     
-                    {% if exercise.primary_muscles %}
+                    {% if item.exercise.primary_muscles %}
                     <div class="mb-2">
                         <h6 class="mb-1">Músculos Principales:</h6>
-                        <p class="small text-muted mb-0">{{ exercise.primary_muscles }}</p>
+                        <p class="small text-muted mb-0">{{ item.exercise.primary_muscles }}</p>
                     </div>
                     {% endif %}
                     
-                    {% if exercise.equipment %}
+                    {% if item.exercise.equipment %}
                     <div class="mb-2">
                         <h6 class="mb-1">Equipamiento:</h6>
-                        <p class="small text-muted mb-0">{{ exercise.equipment }}</p>
+                        <p class="small text-muted mb-0">{{ item.exercise.equipment }}</p>
                     </div>
                     {% endif %}
                     
                     <div class="mt-3">
-                        <span class="badge {% if exercise.difficulty == 'Principiante' %}bg-success{% elif exercise.difficulty == 'Intermedio' %}bg-warning{% else %}bg-danger{% endif %}">
-                            {{ exercise.difficulty }}
+                        <span class="badge {% if item.exercise.difficulty == 'Principiante' %}bg-success{% elif item.exercise.difficulty == 'Intermedio' %}bg-warning{% else %}bg-danger{% endif %}">
+                            {{ item.exercise.difficulty }}
                         </span>
                     </div>
                 </div>
                 <div class="card-footer bg-white">
-                    <a href="{% url 'exercises:exercise-detail' exercise.pk %}" class="btn btn-outline-primary w-100">
-                        <i class="fas fa-eye me-1"></i>Ver Detalles
-                    </a>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'exercises:exercise-detail' item.exercise.pk %}" class="btn btn-outline-primary flex-grow-1">
+                            <i class="fas fa-eye me-1"></i>Ver Detalles
+                        </a>
+                        {% if item.can_edit %}
+                        <a href="{% url 'exercises:exercise-edit' item.exercise.pk %}" class="btn btn-outline-success">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>

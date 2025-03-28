@@ -1,5 +1,5 @@
 from rest_framework import generics
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from .models import Exercise
@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 import pandas as pd
 import io
 from datetime import datetime
-from gym_tracker.users.permissions import is_admin_or_superuser
+from gym_tracker.users.permissions import is_admin_or_superuser, is_trainer_or_admin, can_edit_exercise
 
 class ExerciseListView(generics.ListAPIView):
     """
@@ -20,8 +20,20 @@ class ExerciseListView(generics.ListAPIView):
     def get(self, request, *args, **kwargs):
         if request.path.startswith('/api/'):
             return super().get(request, *args, **kwargs)
+        
+        # Obtener todos los ejercicios
+        exercises = self.get_queryset()
+        
+        # Para cada ejercicio, determinar si el usuario actual puede editarlo
+        exercises_with_permissions = []
+        for exercise in exercises:
+            exercises_with_permissions.append({
+                'exercise': exercise,
+                'can_edit': can_edit_exercise(request.user, exercise)
+            })
+        
         return render(request, 'exercises/exercise_list.html', {
-            'exercises': self.get_queryset()
+            'exercises_with_permissions': exercises_with_permissions
         })
 
 class ExerciseDetailView(generics.RetrieveAPIView):
@@ -35,10 +47,14 @@ class ExerciseDetailView(generics.RetrieveAPIView):
         if request.path.startswith('/api/'):
             return super().get(request, *args, **kwargs)
         exercise = self.get_object()
+        can_edit = can_edit_exercise(request.user, exercise)
         return render(request, 'exercises/exercise_detail.html', {
-            'exercise': exercise
+            'exercise': exercise,
+            'can_edit': can_edit
         })
 
+@login_required
+@user_passes_test(is_trainer_or_admin)
 def exercise_create(request):
     """
     Vista para crear un nuevo ejercicio.
@@ -51,6 +67,7 @@ def exercise_create(request):
                 'description': request.POST.get('description'),
                 'category': request.POST.get('category'),
                 'difficulty': request.POST.get('difficulty'),
+                'creator': request.user,  # Registrar el creador
             }
             
             # Añadir campos opcionales si existen en el modelo
@@ -74,6 +91,53 @@ def exercise_create(request):
             messages.error(request, f'Error al crear el ejercicio: {str(e)}')
     
     return render(request, 'exercises/exercise_form.html')
+
+@login_required
+@user_passes_test(is_trainer_or_admin)
+def exercise_edit(request, pk):
+    """
+    Vista para editar un ejercicio existente.
+    Solo los administradores pueden editar cualquier ejercicio.
+    Los entrenadores solo pueden editar los ejercicios que ellos crearon.
+    """
+    exercise = get_object_or_404(Exercise, pk=pk)
+    
+    # Verificar si el usuario tiene permiso para editar
+    if not can_edit_exercise(request.user, exercise):
+        messages.error(request, 'No tienes permiso para editar este ejercicio.')
+        return redirect('exercises:exercise-detail', pk=pk)
+    
+    if request.method == 'POST':
+        try:
+            # Actualizar campos del ejercicio
+            exercise.name = request.POST.get('name')
+            exercise.description = request.POST.get('description')
+            exercise.category = request.POST.get('category')
+            exercise.difficulty = request.POST.get('difficulty')
+            
+            # Actualizar campos opcionales
+            optional_fields = [
+                'primary_muscles', 
+                'secondary_muscles', 
+                'equipment', 
+                'instructions', 
+                'tips'
+            ]
+            
+            for field in optional_fields:
+                if hasattr(Exercise, field) and request.POST.get(field) is not None:
+                    setattr(exercise, field, request.POST.get(field))
+            
+            exercise.save()
+            messages.success(request, 'Ejercicio actualizado exitosamente.')
+            return redirect('exercises:exercise-detail', pk=pk)
+        except Exception as e:
+            messages.error(request, f'Error al actualizar el ejercicio: {str(e)}')
+    
+    return render(request, 'exercises/exercise_form.html', {
+        'exercise': exercise,
+        'editing': True
+    })
 
 @login_required
 @user_passes_test(is_admin_or_superuser)
