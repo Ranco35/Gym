@@ -86,9 +86,15 @@
                                             <strong>{{ day.day_of_week }}</strong>
                                             {% if day.focus %} - {{ day.focus }}{% endif %}
                                         </span>
+                                        {% if is_assigned_routine %}
+                                        <span class="badge bg-primary rounded-pill ms-2">
+                                            {{ day.sets.count }} ejercicios
+                                        </span>
+                                        {% else %}
                                         <span class="badge bg-primary rounded-pill ms-2">
                                             {{ day.exercises.count }} ejercicios
                                         </span>
+                                        {% endif %}
                                     </div>
                                 </button>
                             </h2>
@@ -110,56 +116,91 @@
                                                 </div>
                                             </form>
                                         </div>
+                                        {% if not is_assigned_routine %}
                                         <a href="{% url 'workouts:workout-day-detail' routine.pk day.pk %}" 
                                            class="btn btn-sm btn-primary">
                                             <i class="fas fa-dumbbell me-1"></i>Gestionar Ejercicios
                                         </a>
+                                        {% endif %}
                                     </div>
                                     
-                                    {% if day.exercises.exists %}
-                                    <div class="table-responsive">
-                                        <table class="table table-sm table-hover align-middle">
-                                            <thead class="table-light">
-                                                <tr>
-                                                    <th>Ejercicio</th>
-                                                    <th style="width: 80px;">Series</th>
-                                                    <th style="width: 100px;">Repeticiones</th>
-                                                    <th style="width: 100px;">Peso (kg)</th>
-                                                    <th style="width: 120px;">Descanso</th>
-                                                    <th style="width: 80px;">Acciones</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {% for exercise in day.exercises.all %}
-                                                <tr>
-                                                    <td>{{ exercise.exercise.name }}</td>
-                                                    <td>{{ exercise.sets }}</td>
-                                                    <td>{{ exercise.reps }}</td>
-                                                    <td>{% if exercise.weight %}{{ exercise.weight }}{% else %}-{% endif %}</td>
-                                                    <td>{{ exercise.rest_time }}s</td>
-                                                    <td>
-                                                        <form method="POST" action="{% url 'workouts:delete-routine-exercise' exercise.pk %}"
-                                                              onsubmit="return confirm('¿Estás seguro de eliminar este ejercicio?');"
-                                                              class="d-inline">
-                                                            {% csrf_token %}
-                                                            <button type="submit" class="btn btn-sm btn-outline-danger">
-                                                                <i class="fas fa-trash"></i>
-                                                            </button>
-                                                        </form>
-                                                    </td>
-                                                </tr>
-                                                {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                    {% if is_assigned_routine %}
+                                        {% if day.sets.exists %}
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-hover align-middle">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Ejercicio</th>
+                                                        <th style="width: 80px;">Series</th>
+                                                        <th style="width: 100px;">Repeticiones</th>
+                                                        <th style="width: 100px;">Peso (kg)</th>
+                                                        <th style="width: 120px;">Notas</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for exercise in day.sets.all %}
+                                                    <tr>
+                                                        <td>{{ exercise.exercise }}</td>
+                                                        <td>{{ exercise.sets_count }}</td>
+                                                        <td>{{ exercise.reps }}</td>
+                                                        <td>{% if exercise.weight %}{{ exercise.weight }}{% else %}-{% endif %}</td>
+                                                        <td>{% if exercise.notes %}{{ exercise.notes }}{% else %}-{% endif %}</td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        {% else %}
+                                        <div class="text-center py-4">
+                                            <p class="text-muted mb-3">Aún no hay ejercicios configurados para este día.</p>
+                                        </div>
+                                        {% endif %}
                                     {% else %}
-                                    <div class="text-center py-4">
-                                        <p class="text-muted mb-3">No hay ejercicios configurados para este día</p>
-                                        <a href="{% url 'workouts:workout-day-detail' routine.pk day.pk %}" 
-                                           class="btn btn-sm btn-primary">
-                                            <i class="fas fa-plus me-1"></i>Añadir ejercicios
-                                        </a>
-                                    </div>
+                                        {% if day.exercises.exists %}
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-hover align-middle">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Ejercicio</th>
+                                                        <th style="width: 80px;">Series</th>
+                                                        <th style="width: 100px;">Repeticiones</th>
+                                                        <th style="width: 100px;">Peso (kg)</th>
+                                                        <th style="width: 120px;">Descanso</th>
+                                                        <th style="width: 80px;">Acciones</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for exercise in day.exercises.all %}
+                                                    <tr>
+                                                        <td>{{ exercise.exercise.name }}</td>
+                                                        <td>{{ exercise.sets }}</td>
+                                                        <td>{{ exercise.reps }}</td>
+                                                        <td>{% if exercise.weight %}{{ exercise.weight }}{% else %}-{% endif %}</td>
+                                                        <td>{{ exercise.rest_time }}s</td>
+                                                        <td>
+                                                            <form method="POST" action="{% url 'workouts:delete-routine-exercise' exercise.pk %}"
+                                                                  onsubmit="return confirm('¿Estás seguro de eliminar este ejercicio?');"
+                                                                  class="d-inline">
+                                                                {% csrf_token %}
+                                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                                    <i class="fas fa-trash"></i>
+                                                                </button>
+                                                            </form>
+                                                        </td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        {% else %}
+                                        <div class="text-center py-4">
+                                            <p class="text-muted mb-3">No hay ejercicios configurados para este día</p>
+                                            <a href="{% url 'workouts:workout-day-detail' routine.pk day.pk %}" 
+                                               class="btn btn-sm btn-primary">
+                                                <i class="fas fa-plus me-1"></i>Añadir ejercicios
+                                            </a>
+                                        </div>
+                                        {% endif %}
                                     {% endif %}
                                 </div>
                             </div>
@@ -219,7 +260,7 @@
                     
                     <div class="d-grid gap-3">
                         <!-- Opción 1: Registrar todos los ejercicios a la vez -->
-                        <form action="{% url 'trainings:training-from-routine' %}" method="post" id="bulk-form">
+                        <form action="{% url 'trainings:create-training-from-routine' %}" method="post" id="bulk-form">
                             {% csrf_token %}
                             <input type="hidden" name="routine_id" id="bulk_routine_id" value="{{ routine.id }}">
                             <input type="hidden" name="routine_day_id" id="bulk_day_id">

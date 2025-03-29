@@ -204,7 +204,7 @@ ADMIN_INTERFACE_THEME_SETTINGS = {
     'name': 'Gym Tracker 360 Los Ríos',
     'title': 'Gym Tracker 360 Los Ríos',
     'logo': None,
-    'copyright': '© 2024 by Eduardo Peroboste Furet',
+    'copyright': '© 2024 by Eduardo Proboste Furet',
     
     # Colores principales
     'css_header_background_color': '#2C3E50',

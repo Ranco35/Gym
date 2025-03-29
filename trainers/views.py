@@ -154,67 +154,17 @@ def start_live_session(request, student_id):
                 trainer_student=trainer_student
             )
             
+            return redirect('trainers:live_session', session_id=session.id)
+            
         elif routine_type == 'weekly':
-            # Rutina semanal del estudiante
-            routine = get_object_or_404(WeeklyRoutine, id=routine_id, user=trainer_student.student)
-            
-            # Crear un TrainerTraining temporal basado en la rutina semanal
-            today = timezone.now().date()
-            training = TrainerTraining.objects.create(
-                user=trainer_student.student,
-                created_by=request.user,
-                name=f"Sesión en vivo: {routine.name}",
-                description=f"Sesión basada en la rutina semanal '{routine.name}'",
-                date=today
-            )
-            
-            # Obtener el día actual de la semana en español
-            days_map = {
-                0: 'Lunes',
-                1: 'Martes',
-                2: 'Miércoles',
-                3: 'Jueves',
-                4: 'Viernes',
-                5: 'Sábado',
-                6: 'Domingo'
-            }
-            current_day_name = days_map.get(today.weekday())
-            
-            # Intentar obtener los ejercicios del día actual, si no hay, usar cualquier día
-            routine_day = routine.days.filter(day_of_week=current_day_name).first()
-            if not routine_day:
-                routine_day = routine.days.first()
-            
-            if routine_day:
-                # Crear el día de entrenamiento
-                training_day = TrainerTrainingDay.objects.create(
-                    training=training,
-                    day_of_week=routine_day.day_of_week,
-                    focus=routine_day.focus
-                )
-                
-                # Copiar los ejercicios de la rutina al entrenamiento temporal
-                for i, exercise in enumerate(routine_day.exercises.all()):
-                    TrainerSet.objects.create(
-                        training_day=training_day,
-                        exercise=exercise.exercise.name,
-                        sets_count=exercise.sets,
-                        reps=exercise.reps,
-                        weight=exercise.weight,
-                        notes=exercise.notes,
-                        order=i+1
-                    )
-            
-            # Crear la sesión con el entrenamiento temporal
-            session = LiveTrainingSession.objects.create(
-                training=training,
-                trainer_student=trainer_student
-            )
+            # Para rutinas semanales, redirigir a la selección de día específico
+            return redirect('trainers:select_routine_day', 
+                           routine_id=routine_id, 
+                           session_id=0, 
+                           student_id=student_id)
         else:
             messages.error(request, 'Tipo de rutina no válido')
             return redirect('trainers:select_session_routine', student_id=student_id)
-            
-        return redirect('trainers:live_session', session_id=session.id)
     
     # Si es una solicitud GET, redirigir a la página de selección de rutina
     return redirect('trainers:select_session_routine', student_id=student_id)
@@ -845,3 +795,77 @@ def delete_training(request, student_id, training_id):
         'training': training
     }
     return render(request, 'trainers/delete_training.html', context)
+
+@login_required
+@trainer_required
+def select_routine_day(request, routine_id, session_id, student_id):
+    """Permite seleccionar un día específico de una rutina semanal para una sesión."""
+    # Verificar la relación entrenador-estudiante
+    trainer_student = get_object_or_404(
+        TrainerStudent,
+        trainer=request.user,
+        student_id=student_id,
+        active=True
+    )
+    
+    # Obtener la rutina semanal
+    routine = get_object_or_404(WeeklyRoutine, id=routine_id, user=trainer_student.student)
+    
+    # Si se envía el formulario con un día seleccionado
+    if request.method == 'POST':
+        day_id = request.POST.get('day_id')
+        
+        if not day_id:
+            messages.error(request, 'Debes seleccionar un día de entrenamiento')
+            return redirect('trainers:select_routine_day', routine_id=routine_id, session_id=session_id, student_id=student_id)
+        
+        # Obtener el día de la rutina
+        routine_day = get_object_or_404(routine.days.all(), id=day_id)
+        
+        # Crear un TrainerTraining temporal basado en la rutina semanal
+        today = timezone.now().date()
+        training = TrainerTraining.objects.create(
+            user=trainer_student.student,
+            created_by=request.user,
+            name=f"Sesión: {routine.name} - {routine_day.day_of_week}",
+            description=f"Sesión basada en la rutina '{routine.name}', día {routine_day.day_of_week}",
+            date=today
+        )
+        
+        # Crear el día de entrenamiento
+        training_day = TrainerTrainingDay.objects.create(
+            training=training,
+            day_of_week=routine_day.day_of_week,
+            focus=routine_day.focus
+        )
+        
+        # Copiar los ejercicios de la rutina al entrenamiento temporal
+        for i, exercise in enumerate(routine_day.exercises.all()):
+            TrainerSet.objects.create(
+                training_day=training_day,
+                exercise=exercise.exercise.name,
+                sets_count=exercise.sets,
+                reps=exercise.reps,
+                weight=exercise.weight,
+                notes=exercise.notes,
+                order=i + 1
+            )
+        
+        # Crear la sesión con el entrenamiento creado
+        session = LiveTrainingSession.objects.create(
+            training=training,
+            trainer_student=trainer_student
+        )
+        
+        messages.success(request, f'Sesión iniciada para {routine.name} - {routine_day.day_of_week}')
+        return redirect('trainers:live_session', session_id=session.id)
+    
+    # Mostrar la página para seleccionar un día
+    context = {
+        'routine': routine,
+        'trainer_student': trainer_student,
+        'session_id': session_id,
+        'student_id': student_id
+    }
+    
+    return render(request, 'trainers/select_routine_day.html', context)

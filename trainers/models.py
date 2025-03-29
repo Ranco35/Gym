@@ -78,6 +78,14 @@ class TrainerTraining(models.Model):
     def __str__(self):
         return f"{self.name} - {self.date}"
         
+    def get_total_exercises(self):
+        """Calcula el número total de ejercicios en toda la rutina."""
+        # Contar los ejercicios en todos los días de la rutina
+        total = 0
+        for day in self.days.all():
+            total += day.sets.count()
+        return total
+        
     def get_days_display(self):
         """Devuelve una representación legible de los días de la semana programados."""
         days = self.days.values_list('day_of_week', flat=True).order_by(

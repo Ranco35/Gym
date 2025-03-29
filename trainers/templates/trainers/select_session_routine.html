@@ -105,7 +105,7 @@
                                             <td>{{ routine.get_days_display }}</td>
                                             <td>{{ routine.description|truncatechars:50 }}</td>
                                             <td>
-                                                <a href="{% url 'trainers:select_routine_day' routine.id session.id student.id %}" class="btn btn-sm btn-success">
+                                                <a href="{% url 'trainers:select_routine_day' routine.id '0' trainer_student.student.id %}" class="btn btn-sm btn-success">
                                                     <i class="fas fa-check-circle me-1"></i>Seleccionar
                                                 </a>
                                             </td>
