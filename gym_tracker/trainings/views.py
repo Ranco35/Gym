@@ -17,6 +17,7 @@ from .serializers import TrainingSerializer
 from gym_tracker.exercises.models import Exercise as GymExercise
 from gym_tracker.workouts.models import WeeklyRoutine as Routine, RoutineDay, RoutineExercise
 from .forms import TrainingForm, SetForm
+from trainers.models import LiveTrainingSession, TrainerStudent
 
 # API REST Views
 class TrainingListCreateView(generics.ListCreateAPIView):
@@ -736,11 +737,30 @@ def dashboard(request):
     # Calcular porcentaje de progreso
     progress_percentage = (completed_trainings / total_trainings * 100) if total_trainings > 0 else 0
     
+    # Obtener sesiones en vivo activas
+    active_sessions = []
+    
+    # Si el usuario es entrenador, mostrar las sesiones con sus estudiantes
+    if hasattr(request.user, 'trainerprofile'):
+        active_sessions = LiveTrainingSession.objects.filter(
+            trainer_student__trainer=request.user,
+            status='active',
+            ended_at__isnull=True
+        ).select_related('trainer_student__student', 'training')
+    else:
+        # Si es estudiante, mostrar las sesiones con sus entrenadores
+        active_sessions = LiveTrainingSession.objects.filter(
+            trainer_student__student=request.user,
+            status='active',
+            ended_at__isnull=True
+        ).select_related('trainer_student__trainer', 'training')
+    
     context = {
         'total_exercises': total_exercises,
         'total_trainings': total_trainings,
         'completed_trainings': completed_trainings,
-        'progress_percentage': round(progress_percentage, 1)
+        'progress_percentage': round(progress_percentage, 1),
+        'active_sessions': active_sessions
     }
     
     return render(request, 'trainings/dashboard.html', context)

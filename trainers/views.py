@@ -15,10 +15,31 @@ from gym_tracker.exercises.models import Exercise
 @trainer_required
 def trainer_dashboard(request):
     """Dashboard principal del entrenador."""
-    # Mostrar información básica sin necesidad de consultas complejas
+    # Obtener los estudiantes asignados al entrenador
+    students = TrainerStudent.objects.filter(
+        trainer=request.user,
+        active=True
+    ).select_related('student', 'student__profile')
+    
+    # Obtener sesiones en vivo activas
+    active_sessions = LiveTrainingSession.objects.filter(
+        trainer_student__trainer=request.user,
+        status='active',
+        ended_at__isnull=True
+    ).select_related('trainer_student__student', 'training')
+    
+    # Estadísticas básicas
+    total_students = students.count()
+    total_sessions = LiveTrainingSession.objects.filter(
+        trainer_student__trainer=request.user
+    ).count()
+    
     context = {
         'title': 'Dashboard de Entrenador',
-        'message': 'Bienvenido al área de entrenador'
+        'students': students,
+        'active_sessions': active_sessions,
+        'total_students': total_students,
+        'total_sessions': total_sessions
     }
     return render(request, 'trainers/dashboard.html', context)
 
@@ -88,34 +109,58 @@ def live_session(request, session_id):
         trainer_student__trainer=request.user
     )
     
-    # Obtener los días de entrenamiento
+    # Obtener los días de entrenamiento de la sesión
     training_days = session.training.days.all()
     
-    # Estructura para almacenar sets por día
-    days_with_sets = {}
-    completed_sets = {}
-    
+    # Obtener todos los sets de todos los días
+    all_sets = []
     for day in training_days:
-        # Obtener los sets de cada día
-        sets = TrainerSet.objects.filter(training_day=day).order_by('order')
-        days_with_sets[day] = sets
-        
-        # Obtener los sets completados para cada día
-        day_completed_sets = {}
-        for set_obj in sets:
-            live_sets = LiveSet.objects.filter(
-                session=session, 
-                set=set_obj
-            ).order_by('completed_at')
-            if live_sets.exists():
-                day_completed_sets[set_obj.id] = live_sets
-                
-        completed_sets[day.id] = day_completed_sets
+        day_sets = day.sets.all().order_by('order')
+        all_sets.extend(day_sets)
+    
+    # Si no hay sets, devolver un mensaje
+    if not all_sets:
+        messages.warning(request, "Esta sesión no tiene ejercicios configurados")
+        return redirect('trainers:session_list')
+    
+    # Obtener los sets completados
+    completed_sets = LiveSet.objects.filter(
+        session=session
+    ).select_related('set').order_by('-completed_at')
+    
+    # Obtener los IDs de los sets completados
+    completed_set_ids = []
+    for cs in completed_sets:
+        # Solo añadir a IDs completados si todas las series están completadas
+        set_complete_count = LiveSet.objects.filter(session=session, set=cs.set).count()
+        if set_complete_count >= cs.set.sets_count and cs.set.id not in completed_set_ids:
+            completed_set_ids.append(cs.set.id)
+    
+    # Determinar el set actual a mostrar
+    current_set_index = request.GET.get('set', '1')
+    try:
+        current_set_index = int(current_set_index)
+        if current_set_index < 1:
+            current_set_index = 1
+        elif current_set_index > len(all_sets):
+            current_set_index = len(all_sets)
+    except (ValueError, TypeError):
+        current_set_index = 1
+    
+    # Obtener el set actual
+    current_set = all_sets[current_set_index - 1]
+    
+    # Imprimir información para depuración
+    print(f"Current Set ID: {current_set.id}, Exercise: {current_set.exercise}")
+    print(f"Weight: {current_set.weight}")
     
     context = {
         'session': session,
-        'days_with_sets': days_with_sets,
-        'completed_sets': completed_sets
+        'completed_sets': completed_sets,
+        'completed_set_ids': completed_set_ids,
+        'current_set_index': current_set_index,
+        'all_sets': all_sets,
+        'current_set': current_set
     }
     return render(request, 'trainers/live_session.html', context)
 
@@ -206,37 +251,74 @@ def save_live_set(request):
     if request.method == 'POST':
         session_id = request.POST.get('session_id')
         set_id = request.POST.get('set_id')
-        weight = request.POST.get('weight')
-        reps = request.POST.get('reps')
-        feedback = request.POST.get('feedback', '')
-        form_rating = request.POST.get('form_rating')
         
-        session = get_object_or_404(
-            LiveTrainingSession,
-            id=session_id,
-            trainer_student__trainer=request.user
-        )
-        
-        # Obtener el set que ahora está relacionado con training_day en lugar de training directamente
-        set_obj = get_object_or_404(
-            TrainerSet, 
-            id=set_id, 
-            training_day__training=session.training
-        )
-        
-        live_set = LiveSet.objects.create(
-            session=session,
-            set=set_obj,
-            completed_by=request.user,
-            weight=weight,
-            reps=reps,
-            trainer_feedback=feedback,
-            form_rating=form_rating
-        )
-        
-        return JsonResponse({'status': 'success', 'set_id': live_set.id})
+        try:
+            session = get_object_or_404(
+                LiveTrainingSession,
+                id=session_id,
+                trainer_student__trainer=request.user
+            )
+            
+            # Obtener el set que está relacionado con training_day
+            set_obj = get_object_or_404(
+                TrainerSet, 
+                id=set_id
+            )
+            
+            # Procesar el peso asegurando que se acepte tanto coma como punto
+            weight_str = request.POST.get('weight', '0')
+            weight_str = weight_str.replace(',', '.')
+            weight = float(weight_str)
+            
+            reps = int(request.POST.get('reps', 0))
+            form_rating = int(request.POST.get('form_rating', 3))
+            feedback = request.POST.get('feedback', '')
+            
+            # Contar el número de series ya completadas para este ejercicio
+            completed_sets_count = LiveSet.objects.filter(
+                session=session,
+                set=set_obj
+            ).count()
+            
+            # El número de serie será el siguiente
+            set_number = completed_sets_count + 1
+            
+            # Verificar que no se hayan completado todas las series
+            if set_number <= set_obj.sets_count:
+                live_set = LiveSet.objects.create(
+                    session=session,
+                    set=set_obj,
+                    completed_by=request.user,
+                    weight=weight,
+                    reps=reps,
+                    trainer_feedback=feedback,
+                    form_rating=form_rating,
+                    set_number=set_number
+                )
+                
+                # Indicar si se han completado todas las series
+                all_completed = set_number >= set_obj.sets_count
+                
+                return JsonResponse({
+                    'status': 'success', 
+                    'set_id': live_set.id,
+                    'set_number': set_number,
+                    'all_completed': all_completed,
+                    'total_sets': set_obj.sets_count
+                })
+            else:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Ya se han completado todas las series para este ejercicio'
+                }, status=400)
+                
+        except ValueError as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': f'Error en los datos: {str(e)}'
+            }, status=400)
     
-    return JsonResponse({'status': 'error'}, status=400)
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=400)
 
 @login_required
 @trainer_required
@@ -869,3 +951,120 @@ def select_routine_day(request, routine_id, session_id, student_id):
     }
     
     return render(request, 'trainers/select_routine_day.html', context)
+
+@login_required
+def student_live_session(request, session_id):
+    """Vista de una sesión de entrenamiento en vivo para estudiantes."""
+    # Obtener la sesión en vivo, verificando que el estudiante sea parte de ella
+    session = get_object_or_404(
+        LiveTrainingSession,
+        id=session_id,
+        trainer_student__student=request.user,
+        status='active',
+        ended_at__isnull=True
+    )
+    
+    # Obtener los días de entrenamiento de la sesión
+    training_days = session.training.days.all()
+    
+    # Obtener todos los sets de todos los días
+    all_sets = []
+    for day in training_days:
+        day_sets = day.sets.all().order_by('order')
+        all_sets.extend(day_sets)
+    
+    # Si no hay sets, devolver un mensaje
+    if not all_sets:
+        messages.warning(request, "Esta sesión no tiene ejercicios configurados")
+        return redirect('trainings:dashboard')
+    
+    # Obtener los sets completados
+    completed_sets = LiveSet.objects.filter(
+        session=session
+    ).select_related('set').order_by('-completed_at')
+    
+    # Obtener los IDs de los sets completados
+    completed_set_ids = []
+    
+    # Crear un diccionario para almacenar el último peso y reps por ejercicio y por set_id
+    # Esto permite conservar valores entre series del mismo ejercicio
+    last_weights_by_exercise = {}
+    last_reps_by_exercise = {}
+    last_weights_by_set = {}
+    last_reps_by_set = {}
+    
+    for cs in completed_sets:
+        # Añadir a IDs completados solo si todas las series están completadas
+        set_complete_count = LiveSet.objects.filter(session=session, set=cs.set).count()
+        if set_complete_count >= cs.set.sets_count and cs.set.id not in completed_set_ids:
+            completed_set_ids.append(cs.set.id)
+        
+        # Guardar el último peso y repeticiones por ejercicio
+        exercise_key = None
+        if hasattr(cs.set.exercise, 'name'):
+            exercise_key = cs.set.exercise.name
+        else:
+            exercise_key = cs.set.exercise
+            
+        # Almacenar por ejercicio (para usar entre diferentes ocurrencias del mismo ejercicio)
+        if exercise_key not in last_weights_by_exercise or cs.completed_at > last_weights_by_exercise[exercise_key]['time']:
+            last_weights_by_exercise[exercise_key] = {'weight': cs.weight, 'time': cs.completed_at}
+            last_reps_by_exercise[exercise_key] = {'reps': cs.reps, 'time': cs.completed_at}
+        
+        # Almacenar por set_id (para usar entre series del mismo ejercicio específico)
+        set_id = cs.set.id
+        if set_id not in last_weights_by_set or cs.completed_at > last_weights_by_set[set_id]['time']:
+            last_weights_by_set[set_id] = {'weight': cs.weight, 'time': cs.completed_at}
+            last_reps_by_set[set_id] = {'reps': cs.reps, 'time': cs.completed_at}
+    
+    # Determinar el set actual a mostrar
+    current_set_index = request.GET.get('set', '1')
+    try:
+        current_set_index = int(current_set_index)
+        if current_set_index < 1:
+            current_set_index = 1
+        elif current_set_index > len(all_sets):
+            current_set_index = len(all_sets)
+    except (ValueError, TypeError):
+        current_set_index = 1
+    
+    # Ajustar all_sets para mostrar el ejercicio actual primero
+    current_set = all_sets[current_set_index - 1]
+    
+    # GARANTIZAR que siempre hay un peso original disponible
+    current_set.original_weight = current_set.weight
+    current_set.original_reps = current_set.reps
+    
+    # Verificar primero si hay un valor anterior del mismo ejercicio específico (mismo set_id)
+    if current_set.id in last_weights_by_set:
+        current_set.last_used_weight = last_weights_by_set[current_set.id]['weight']
+    
+    if current_set.id in last_reps_by_set:
+        current_set.last_used_reps = last_reps_by_set[current_set.id]['reps']
+    else:
+        # Si no hay un valor para el mismo ejercicio específico, buscar por nombre de ejercicio
+        exercise_key = None
+        if hasattr(current_set.exercise, 'name'):
+            exercise_key = current_set.exercise.name
+        else:
+            exercise_key = current_set.exercise
+            
+        if exercise_key in last_weights_by_exercise:
+            # Solo usar estos valores si no se han encontrado valores por set_id específico
+            if not hasattr(current_set, 'last_used_weight'):
+                current_set.last_used_weight = last_weights_by_exercise[exercise_key]['weight']
+        
+        if exercise_key in last_reps_by_exercise:
+            if not hasattr(current_set, 'last_used_reps'):
+                current_set.last_used_reps = last_reps_by_exercise[exercise_key]['reps']
+    
+    context = {
+        'session': session,
+        'completed_sets': completed_sets,
+        'completed_set_ids': completed_set_ids,
+        'current_set_index': current_set_index,
+        'all_sets': all_sets,
+        'is_student': True,
+        'current_set': current_set
+    }
+    return render(request, 'trainers/student_live_session.html', context)

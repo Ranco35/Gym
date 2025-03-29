@@ -31,7 +31,7 @@ urlpatterns = [
     path('trainings/', include('gym_tracker.trainings.urls', namespace='trainings')),
     
     # Ruta para el área de entrenadores
-    path('trainers/', include('trainers.urls')),
+    path('trainers/', include('trainers.urls', namespace='trainers')),
     
     # API de gestión de usuarios
     path('api/users/', include('gym_tracker.users.urls', namespace='users')),

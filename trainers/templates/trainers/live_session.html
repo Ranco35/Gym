@@ -1,154 +1,351 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load trainer_tags %}
 
 {% block title %}Sesión en Vivo - {{ session.training.name }}{% endblock %}
 
 {% block extra_css %}
 <style>
-    .set-card {
-        transition: all 0.3s ease;
-    }
-    .set-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    }
-    .set-completed {
-        background-color: #d4edda;
-        border-color: #c3e6cb;
-    }
     .timer {
         font-size: 2rem;
         font-weight: bold;
+    }
+    .rest-timer {
+        font-size: 3.5rem;
+        font-weight: bold;
+    }
+    .exercise-card {
+        border-radius: 8px;
+        margin-bottom: 15px;
+        border-left: 5px solid #007bff;
+    }
+    .exercise-completed {
+        border-left: 5px solid #28a745;
+    }
+    .exercise-btn {
+        min-width: 100px;
+        margin: 5px;
+    }
+    .progress-bar {
+        height: 10px;
+    }
+    .navigation-arrows {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        text-align: center;
+        padding: 10px;
+        background-color: rgba(255, 255, 255, 0.95);
+        border-top: 1px solid #dee2e6;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    }
+    .completed-badge {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+    }
+    .exercise-pills-container {
+        overflow-x: auto;
+        white-space: nowrap;
+        padding-bottom: 5px;
+        margin-bottom: 10px;
+        -webkit-overflow-scrolling: touch;
+    }
+    .exercise-pill {
+        display: inline-block;
+        padding: 5px 10px;
+        margin-right: 5px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+    }
+    .exercise-pill.active {
+        background-color: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+    .exercise-pill.completed {
+        background-color: #28a745;
+        color: white;
+        border-color: #28a745;
+    }
+    .content-container {
+        padding-bottom: 80px; /* Espacio para la barra de navegación */
+    }
+    .rest-control-panel {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .info-box {
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        text-align: center;
+        padding: 8px 5px;
+        margin-bottom: 8px;
+    }
+    .info-value {
+        font-size: 1.2rem;
+        font-weight: bold;
+        margin: 0;
+    }
+    .info-label {
+        font-size: 0.8rem;
+        color: #6c757d;
+        margin: 0;
+    }
+    @media (max-width: 768px) {
+        .container-fluid {
+            padding-left: 8px;
+            padding-right: 8px;
+        }
+        .timer {
+            font-size: 1.5rem;
+        }
+        .card-body {
+            padding: 0.8rem;
+        }
+        .row {
+            margin-right: -8px;
+            margin-left: -8px;
+        }
+        .col, .col-1, .col-2, .col-3, .col-4, .col-5, .col-6, .col-7, .col-8, .col-9, .col-10, .col-11, .col-12, 
+        .col-sm, .col-md, .col-lg, .col-xl {
+            padding-right: 8px;
+            padding-left: 8px;
+        }
+        .mb-4 {
+            margin-bottom: 1rem !important;
+        }
+        .form-label {
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+        }
+        .btn {
+            padding: 0.375rem 0.5rem;
+        }
+        h5.card-title {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    <!-- Encabezado -->
-    <div class="row mb-4">
+<div class="container-fluid mt-3 content-container">
+    <!-- Encabezado y tiempo de sesión -->
+    <div class="row align-items-center mb-2">
+        <div class="col-7">
+            <h4 class="mb-0">{{ session.training.name }}</h4>
+            <p class="text-muted small mb-0">Estudiante: {{ session.trainer_student.student.get_full_name }}</p>
+        </div>
+        <div class="col-5 text-end">
+            <div class="timer" id="session-timer">00:00:00</div>
+            <form method="post" action="{% url 'trainers:end_session' session.id %}" class="d-inline mt-1">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Finalizar sesión?')">
+                    Finalizar
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Navegación rápida entre ejercicios -->
+    <div class="exercise-pills-container">
+        {% for set in all_sets %}
+        <div class="exercise-pill {% if set.id in completed_set_ids %}completed{% elif forloop.counter == current_set_index %}active{% endif %}" 
+             onclick="selectExercise({{ forloop.counter }})">
+            {{ forloop.counter }}. {{ set.exercise|truncatechars:15 }}
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Progreso general -->
+    <div class="row mb-3">
         <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h2>{{ session.training.name }}</h2>
-                    <p class="text-muted">
-                        Estudiante: {{ session.trainer_student.student.get_full_name }}
-                    </p>
+            <div class="progress">
+                <div class="progress-bar bg-success" role="progressbar" 
+                     style="width: {% if all_sets|length > 0 %}{% widthratio completed_sets|length all_sets|length 100 %}{% else %}0{% endif %}%" 
+                     aria-valuenow="{{ completed_sets|length|default:0 }}" 
+                     aria-valuemin="0" 
+                     aria-valuemax="{{ all_sets|length }}">
                 </div>
-                <div class="d-flex align-items-center">
-                    <div class="timer me-3" id="session-timer">00:00:00</div>
-                    <form method="post" action="{% url 'trainers:end_session' session.id %}" class="d-inline">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-danger" onclick="return confirm('¿Seguro que deseas finalizar la sesión?')">
-                            Finalizar Sesión
+            </div>
+            <div class="d-flex justify-content-between">
+                <small>Completado: {{ completed_sets|length|default:0 }}/{{ all_sets|length }}</small>
+                <small>Ejercicio {{ current_set_index }}/{{ all_sets|length }}</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ejercicio actual -->
+    <div class="card mb-3 exercise-card">
+        <div class="card-body">
+            <h5 class="card-title mb-2">{{ current_set.exercise }}</h5>
+            <div class="row">
+                <div class="col-4 text-center">
+                    <div class="info-box">
+                        <p class="info-value">{{ current_set.weight }}</p>
+                        <p class="info-label">kg</p>
+                    </div>
+                </div>
+                <div class="col-4 text-center">
+                    <div class="info-box">
+                        <p class="info-value">{{ current_set.reps }}</p>
+                        <p class="info-label">reps</p>
+                    </div>
+                </div>
+                <div class="col-4 text-center">
+                    <div class="info-box">
+                        <p class="info-value">{{ current_set.sets_count }}</p>
+                        <p class="info-label">series</p>
+                    </div>
+                </div>
+            </div>
+            
+            {% if current_set.notes %}
+            <div class="alert alert-info mt-2 mb-0 p-2">
+                <small><i class="fas fa-info-circle me-1"></i> {{ current_set.notes }}</small>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Progreso del ejercicio actual y temporizador de descanso juntos en móvil -->
+    <div class="row">
+        <!-- Progreso del ejercicio actual -->
+        {% with completed_sets=session.live_sets.all %}
+        {% with completed_count=completed_sets|completed_sets_count:current_set.id %}
+        <div class="col-md-6 col-12">
+            <div class="card mb-3">
+                <div class="card-body py-2">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <h5 class="card-title mb-0">Progreso del ejercicio</h5>
+                        <span class="badge bg-primary">{{ completed_count }}/{{ current_set.sets_count }}</span>
+                    </div>
+                    <div class="progress mb-2" style="height: 10px;">
+                        <div class="progress-bar bg-primary" role="progressbar" 
+                            style="width: {% widthratio completed_count current_set.sets_count 100 %}%" 
+                            aria-valuenow="{{ completed_count }}" 
+                            aria-valuemin="0" 
+                            aria-valuemax="{{ current_set.sets_count }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Temporizador de descanso -->
+        <div class="col-md-6 col-12">
+            <div class="card mb-3">
+                <div class="card-body text-center py-2">
+                    <h5 class="card-title mb-1">Descanso</h5>
+                    <div class="rest-timer mb-2" id="rest-timer">60s</div>
+                    <div class="btn-group w-100">
+                        <button type="button" class="btn btn-primary w-50" id="startTimer">
+                            <i class="fas fa-play me-1"></i>Iniciar
                         </button>
-                    </form>
+                        <button type="button" class="btn btn-danger w-50" id="resetTimer">
+                            <i class="fas fa-redo me-1"></i>Reiniciar
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row">
-        <!-- Panel de Sets -->
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Sets del Entrenamiento</h5>
-                    <div class="row" id="sets-container">
-                        {% for set in session.training.sets.all %}
-                        <div class="col-md-6 mb-3">
-                            <div class="card set-card {% if set.id in completed_set_ids %}set-completed{% endif %}" 
-                                 id="set-card-{{ set.id }}">
-                                <div class="card-body">
-                                    <h6 class="card-title">{{ set.exercise }}</h6>
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <span>Series: {{ set.sets_count }}</span>
-                                        <span>Repeticiones: {{ set.reps }}</span>
-                                    </div>
-                                    {% if not set.id in completed_set_ids %}
-                                        <form class="set-form" data-set-id="{{ set.id }}">
-                                            <div class="row g-2">
-                                                <div class="col-md-4">
-                                                    <input type="number" class="form-control form-control-sm" 
-                                                           name="weight" placeholder="Peso" required>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <input type="number" class="form-control form-control-sm" 
-                                                           name="reps" placeholder="Reps" required>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <select class="form-select form-select-sm" name="form_rating">
-                                                        <option value="">Forma</option>
-                                                        <option value="1">⭐</option>
-                                                        <option value="2">⭐⭐</option>
-                                                        <option value="3">⭐⭐⭐</option>
-                                                        <option value="4">⭐⭐⭐⭐</option>
-                                                        <option value="5">⭐⭐⭐⭐⭐</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            <div class="mt-2">
-                                                <input type="text" class="form-control form-control-sm" 
-                                                       name="feedback" placeholder="Feedback (opcional)">
-                                            </div>
-                                            <button type="submit" class="btn btn-primary btn-sm mt-2">
-                                                Completar Set
-                                            </button>
-                                        </form>
-                                    {% else %}
-                                        <div class="alert alert-success py-1 mb-0">
-                                            <small>Completado</small>
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
+    <!-- Formulario para registro de set -->
+    {% if current_set.sets_count > completed_count %}
+    <form class="set-form mb-3" data-set-id="{{ current_set.id }}">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Registrar serie {{ completed_count|add:1 }}</h5>
+                <div class="row g-2">
+                    <div class="col-4">
+                        <label for="weight" class="form-label">Peso (kg)</label>
+                        <input type="text" class="form-control" 
+                               id="weight" name="weight" placeholder="Peso" 
+                               value="{{ current_set.weight|stringformat:'.2f'|cut:',' }}" required
+                               oninput="this.value = this.value.replace(',', '.')">
                     </div>
+                    <div class="col-4">
+                        <label for="reps" class="form-label">Reps</label>
+                        <input type="number" class="form-control" 
+                               id="reps" name="reps" placeholder="Reps" 
+                               value="{{ current_set.reps }}" required>
+                    </div>
+                    <div class="col-4">
+                        <label for="form_rating" class="form-label">Forma</label>
+                        <select class="form-select" id="form_rating" name="form_rating" required>
+                            <option value="">Calificar</option>
+                            <option value="1">⭐</option>
+                            <option value="2">⭐⭐</option>
+                            <option value="3">⭐⭐⭐</option>
+                            <option value="4">⭐⭐⭐⭐</option>
+                            <option value="5">⭐⭐⭐⭐⭐</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label for="feedback" class="form-label">Feedback (opcional)</label>
+                        <input type="text" class="form-control" 
+                               id="feedback" name="feedback" placeholder="Feedback para el estudiante">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-success w-100 mt-3">
+                    Guardar Serie <i class="fas fa-check ms-1"></i>
+                </button>
+            </div>
+        </div>
+    </form>
+    {% else %}
+    <div class="alert alert-success mb-3">
+        <i class="fas fa-check-circle me-2"></i> Este ejercicio ya ha sido completado.
+    </div>
+    {% endif %}
+    {% endwith %}
+    {% endwith %}
+
+    <!-- Sets completados -->
+    <h5>Sets Completados <span class="badge bg-success">{{ completed_sets|length }}</span></h5>
+    <div class="list-group mb-5">
+        {% for completed_set in completed_sets %}
+        <div class="list-group-item p-2">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>{{ completed_set.set.exercise }}</strong>
+                    <br>
+                    <small>
+                        {{ completed_set.weight }}kg | 
+                        {{ completed_set.reps }} reps | 
+                        Forma: {{ completed_set.form_rating }}/5
+                    </small>
+                    {% if completed_set.trainer_feedback %}
+                    <br>
+                    <small class="text-muted"><i class="fas fa-comment me-1"></i> {{ completed_set.trainer_feedback }}</small>
+                    {% endif %}
+                </div>
+                <div>
+                    <span class="badge bg-secondary">{{ forloop.counter }}</span>
                 </div>
             </div>
         </div>
+        {% endfor %}
+    </div>
 
-        <!-- Panel de Progreso -->
-        <div class="col-md-4">
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5 class="card-title">Progreso de la Sesión</h5>
-                    <div class="progress mb-3">
-                        <div class="progress-bar" role="progressbar" 
-                             style="width: {{ completed_sets|length|default:0 }}%" 
-                             aria-valuenow="{{ completed_sets|length|default:0 }}" 
-                             aria-valuemin="0" 
-                             aria-valuemax="{{ session.training.sets.count }}">
-                            {{ completed_sets|length|default:0 }}/{{ session.training.sets.count }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Sets Completados -->
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Sets Completados</h5>
-                    <div class="list-group list-group-flush" id="completed-sets-list">
-                        {% for completed_set in completed_sets %}
-                        <div class="list-group-item px-0">
-                            <h6 class="mb-1">{{ completed_set.set.exercise.name }}</h6>
-                            <p class="mb-1">
-                                <small>
-                                    Peso: {{ completed_set.weight }}kg | 
-                                    Reps: {{ completed_set.reps }} | 
-                                    Forma: {{ completed_set.form_rating }}/5
-                                </small>
-                            </p>
-                            {% if completed_set.trainer_feedback %}
-                                <small class="text-muted">{{ completed_set.trainer_feedback }}</small>
-                            {% endif %}
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
+    <!-- Navegación entre ejercicios (fixed en móvil) -->
+    <div class="navigation-arrows">
+        <div class="d-flex justify-content-between">
+            <button class="btn btn-lg btn-outline-primary" {% if current_set_index == 1 %}disabled{% endif %} onclick="prevExercise()">
+                <i class="fas fa-arrow-left"></i> Anterior
+            </button>
+            <button class="btn btn-lg btn-outline-primary" {% if current_set_index == all_sets|length %}disabled{% endif %} onclick="nextExercise()">
+                Siguiente <i class="fas fa-arrow-right"></i>
+            </button>
         </div>
     </div>
 </div>
@@ -156,9 +353,32 @@
 
 {% block extra_js %}
 <script>
+    // Variables globales
+    const currentSetIndex = {{ current_set_index }};
+    const totalSets = {{ all_sets|length }};
+    
+    // Navegación entre ejercicios
+    function selectExercise(index) {
+        if (index > 0 && index <= totalSets) {
+            window.location.href = `?set=${index}`;
+        }
+    }
+    
+    function prevExercise() {
+        if (currentSetIndex > 1) {
+            selectExercise(currentSetIndex - 1);
+        }
+    }
+    
+    function nextExercise() {
+        if (currentSetIndex < totalSets) {
+            selectExercise(currentSetIndex + 1);
+        }
+    }
+
     // Temporizador de sesión
     function updateTimer() {
-        const startTime = new Date("{{ session.start_time|date:'c' }}").getTime();
+        const startTime = new Date("{{ session.started_at|date:'c' }}").getTime();
         const now = new Date().getTime();
         const diff = now - startTime;
         
@@ -172,6 +392,82 @@
     
     setInterval(updateTimer, 1000);
     updateTimer();
+
+    // Temporizador de descanso
+    document.addEventListener('DOMContentLoaded', function() {
+        const timerDisplay = document.getElementById('rest-timer');
+        const startButton = document.getElementById('startTimer');
+        const resetButton = document.getElementById('resetTimer');
+        const initialTime = 60;
+        let timeLeft = initialTime;
+        let timerId = null;
+        let isRunning = false;
+
+        function formatTime(seconds) {
+            if (seconds >= 60) {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            } else {
+                return `${seconds}s`;
+            }
+        }
+
+        function updateTimerDisplay() {
+            timerDisplay.textContent = formatTime(timeLeft);
+        }
+
+        function toggleTimer() {
+            if (!isRunning) {
+                isRunning = true;
+                startButton.innerHTML = '<i class="fas fa-pause me-1"></i>Pausar';
+                timerId = setInterval(() => {
+                    if (timeLeft > 0) {
+                        timeLeft--;
+                        updateTimerDisplay();
+                    } else {
+                        clearInterval(timerId);
+                        isRunning = false;
+                        startButton.innerHTML = '<i class="fas fa-play me-1"></i>Iniciar';
+                        // Sonido de alerta
+                        try {
+                            const audio = new Audio('/static/sounds/beep.mp3');
+                            audio.play();
+                        } catch (e) {
+                            console.log('Error al reproducir sonido:', e);
+                        }
+                    }
+                }, 1000);
+            } else {
+                clearInterval(timerId);
+                isRunning = false;
+                startButton.innerHTML = '<i class="fas fa-play me-1"></i>Reanudar';
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timerId);
+            isRunning = false;
+            timeLeft = initialTime;
+            updateTimerDisplay();
+            startButton.innerHTML = '<i class="fas fa-play me-1"></i>Iniciar';
+        }
+
+        startButton.addEventListener('click', toggleTimer);
+        resetButton.addEventListener('click', resetTimer);
+        
+        // Permitir navegación con teclado para facilitar el uso
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowLeft') {
+                prevExercise();
+            } else if (e.key === 'ArrowRight') {
+                nextExercise();
+            } else if (e.key === ' ' || e.key === 'Spacebar') {
+                toggleTimer();
+                e.preventDefault(); // Prevenir scroll
+            }
+        });
+    });
 
     // Manejo de formularios de sets
     document.querySelectorAll('.set-form').forEach(form => {
@@ -191,51 +487,27 @@
                     }
                 });
 
+                const data = await response.json();
                 if (response.ok) {
-                    const data = await response.json();
-                    // Actualizar UI
-                    const card = document.getElementById(`set-card-${setId}`);
-                    card.classList.add('set-completed');
-                    card.innerHTML = `
-                        <div class="card-body">
-                            <h6 class="card-title">${form.closest('.card').querySelector('.card-title').textContent}</h6>
-                            <div class="alert alert-success py-1 mb-0">
-                                <small>Completado</small>
-                            </div>
-                        </div>
-                    `;
-                    
-                    // Actualizar lista de sets completados
-                    const completedSetsList = document.getElementById('completed-sets-list');
-                    const newSet = document.createElement('div');
-                    newSet.className = 'list-group-item px-0';
-                    newSet.innerHTML = `
-                        <h6 class="mb-1">${form.closest('.card').querySelector('.card-title').textContent}</h6>
-                        <p class="mb-1">
-                            <small>
-                                Peso: ${formData.get('weight')}kg | 
-                                Reps: ${formData.get('reps')} | 
-                                Forma: ${formData.get('form_rating')}/5
-                            </small>
-                        </p>
-                        ${formData.get('feedback') ? `<small class="text-muted">${formData.get('feedback')}</small>` : ''}
-                    `;
-                    completedSetsList.insertBefore(newSet, completedSetsList.firstChild);
-                    
-                    // Actualizar barra de progreso
-                    const progressBar = document.querySelector('.progress-bar');
-                    const totalSets = {{ session.training.sets.count }};
-                    const completedSets = document.querySelectorAll('.set-completed').length;
-                    const progress = (completedSets / totalSets) * 100;
-                    progressBar.style.width = `${progress}%`;
-                    progressBar.setAttribute('aria-valuenow', completedSets);
-                    progressBar.textContent = `${completedSets}/${totalSets}`;
+                    if (data.all_completed) {
+                        // Si completamos todas las series del ejercicio actual, avanzamos al siguiente
+                        if (currentSetIndex >= totalSets) {
+                            window.location.href = `?set=1`;
+                        } else {
+                            window.location.href = `?set=${currentSetIndex + 1}`;
+                        }
+                    } else {
+                        // Recargamos la página para mostrar el nuevo progreso
+                        window.location.reload();
+                    }
+                } else {
+                    alert('Error al guardar el set: ' + data.error);
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Error al guardar el set');
+                alert('Error al procesar la solicitud');
             }
         });
     });
 </script>
-{% endblock %} 
+{% endblock %}

@@ -1,0 +1,293 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load trainer_tags %}
+
+{% block title %}Sesión en Vivo - {{ session.training.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .timer {
+        font-size: 2rem;
+        font-weight: bold;
+    }
+    .rest-timer {
+        font-size: 3.5rem;
+        font-weight: bold;
+    }
+    .exercise-card {
+        border-radius: 8px;
+        margin-bottom: 15px;
+        border-left: 5px solid #007bff;
+    }
+    .exercise-completed {
+        border-left: 5px solid #28a745;
+    }
+    .exercise-btn {
+        min-width: 100px;
+        margin: 5px;
+    }
+    .progress-bar {
+        height: 10px;
+    }
+    .navigation-arrows {
+        position: fixed;
+        bottom: 20px;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        text-align: center;
+        padding: 10px;
+        background-color: rgba(255, 255, 255, 0.9);
+        border-top: 1px solid #dee2e6;
+    }
+    .completed-badge {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+    }
+    @media (max-width: 768px) {
+        .container-fluid {
+            padding-left: 8px;
+            padding-right: 8px;
+        }
+        .timer {
+            font-size: 1.5rem;
+        }
+        .card-body {
+            padding: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-3">
+    <!-- Encabezado y tiempo de sesión -->
+    <div class="row align-items-center mb-2">
+        <div class="col-8">
+            <h4>{{ session.training.name }}</h4>
+        </div>
+        <div class="col-4 text-end">
+            <div class="timer" id="session-timer">00:00:00</div>
+        </div>
+    </div>
+
+    <!-- Progreso general -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="progress">
+                <div class="progress-bar bg-success" role="progressbar" 
+                     style="width: {% if all_sets|length > 0 %}{{ completed_sets|length|default:0|floatformat:0 }}{% else %}0{% endif %}%" 
+                     aria-valuenow="{{ completed_sets|length|default:0 }}" 
+                     aria-valuemin="0" 
+                     aria-valuemax="{{ all_sets|length }}">
+                </div>
+            </div>
+            <div class="d-flex justify-content-between">
+                <small>Completado: {{ completed_sets|length|default:0 }}/{{ all_sets|length }}</small>
+                <small>Ejercicio {{ current_set_index }}/{{ all_sets|length }}</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ejercicio actual -->
+    <div class="card mb-3 exercise-card">
+        <div class="card-body">
+            <h5 class="card-title">{{ current_set.exercise }}</h5>
+            <div class="row">
+                <div class="col-4 text-center border-end">
+                    <div class="h3 mb-0">{{ current_set.weight }}</div>
+                    <small>kg</small>
+                </div>
+                <div class="col-4 text-center border-end">
+                    <div class="h3 mb-0">{{ current_set.reps }}</div>
+                    <small>reps</small>
+                </div>
+                <div class="col-4 text-center">
+                    <div class="h3 mb-0">{{ current_set.sets_count }}</div>
+                    <small>series</small>
+                </div>
+            </div>
+            
+            {% if current_set.notes %}
+            <div class="alert alert-info mt-3 mb-0 p-2">
+                <small><i class="fas fa-info-circle me-1"></i> {{ current_set.notes }}</small>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Temporizador de descanso -->
+    <div class="card mb-3">
+        <div class="card-body text-center py-2">
+            <h5 class="card-title mb-2">Descanso</h5>
+            <div class="rest-timer mb-2" id="rest-timer">60s</div>
+            <div class="btn-group">
+                <button type="button" class="btn btn-primary" id="startTimer">
+                    <i class="fas fa-play me-1"></i>Iniciar
+                </button>
+                <button type="button" class="btn btn-danger" id="resetTimer">
+                    <i class="fas fa-redo me-1"></i>Reiniciar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sets completados -->
+    <h5>Sets Completados</h5>
+    <div class="list-group mb-5">
+        {% for completed_set in completed_sets %}
+        <div class="list-group-item py-2">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>{{ completed_set.set.exercise }}</strong>
+                    <br>
+                    <small>
+                        {{ completed_set.weight }}kg | 
+                        {{ completed_set.reps }} reps
+                        {% if completed_set.form_rating %}
+                        | Forma: {{ completed_set.form_rating }}/5
+                        {% endif %}
+                    </small>
+                </div>
+                <div>
+                    <span class="badge bg-success">Completado</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Navegación entre ejercicios (fixed en móvil) -->
+    <div class="navigation-arrows">
+        <div class="d-flex justify-content-between">
+            <button class="btn btn-lg btn-outline-primary" {% if current_set_index == 1 %}disabled{% endif %} onclick="prevExercise()">
+                <i class="fas fa-arrow-left"></i> Anterior
+            </button>
+            <button class="btn btn-lg btn-outline-primary" {% if current_set_index == all_sets|length %}disabled{% endif %} onclick="nextExercise()">
+                Siguiente <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Variables globales
+    let currentSetIndex = {{ current_set_index|default:1 }};
+    const totalSets = {{ all_sets|length }};
+    
+    // Navegación entre ejercicios
+    function selectExercise(index) {
+        if (index > 0 && index <= totalSets) {
+            window.location.href = `?set=${index}`;
+        }
+    }
+    
+    function prevExercise() {
+        if (currentSetIndex > 1) {
+            selectExercise(currentSetIndex - 1);
+        }
+    }
+    
+    function nextExercise() {
+        if (currentSetIndex < totalSets) {
+            selectExercise(currentSetIndex + 1);
+        }
+    }
+
+    // Temporizador de sesión
+    function updateTimer() {
+        const startTime = new Date("{{ session.started_at|date:'c' }}").getTime();
+        const now = new Date().getTime();
+        const diff = now - startTime;
+        
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        
+        document.getElementById('session-timer').textContent = 
+            `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+    
+    setInterval(updateTimer, 1000);
+    updateTimer();
+
+    // Temporizador de descanso
+    document.addEventListener('DOMContentLoaded', function() {
+        const timerDisplay = document.getElementById('rest-timer');
+        const startButton = document.getElementById('startTimer');
+        const resetButton = document.getElementById('resetTimer');
+        const initialTime = 60;
+        let timeLeft = initialTime;
+        let timerId = null;
+        let isRunning = false;
+
+        function formatTime(seconds) {
+            if (seconds >= 60) {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            } else {
+                return `${seconds}s`;
+            }
+        }
+
+        function updateTimerDisplay() {
+            timerDisplay.textContent = formatTime(timeLeft);
+        }
+
+        function toggleTimer() {
+            if (!isRunning) {
+                isRunning = true;
+                startButton.innerHTML = '<i class="fas fa-pause me-1"></i>Pausar';
+                timerId = setInterval(() => {
+                    if (timeLeft > 0) {
+                        timeLeft--;
+                        updateTimerDisplay();
+                    } else {
+                        clearInterval(timerId);
+                        isRunning = false;
+                        startButton.innerHTML = '<i class="fas fa-play me-1"></i>Iniciar';
+                        // Sonido de alerta
+                        try {
+                            const audio = new Audio('/static/sounds/beep.mp3');
+                            audio.play();
+                        } catch (e) {
+                            console.log('Error al reproducir sonido:', e);
+                        }
+                    }
+                }, 1000);
+            } else {
+                clearInterval(timerId);
+                isRunning = false;
+                startButton.innerHTML = '<i class="fas fa-play me-1"></i>Reanudar';
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timerId);
+            isRunning = false;
+            timeLeft = initialTime;
+            updateTimerDisplay();
+            startButton.innerHTML = '<i class="fas fa-play me-1"></i>Iniciar';
+        }
+
+        startButton.addEventListener('click', toggleTimer);
+        resetButton.addEventListener('click', resetTimer);
+        
+        // Permitir navegación con teclado para facilitar el uso
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowLeft') {
+                prevExercise();
+            } else if (e.key === 'ArrowRight') {
+                nextExercise();
+            } else if (e.key === ' ' || e.key === 'Spacebar') {
+                toggleTimer();
+                e.preventDefault(); // Prevenir scroll
+            }
+        });
+    });
+</script>
+{% endblock %} 

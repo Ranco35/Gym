@@ -160,6 +160,11 @@ class TrainerSet(models.Model):
 
     def __str__(self):
         return f"{self.exercise} - {self.training_day}"
+        
+    @property
+    def suggested_weight(self):
+        """Devuelve el peso sugerido para este ejercicio, o None si no hay peso definido."""
+        return self.weight
 
 class LiveTrainingSession(models.Model):
     """Sesión de entrenamiento en vivo."""
@@ -196,9 +201,11 @@ class LiveSet(models.Model):
     trainer_feedback = models.TextField(blank=True)
     form_rating = models.IntegerField(null=True, blank=True)  # 1-5 rating de la forma
     perceived_effort = models.IntegerField(null=True, blank=True)  # 1-10 RPE
+    # Añadir campo para llevar un seguimiento de las series completadas
+    set_number = models.IntegerField(default=1)  # Número de serie (1, 2, 3, etc)
 
     def __str__(self):
-        return f"Serie en vivo: {self.set} - {self.completed_at}"
+        return f"Serie en vivo: {self.set} - Serie #{self.set_number} - {self.completed_at}"
 
 class TrainerFeedback(models.Model):
     """Retroalimentación general del entrenador."""
