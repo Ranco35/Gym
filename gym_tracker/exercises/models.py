@@ -1,21 +1,33 @@
 from django.db import models
 from django.conf import settings
 
+class ExerciseCategory(models.Model):
+    """
+    Modelo para gestionar las categorías de ejercicios de forma dinámica.
+    """
+    name = models.CharField(max_length=50, unique=True)
+    description = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Categoría de Ejercicio"
+        verbose_name_plural = "Categorías de Ejercicios"
+        ordering = ['name']
+    
+    def __str__(self):
+        return self.name
+    
+    @classmethod
+    def get_default_pk(cls):
+        """Retorna la PK de una categoría por defecto o None si no existe ninguna."""
+        category, created = cls.objects.get_or_create(name="Otros")
+        return category.pk
+
 class Exercise(models.Model):
     """
     Modelo para almacenar la información de los ejercicios.
     """
-    CATEGORY_CHOICES = [
-        ('Pecho', 'Pecho'),
-        ('Espalda', 'Espalda'),
-        ('Piernas', 'Piernas'),
-        ('Hombros', 'Hombros'),
-        ('Brazos', 'Brazos'),
-        ('Abdominales', 'Abdominales'),
-        ('Core', 'Core'),
-        ('Cardio', 'Cardio'),
-    ]
-    
     DIFFICULTY_CHOICES = [
         ('Principiante', 'Principiante'),
         ('Intermedio', 'Intermedio'),
@@ -24,7 +36,12 @@ class Exercise(models.Model):
     
     name = models.CharField(max_length=255)
     description = models.TextField()
-    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
+    category = models.ForeignKey(
+        ExerciseCategory, 
+        on_delete=models.SET_DEFAULT, 
+        default=ExerciseCategory.get_default_pk,
+        related_name='exercises'
+    )
     difficulty = models.CharField(max_length=20, choices=DIFFICULTY_CHOICES)
     
     # Nuevos campos

@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Gestión de Categorías de Ejercicios{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="h2 fw-bold">Gestión de Categorías de Ejercicios</h1>
+            <p class="text-muted">Administra las categorías disponibles para los ejercicios</p>
+        </div>
+        <div class="col-md-4 text-end d-flex align-items-center justify-content-end">
+            <a href="{% url 'exercises:category-create' %}" class="btn btn-primary">
+                <i class="fas fa-plus-circle me-2"></i>Nueva Categoría
+            </a>
+            <a href="{% url 'exercises:exercise-list' %}" class="btn btn-outline-secondary ms-2">
+                <i class="fas fa-dumbbell me-2"></i>Ver Ejercicios
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-white py-3">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h5 class="mb-0 fw-bold">Categorías ({{ categories|length }})</h5>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if categories %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Descripción</th>
+                                <th>Ejercicios</th>
+                                <th>Fecha Creación</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for category in categories %}
+                                <tr>
+                                    <td class="fw-medium">{{ category.name }}</td>
+                                    <td>
+                                        {% if category.description %}
+                                            {{ category.description|truncatechars:50 }}
+                                        {% else %}
+                                            <span class="text-muted fst-italic">Sin descripción</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info text-dark">{{ category.exercise_count }}</span>
+                                    </td>
+                                    <td>{{ category.created_at|date:"d/m/Y" }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{% url 'exercises:category-update' category.id %}" class="btn btn-outline-primary">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{% url 'exercises:category-delete' category.id %}" class="btn btn-outline-danger {% if category.exercise_count > 0 %}disabled{% endif %}" 
+                                               {% if category.exercise_count > 0 %}data-bs-toggle="tooltip" title="No se puede eliminar: Tiene ejercicios asociados"{% endif %}>
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center p-5">
+                    <img src="{% static 'img/illustrations/empty-categories.svg' %}" alt="No hay categorías" class="img-fluid mb-4" style="max-height: 200px;">
+                    <h4 class="text-muted">No hay categorías de ejercicios</h4>
+                    <p>Comienza creando la primera categoría para organizar tus ejercicios</p>
+                    <a href="{% url 'exercises:category-create' %}" class="btn btn-primary mt-2">
+                        <i class="fas fa-plus-circle me-2"></i>Crear Categoría
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <div class="alert alert-info">
+            <div class="d-flex">
+                <i class="fas fa-info-circle me-3 fs-4"></i>
+                <div>
+                    <h5 class="alert-heading">Notas sobre la gestión de categorías</h5>
+                    <p class="mb-0">
+                        • Solo puedes eliminar categorías que no tengan ejercicios asociados.<br>
+                        • Para eliminar una categoría con ejercicios, primero debes reasignar esos ejercicios a otras categorías.<br>
+                        • Las categorías son visibles para todos los usuarios del sistema.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+});
+</script>
+{% endblock %} 

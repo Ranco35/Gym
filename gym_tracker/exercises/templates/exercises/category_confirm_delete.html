@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Eliminar Categoría{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="mb-4">
+                <a href="{% url 'exercises:category-list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Volver a Categorías
+                </a>
+            </div>
+            
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fw-bold text-danger">Eliminar Categoría</h5>
+                </div>
+                <div class="card-body p-4">
+                    {% if exercise_count > 0 %}
+                        <div class="alert alert-danger">
+                            <div class="d-flex">
+                                <i class="fas fa-exclamation-triangle me-3 fs-4"></i>
+                                <div>
+                                    <h5 class="alert-heading">No se puede eliminar esta categoría</h5>
+                                    <p class="mb-0">
+                                        La categoría <strong>"{{ object.name }}"</strong> tiene {{ exercise_count }} ejercicio{{ exercise_count|pluralize }} asociado{{ exercise_count|pluralize }}.
+                                        Debes reasignar todos los ejercicios a otras categorías antes de poder eliminarla.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-end mt-3">
+                            <a href="{% url 'exercises:category-list' %}" class="btn btn-primary">Volver a Categorías</a>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <div class="d-flex">
+                                <i class="fas fa-exclamation-triangle me-3 fs-4"></i>
+                                <div>
+                                    <h5 class="alert-heading">Confirmación necesaria</h5>
+                                    <p class="mb-0">
+                                        Estás a punto de eliminar la categoría <strong>"{{ object.name }}"</strong>. 
+                                        Esta acción no se puede deshacer.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <form method="post">
+                            {% csrf_token %}
+                            
+                            <p class="mb-4">
+                                Por favor, confirma que deseas eliminar permanentemente esta categoría.
+                            </p>
+                            
+                            <div class="d-flex justify-content-end">
+                                <a href="{% url 'exercises:category-list' %}" class="btn btn-outline-secondary me-2">Cancelar</a>
+                                <button type="submit" class="btn btn-danger">Eliminar Categoría</button>
+                            </div>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if object %}
+            <div class="card mt-4 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fw-bold">Detalles de la Categoría</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Nombre:</strong> {{ object.name }}</p>
+                            <p><strong>Ejercicios:</strong> {{ exercise_count }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Creada:</strong> {{ object.created_at|date:"d/m/Y H:i" }}</p>
+                            <p><strong>Actualizada:</strong> {{ object.updated_at|date:"d/m/Y H:i" }}</p>
+                        </div>
+                    </div>
+                    
+                    {% if object.description %}
+                    <div class="mt-3">
+                        <p><strong>Descripción:</strong></p>
+                        <p class="text-muted">{{ object.description }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

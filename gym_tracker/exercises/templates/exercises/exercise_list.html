@@ -13,6 +13,12 @@
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminActionsDropdown">
                     <li>
+                        <a class="dropdown-item" href="{% url 'exercises:category-list' %}">
+                            <i class="fas fa-tags me-2"></i>Gestionar Categorías
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
                         <a class="dropdown-item" href="{% url 'exercises:export-exercises' %}">
                             <i class="fas fa-file-export me-2"></i>Exportar Ejercicios Existentes
                         </a>

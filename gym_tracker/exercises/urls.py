@@ -7,7 +7,12 @@ from .views import (
     export_exercises_template,
     import_exercises,
     export_exercises,
-    exercise_list
+    exercise_list,
+    # Nuevas vistas para categorías
+    CategoryListView,
+    CategoryCreateView,
+    CategoryUpdateView,
+    CategoryDeleteView
 )
 
 app_name = 'exercises'
@@ -27,6 +32,12 @@ urlpatterns = [
     path('export-template/', export_exercises_template, name='export-template'),
     path('export/', export_exercises, name='export-exercises'),
     path('import/', import_exercises, name='import-exercises'),
+    
+    # URLs para gestión de categorías
+    path('categories/', CategoryListView.as_view(), name='category-list'),
+    path('categories/create/', CategoryCreateView.as_view(), name='category-create'),
+    path('categories/<int:pk>/update/', CategoryUpdateView.as_view(), name='category-update'),
+    path('categories/<int:pk>/delete/', CategoryDeleteView.as_view(), name='category-delete'),
 ]
 
 # URLs específicas para cada tipo de ruta

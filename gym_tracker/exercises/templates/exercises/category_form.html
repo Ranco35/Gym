@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if object %}Editar{% else %}Nueva{% endif %} Categoría de Ejercicios{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="h2 fw-bold">{% if object %}Editar{% else %}Nueva{% endif %} Categoría de Ejercicios</h1>
+            <p class="text-muted">
+                {% if object %}
+                    Actualiza la información de la categoría "{{ object.name }}"
+                {% else %}
+                    Crea una nueva categoría para organizar los ejercicios
+                {% endif %}
+            </p>
+        </div>
+        <div class="col-md-4 text-end d-flex align-items-center justify-content-end">
+            <a href="{% url 'exercises:category-list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Volver a Categorías
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger" role="alert">
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.name.id_for_label }}" class="form-label fw-bold">{{ form.name.label }}</label>
+                            {{ form.name }}
+                            {% if form.name.help_text %}
+                                <div class="form-text">{{ form.name.help_text }}</div>
+                            {% endif %}
+                            {% if form.name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="{{ form.description.id_for_label }}" class="form-label fw-bold">{{ form.description.label }}</label>
+                            {{ form.description }}
+                            {% if form.description.help_text %}
+                                <div class="form-text">{{ form.description.help_text }}</div>
+                            {% endif %}
+                            {% if form.description.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.description.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-end">
+                            <a href="{% url 'exercises:category-list' %}" class="btn btn-outline-secondary me-2">Cancelar</a>
+                            <button type="submit" class="btn btn-primary">
+                                {% if object %}Actualizar{% else %}Crear{% endif %} Categoría
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fw-bold">Información</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6 class="fw-bold">¿Qué es una categoría de ejercicios?</h6>
+                        <p class="text-muted">Las categorías permiten organizar los ejercicios por grupos musculares o tipos de entrenamiento, facilitando su búsqueda.</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6 class="fw-bold">Recomendaciones</h6>
+                        <ul class="text-muted mb-0">
+                            <li>Utiliza nombres claros y concisos</li>
+                            <li>Evita nombres duplicados</li>
+                            <li>La descripción es opcional pero recomendable</li>
+                        </ul>
+                    </div>
+                    
+                    {% if object %}
+                    <div class="alert alert-secondary">
+                        <h6 class="alert-heading fw-bold"><i class="fas fa-info-circle me-2"></i>Datos actuales</h6>
+                        <p class="mb-0">
+                            <strong>Creada:</strong> {{ object.created_at|date:"d/m/Y H:i" }}<br>
+                            <strong>Actualizada:</strong> {{ object.updated_at|date:"d/m/Y H:i" }}<br>
+                            <strong>Ejercicios:</strong> {{ object.exercise_set.count }}
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

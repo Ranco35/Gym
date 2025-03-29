@@ -2,7 +2,7 @@ from rest_framework import generics
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
-from .models import Exercise
+from .models import Exercise, ExerciseCategory
 from .serializers import ExerciseSerializer
 from django.contrib.auth.decorators import login_required, user_passes_test
 import pandas as pd
@@ -10,6 +10,10 @@ import io
 from datetime import datetime
 from gym_tracker.users.permissions import is_admin_or_superuser, is_trainer_or_admin, can_edit_exercise
 from django.conf import settings
+from django.urls import reverse_lazy
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from django.contrib.auth.mixins import UserPassesTestMixin
+from .forms import ExerciseCategoryForm
 
 class ExerciseListView(generics.ListAPIView):
     """
@@ -403,3 +407,77 @@ def exercise_list(request):
     }
     
     return render(request, 'exercises/exercise_list.html', context)
+
+# Verificación de permisos
+def is_admin_or_superuser(user):
+    return user.is_authenticated and (user.is_superuser or user.role == 'ADMIN')
+
+# Vistas de CRUD para categorías
+class CategoryListView(UserPassesTestMixin, ListView):
+    model = ExerciseCategory
+    template_name = 'exercises/category_list.html'
+    context_object_name = 'categories'
+    ordering = ['name']
+    
+    def test_func(self):
+        return is_admin_or_superuser(self.request.user)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Añadir contador de ejercicios por categoría
+        categories = context['categories']
+        for category in categories:
+            category.exercise_count = Exercise.objects.filter(category=category).count()
+        return context
+
+class CategoryCreateView(UserPassesTestMixin, CreateView):
+    model = ExerciseCategory
+    form_class = ExerciseCategoryForm
+    template_name = 'exercises/category_form.html'
+    success_url = reverse_lazy('exercises:category-list')
+    
+    def test_func(self):
+        return is_admin_or_superuser(self.request.user)
+    
+    def form_valid(self, form):
+        messages.success(self.request, f'Categoría "{form.instance.name}" creada correctamente.')
+        return super().form_valid(form)
+
+class CategoryUpdateView(UserPassesTestMixin, UpdateView):
+    model = ExerciseCategory
+    form_class = ExerciseCategoryForm
+    template_name = 'exercises/category_form.html'
+    success_url = reverse_lazy('exercises:category-list')
+    
+    def test_func(self):
+        return is_admin_or_superuser(self.request.user)
+    
+    def form_valid(self, form):
+        messages.success(self.request, f'Categoría "{form.instance.name}" actualizada correctamente.')
+        return super().form_valid(form)
+
+class CategoryDeleteView(UserPassesTestMixin, DeleteView):
+    model = ExerciseCategory
+    template_name = 'exercises/category_confirm_delete.html'
+    success_url = reverse_lazy('exercises:category-list')
+    context_object_name = 'category'
+    
+    def test_func(self):
+        return is_admin_or_superuser(self.request.user)
+    
+    def delete(self, request, *args, **kwargs):
+        category = self.get_object()
+        try:
+            result = super().delete(request, *args, **kwargs)
+            messages.success(request, f'Categoría "{category.name}" eliminada correctamente.')
+            return result
+        except Exception as e:
+            messages.error(request, f'No se pudo eliminar la categoría. Error: {str(e)}')
+            return redirect('exercises:category-list')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Añadir contador de ejercicios que usan esta categoría
+        category = context['category']
+        context['exercise_count'] = category.exercises.count()
+        return context
