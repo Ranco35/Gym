@@ -327,7 +327,7 @@ def session_list(request):
         trainer_student__trainer=request.user
     ).select_related(
         'trainer_student__student', 
-        'trainer_student__student__userprofile',
+        'trainer_student__student__profile',
         'training'
     ).prefetch_related(
         'training__days',
@@ -638,7 +638,7 @@ def edit_training(request, student_id, training_id):
         if 'add_set' in request.POST:
             day_id = request.POST.get('day_id')
             exercise = request.POST.get('exercise')
-            sets_count = request.POST.get('sets_count')
+            sets_count = request.POST.get('sets_count', 4)
             reps = request.POST.get('reps')
             weight = request.POST.get('weight', None)
             notes = request.POST.get('notes', '')
@@ -720,9 +720,17 @@ def edit_training(request, student_id, training_id):
         elif 'update_focus' in request.POST:
             day_id = request.POST.get('day_id')
             focus = request.POST.get('focus', '')
+            muscles = request.POST.getlist('muscles', [])
             
             try:
                 day = TrainerTrainingDay.objects.get(id=day_id, training=training)
+                
+                # Si hay músculos seleccionados, incluirlos en el enfoque
+                if muscles:
+                    # Usar el enfoque ingresado manualmente o generar uno basado en los músculos
+                    if not focus or focus.strip() == '':
+                        focus = ', '.join(muscles)
+                
                 day.focus = focus
                 day.save()
                 messages.success(request, f'Enfoque actualizado para {day.day_of_week}')

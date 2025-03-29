@@ -39,60 +39,338 @@
     {% if messages %}
     <div class="mb-4">
         {% for message in messages %}
-        <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-danger{% endif %}">
+        <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-danger{% endif %} alert-dismissible fade show" role="alert">
             {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
         {% endfor %}
     </div>
     {% endif %}
     
     {% if exercises_with_permissions %}
-    <div class="row">
-        {% for item in exercises_with_permissions %}
-        <div class="col-md-4 mb-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-header {% if item.exercise.difficulty == 'Principiante' %}bg-success{% elif item.exercise.difficulty == 'Intermedio' %}bg-warning{% else %}bg-danger{% endif %} text-white">
-                    <div class="d-flex justify-content-between">
-                        <h5 class="mb-0">{{ item.exercise.name }}</h5>
-                        <span class="badge bg-light text-dark">{{ item.exercise.category }}</span>
+    
+    <!-- Buscador de ejercicios -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text bg-primary text-white"><i class="fas fa-search"></i></span>
+                        <input type="text" id="exercise-search" class="form-control" placeholder="Buscar por nombre, categoría o descripción..." aria-label="Buscar ejercicio">
                     </div>
                 </div>
-                <div class="card-body d-flex flex-column">
-                    <p class="card-text mb-2">{{ item.exercise.description|truncatechars:100 }}</p>
-                    
-                    <div class="mt-auto">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="badge {% if item.exercise.difficulty == 'Principiante' %}bg-success{% elif item.exercise.difficulty == 'Intermedio' %}bg-warning{% else %}bg-danger{% endif %}">
-                                {{ item.exercise.difficulty }}
-                            </span>
+                <div class="col-md-3">
+                    <select id="difficulty-filter" class="form-select">
+                        <option value="all">Todas las dificultades</option>
+                        <option value="Principiante">Principiante</option>
+                        <option value="Intermedio">Intermedio</option>
+                        <option value="Avanzado">Avanzado</option>
+                    </select>
+                </div>
+                <div class="col-md-3 text-end">
+                    <button id="reset-filters" class="btn btn-outline-secondary w-100">
+                        <i class="fas fa-sync-alt me-2"></i>Limpiar filtros
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Resumen de ejercicios -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0">Total Ejercicios</h6>
+                        <h2 class="mb-0" id="total-count">{{ total_count }}</h2>
+                    </div>
+                    <i class="fas fa-dumbbell fa-2x"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0">Principiante</h6>
+                        <h2 class="mb-0" id="beginner-count">{{ beginner_count }}</h2>
+                    </div>
+                    <i class="fas fa-walking fa-2x"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0">Intermedio</h6>
+                        <h2 class="mb-0" id="intermediate-count">{{ intermediate_count }}</h2>
+                    </div>
+                    <i class="fas fa-running fa-2x"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0">Avanzado</h6>
+                        <h2 class="mb-0" id="advanced-count">{{ advanced_count }}</h2>
+                    </div>
+                    <i class="fas fa-fire fa-2x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Navegación por pestañas de categorías -->
+    <ul class="nav nav-tabs mb-4" id="exerciseTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab" aria-controls="all" aria-selected="true">
+                <i class="fas fa-th me-2"></i>Todos <span class="badge bg-primary rounded-pill ms-1">{{ total_count }}</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="my-exercises-tab" data-bs-toggle="tab" data-bs-target="#my-exercises" type="button" role="tab" aria-controls="my-exercises" aria-selected="false">
+                <i class="fas fa-user-edit me-2"></i>Mis Ejercicios 
+                <span class="badge bg-info rounded-pill ms-1">
+                    {% with counter=0 %}
+                        {% for item in exercises_with_permissions %}
+                            {% if item.exercise.creator == user %}
+                                {% with counter=counter|add:1 %}{% endwith %}
+                            {% endif %}
+                        {% endfor %}
+                        {{ counter }}
+                    {% endwith %}
+                </span>
+            </button>
+        </li>
+        {% for category in categories %}
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="{{ category|slugify }}-tab" data-bs-toggle="tab" data-bs-target="#{{ category|slugify }}" type="button" role="tab" aria-controls="{{ category|slugify }}" aria-selected="false">
+                <i class="fas fa-layer-group me-2"></i>{{ category }}
+                <span class="badge bg-secondary rounded-pill ms-1 category-badge">
+                    {% with counter=0 %}
+                        {% for item in exercises_with_permissions %}
+                            {% if item.exercise.category == category %}
+                                {% with counter=counter|add:1 %}{% endwith %}
+                            {% endif %}
+                        {% endfor %}
+                        {{ counter }}
+                    {% endwith %}
+                </span>
+            </button>
+        </li>
+        {% endfor %}
+    </ul>
+    
+    <!-- Contenido de las pestañas -->
+    <div class="tab-content" id="exerciseTabsContent">
+        <!-- Pestaña de todos los ejercicios -->
+        <div class="tab-pane fade show active" id="all" role="tabpanel" aria-labelledby="all-tab">
+            <div class="row exercise-container">
+                {% for item in exercises_with_permissions %}
+                <div class="col-md-4 mb-4 exercise-card" 
+                     data-name="{{ item.exercise.name|lower }}" 
+                     data-category="{{ item.exercise.category|lower }}" 
+                     data-difficulty="{{ item.exercise.difficulty }}"
+                     data-creator="{% if item.exercise.creator %}{{ item.exercise.creator.id }}{% else %}0{% endif %}">
+                    <div class="card shadow-sm h-100 hover-card {% if item.exercise.creator == user %}border-info{% endif %}">
+                        <div class="card-header {% if item.exercise.difficulty == 'Principiante' %}bg-success{% elif item.exercise.difficulty == 'Intermedio' %}bg-warning{% else %}bg-danger{% endif %} text-white">
+                            <div class="d-flex justify-content-between">
+                                <h5 class="mb-0">{{ item.exercise.name }}</h5>
+                                <span class="badge bg-light text-dark">{{ item.exercise.category }}</span>
+                            </div>
+                        </div>
+                        <div class="card-body d-flex flex-column">
+                            <p class="card-text mb-2">{{ item.exercise.description|truncatechars:100 }}</p>
                             
-                            <div class="small text-muted">
-                                <i class="fas fa-user-edit me-1"></i>
-                                {% if item.exercise.creator %}
-                                    {{ item.exercise.creator.first_name|default:item.exercise.creator.username }}
-                                {% else %}
-                                    Eduardo
+                            <div class="mt-auto">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="badge {% if item.exercise.difficulty == 'Principiante' %}bg-success{% elif item.exercise.difficulty == 'Intermedio' %}bg-warning{% else %}bg-danger{% endif %}">
+                                        {{ item.exercise.difficulty }}
+                                    </span>
+                                    
+                                    <div class="small text-muted">
+                                        <i class="fas fa-user-edit me-1"></i>
+                                        {% if item.exercise.creator %}
+                                            {{ item.exercise.creator.first_name|default:item.exercise.creator.username }}
+                                            {% if item.exercise.creator == user %}
+                                            <span class="badge bg-info ms-1">Tú</span>
+                                            {% endif %}
+                                        {% else %}
+                                            Eduardo
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white">
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'exercises:exercise-detail' item.exercise.pk %}" class="btn btn-outline-primary flex-grow-1">
+                                    <i class="fas fa-eye me-1"></i>Ver Detalles
+                                </a>
+                                {% if item.can_edit %}
+                                <a href="{% url 'exercises:exercise-edit' item.exercise.pk %}" class="btn btn-outline-success">
+                                    <i class="fas fa-edit"></i>
+                                </a>
                                 {% endif %}
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="card-footer bg-white">
-                    <div class="d-flex gap-2">
-                        <a href="{% url 'exercises:exercise-detail' item.exercise.pk %}" class="btn btn-outline-primary flex-grow-1">
-                            <i class="fas fa-eye me-1"></i>Ver Detalles
-                        </a>
-                        {% if item.can_edit %}
-                        <a href="{% url 'exercises:exercise-edit' item.exercise.pk %}" class="btn btn-outline-success">
-                            <i class="fas fa-edit"></i>
-                        </a>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Pestaña de mis ejercicios creados -->
+        <div class="tab-pane fade" id="my-exercises" role="tabpanel" aria-labelledby="my-exercises-tab">
+            <div class="row exercise-container">
+                {% with has_my_exercises=False %}
+                    {% for item in exercises_with_permissions %}
+                        {% if item.exercise.creator == user %}
+                            {% with has_my_exercises=True %}{% endwith %}
+                            <div class="col-md-4 mb-4 exercise-card" 
+                                data-name="{{ item.exercise.name|lower }}" 
+                                data-category="{{ item.exercise.category|lower }}" 
+                                data-difficulty="{{ item.exercise.difficulty }}"
+                                data-creator="{{ user.id }}">
+                                <div class="card shadow-sm h-100 hover-card border-info">
+                                    <div class="card-header {% if item.exercise.difficulty == 'Principiante' %}bg-success{% elif item.exercise.difficulty == 'Intermedio' %}bg-warning{% else %}bg-danger{% endif %} text-white">
+                                        <div class="d-flex justify-content-between">
+                                            <h5 class="mb-0">{{ item.exercise.name }}</h5>
+                                            <span class="badge bg-light text-dark">{{ item.exercise.category }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="card-body d-flex flex-column">
+                                        <p class="card-text mb-2">{{ item.exercise.description|truncatechars:100 }}</p>
+                                        
+                                        <div class="mt-auto">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="badge {% if item.exercise.difficulty == 'Principiante' %}bg-success{% elif item.exercise.difficulty == 'Intermedio' %}bg-warning{% else %}bg-danger{% endif %}">
+                                                    {{ item.exercise.difficulty }}
+                                                </span>
+                                                
+                                                <div class="small">
+                                                    <span class="badge bg-info">
+                                                        <i class="fas fa-user-edit me-1"></i>Creado por ti
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-footer bg-white">
+                                        <div class="d-flex gap-2">
+                                            <a href="{% url 'exercises:exercise-detail' item.exercise.pk %}" class="btn btn-outline-primary flex-grow-1">
+                                                <i class="fas fa-eye me-1"></i>Ver Detalles
+                                            </a>
+                                            <a href="{% url 'exercises:exercise-edit' item.exercise.pk %}" class="btn btn-outline-success">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         {% endif %}
+                    {% endfor %}
+                    
+                    {% if not has_my_exercises %}
+                        <div class="col-12">
+                            <div class="card shadow-sm">
+                                <div class="card-body text-center py-5">
+                                    <div class="mb-4">
+                                        <i class="fas fa-user-edit fa-4x text-info"></i>
+                                    </div>
+                                    <h4 class="mb-3">Aún no has creado ejercicios</h4>
+                                    <p class="text-muted mb-4">Comienza a crear tus propios ejercicios personalizados</p>
+                                    <a href="{% url 'exercises:exercise-create' %}" class="btn btn-info">
+                                        <i class="fas fa-plus me-2"></i>Crear mi primer ejercicio
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endwith %}
+            </div>
+        </div>
+        
+        <!-- Pestañas por categoría -->
+        {% for category in categories %}
+        <div class="tab-pane fade" id="{{ category|slugify }}" role="tabpanel" aria-labelledby="{{ category|slugify }}-tab">
+            <div class="row">
+                {% for item in exercises_with_permissions %}
+                {% if item.exercise.category == category %}
+                <div class="col-md-4 mb-4 exercise-card" 
+                     data-name="{{ item.exercise.name|lower }}" 
+                     data-category="{{ item.exercise.category|lower }}" 
+                     data-difficulty="{{ item.exercise.difficulty }}"
+                     data-creator="{% if item.exercise.creator %}{{ item.exercise.creator.id }}{% else %}0{% endif %}">
+                    <div class="card shadow-sm h-100 hover-card {% if item.exercise.creator == user %}border-info{% endif %}">
+                        <div class="card-header {% if item.exercise.difficulty == 'Principiante' %}bg-success{% elif item.exercise.difficulty == 'Intermedio' %}bg-warning{% else %}bg-danger{% endif %} text-white">
+                            <div class="d-flex justify-content-between">
+                                <h5 class="mb-0">{{ item.exercise.name }}</h5>
+                                <span class="badge bg-light text-dark">{{ item.exercise.category }}</span>
+                            </div>
+                        </div>
+                        <div class="card-body d-flex flex-column">
+                            <p class="card-text mb-2">{{ item.exercise.description|truncatechars:100 }}</p>
+                            
+                            <div class="mt-auto">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="badge {% if item.exercise.difficulty == 'Principiante' %}bg-success{% elif item.exercise.difficulty == 'Intermedio' %}bg-warning{% else %}bg-danger{% endif %}">
+                                        {{ item.exercise.difficulty }}
+                                    </span>
+                                    
+                                    <div class="small text-muted">
+                                        <i class="fas fa-user-edit me-1"></i>
+                                        {% if item.exercise.creator %}
+                                            {{ item.exercise.creator.first_name|default:item.exercise.creator.username }}
+                                            {% if item.exercise.creator == user %}
+                                            <span class="badge bg-info ms-1">Tú</span>
+                                            {% endif %}
+                                        {% else %}
+                                            Eduardo
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white">
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'exercises:exercise-detail' item.exercise.pk %}" class="btn btn-outline-primary flex-grow-1">
+                                    <i class="fas fa-eye me-1"></i>Ver Detalles
+                                </a>
+                                {% if item.can_edit %}
+                                <a href="{% url 'exercises:exercise-edit' item.exercise.pk %}" class="btn btn-outline-success">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
                 </div>
+                {% endif %}
+                {% endfor %}
             </div>
         </div>
         {% endfor %}
     </div>
+    
+    <!-- Mensaje de no se encontraron resultados -->
+    <div id="no-results" class="card shadow-sm d-none">
+        <div class="card-body text-center py-5">
+            <div class="mb-4">
+                <i class="fas fa-search fa-4x text-muted"></i>
+            </div>
+            <h4 class="mb-3">No se encontraron ejercicios</h4>
+            <p class="text-muted mb-4">Prueba con otros términos de búsqueda o filtros</p>
+            <button id="reset-filters" class="btn btn-primary">
+                <i class="fas fa-sync me-2"></i>Restablecer filtros
+            </button>
+        </div>
+    </div>
+    
     {% else %}
     <div class="card shadow-sm">
         <div class="card-body text-center py-5">
@@ -108,4 +386,253 @@
     </div>
     {% endif %}
 </div>
+
+<style>
+    .hover-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .hover-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    .badge {
+        font-size: 85%;
+    }
+    .nav-tabs .nav-link.active {
+        font-weight: 600;
+        border-bottom-color: #2C3E50;
+    }
+    .nav-tabs .nav-link .badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 22px;
+        height: 22px;
+    }
+    .nav-tabs .nav-link.active .badge {
+        background-color: #2C3E50 !important;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Referencias a los elementos
+    const searchInput = document.getElementById('exercise-search');
+    const difficultyFilter = document.getElementById('difficulty-filter');
+    const resetButton = document.getElementById('reset-filters');
+    const exerciseCards = document.querySelectorAll('.exercise-card');
+    const noResultsMessage = document.getElementById('no-results');
+    const tabButtons = document.querySelectorAll('[data-bs-toggle="tab"]');
+    let currentCategory = 'all';
+    const currentUserId = '{{ user.id }}'; // Obtener ID del usuario actual
+    
+    // Calcular y actualizar los contadores
+    function updateCounters() {
+        let beginnerCount = 0;
+        let intermediateCount = 0;
+        let advancedCount = 0;
+        let totalVisible = 0;
+        
+        // Contador para categorías
+        const categoryCounters = {};
+        
+        // Para evitar contar los ejercicios duplicados, solo contamos los que están en el panel activo
+        const activeTabId = document.querySelector('.tab-pane.active').id;
+        const cardsToCount = activeTabId === 'all' ? 
+            document.querySelectorAll('#all .exercise-card') : 
+            document.querySelectorAll(`.tab-pane.active .exercise-card`);
+        
+        cardsToCount.forEach(card => {
+            if (!card.classList.contains('d-none')) {
+                totalVisible++;
+                const difficulty = card.dataset.difficulty;
+                const category = card.dataset.category;
+                
+                if (difficulty === 'Principiante') beginnerCount++;
+                else if (difficulty === 'Intermedio') intermediateCount++;
+                else if (difficulty === 'Avanzado') advancedCount++;
+                
+                // Actualizar contador de categoría solo para la pestaña "Todos"
+                if (activeTabId === 'all') {
+                    if (!categoryCounters[category]) {
+                        categoryCounters[category] = 0;
+                    }
+                    categoryCounters[category]++;
+                }
+            }
+        });
+        
+        // Actualizar contadores en el UI
+        document.getElementById('beginner-count').textContent = beginnerCount;
+        document.getElementById('intermediate-count').textContent = intermediateCount;
+        document.getElementById('advanced-count').textContent = advancedCount;
+        document.getElementById('total-count').textContent = totalVisible;
+        
+        // Actualizar contador en la pestaña "Todos"
+        document.querySelector('#all-tab .badge').textContent = totalVisible;
+        
+        // Si estamos en la pestaña "Todos", actualizar contadores en las pestañas de categorías
+        if (activeTabId === 'all') {
+            tabButtons.forEach(button => {
+                if (button.id !== 'all-tab' && button.id !== 'my-exercises-tab') {
+                    const tabText = button.textContent.trim().replace(/\s+\d+$/, '').toLowerCase();
+                    const badge = button.querySelector('.badge');
+                    if (badge) {
+                        badge.textContent = categoryCounters[tabText] || 0;
+                    }
+                }
+            });
+        } else if (activeTabId === 'my-exercises') {
+            // Actualizar contador en la pestaña "Mis Ejercicios"
+            const myExercisesTab = document.querySelector('#my-exercises-tab');
+            const badge = myExercisesTab.querySelector('.badge');
+            if (badge) {
+                badge.textContent = totalVisible;
+            }
+        } else {
+            // Si estamos en una pestaña de categoría, solo actualizar su contador
+            const currentTab = document.querySelector('.nav-link.active');
+            if (currentTab && currentTab.id !== 'all-tab' && currentTab.id !== 'my-exercises-tab') {
+                const badge = currentTab.querySelector('.badge');
+                if (badge) {
+                    badge.textContent = totalVisible;
+                }
+            }
+        }
+    }
+    
+    // Función para filtrar ejercicios
+    function filterExercises() {
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        const selectedDifficulty = difficultyFilter.value;
+        
+        let visibleCount = 0;
+        
+        // Filtramos solamente las tarjetas en el panel activo
+        const activeTabId = document.querySelector('.tab-pane.active').id;
+        const cardsToFilter = activeTabId === 'all' ? 
+            document.querySelectorAll('#all .exercise-card') : 
+            document.querySelectorAll(`.tab-pane.active .exercise-card`);
+        
+        cardsToFilter.forEach(card => {
+            const name = card.dataset.name;
+            const difficulty = card.dataset.difficulty;
+            const category = card.dataset.category;
+            const creator = card.dataset.creator;
+            
+            // Obtener la descripción del ejercicio desde el elemento de texto en la tarjeta
+            const descriptionElement = card.querySelector('.card-text');
+            const description = descriptionElement ? descriptionElement.textContent.toLowerCase() : '';
+            
+            // Buscar en nombre, categoría y descripción
+            const matchesSearch = searchTerm === '' || 
+                name.includes(searchTerm) || 
+                category.includes(searchTerm) || 
+                description.includes(searchTerm);
+                
+            const matchesDifficulty = selectedDifficulty === 'all' || difficulty === selectedDifficulty;
+            
+            // Para la pestaña de "Mis Ejercicios"
+            const isMyExercisesTab = activeTabId === 'my-exercises';
+            const matchesCreator = !isMyExercisesTab || (isMyExercisesTab && creator === currentUserId);
+            
+            if (matchesSearch && matchesDifficulty && matchesCreator) {
+                card.classList.remove('d-none');
+                visibleCount++;
+            } else {
+                card.classList.add('d-none');
+            }
+        });
+        
+        // Actualizar contadores
+        updateCounters();
+        
+        // Mostrar mensaje de no resultados si no hay coincidencias
+        if (visibleCount === 0) {
+            noResultsMessage.classList.remove('d-none');
+        } else {
+            noResultsMessage.classList.add('d-none');
+        }
+    }
+    
+    // Event listeners para los filtros
+    searchInput.addEventListener('input', filterExercises);
+    difficultyFilter.addEventListener('change', filterExercises);
+    
+    // Resetear filtros
+    resetButton.addEventListener('click', function() {
+        searchInput.value = '';
+        difficultyFilter.value = 'all';
+        
+        // Restablecer todas las tarjetas en el panel actual
+        const activeTabId = document.querySelector('.tab-pane.active').id;
+        const cardsToReset = activeTabId === 'all' ? 
+            document.querySelectorAll('#all .exercise-card') : 
+            document.querySelectorAll(`.tab-pane.active .exercise-card`);
+            
+        cardsToReset.forEach(card => {
+            // Para la pestaña de "Mis Ejercicios", solo mostrar los ejercicios del usuario
+            if (activeTabId === 'my-exercises') {
+                const creator = card.dataset.creator;
+                if (creator === currentUserId) {
+                    card.classList.remove('d-none');
+                } else {
+                    card.classList.add('d-none');
+                }
+            } else {
+                card.classList.remove('d-none');
+            }
+        });
+        
+        noResultsMessage.classList.add('d-none');
+        updateCounters();
+    });
+    
+    // Manejar cambios de pestaña para filtrar por categoría
+    tabButtons.forEach(button => {
+        button.addEventListener('shown.bs.tab', function(event) {
+            const targetId = event.target.getAttribute('data-bs-target').replace('#', '');
+            
+            // Actualizar la categoría actual
+            if (targetId === 'all') {
+                currentCategory = 'all';
+            } else if (targetId === 'my-exercises') {
+                currentCategory = 'my-exercises';
+            } else {
+                // Obtener el texto de la pestaña sin el contador
+                const tabText = event.target.textContent.trim();
+                currentCategory = tabText.replace(/\s+\d+$/, '').trim().toLowerCase();
+            }
+            
+            // Restablecer los filtros al cambiar de pestaña
+            searchInput.value = '';
+            difficultyFilter.value = 'all';
+            
+            // Mostrar todas las tarjetas en el nuevo panel
+            const cardsInNewTab = document.querySelectorAll(`#${targetId} .exercise-card`);
+            
+            cardsInNewTab.forEach(card => {
+                // Para la pestaña de "Mis Ejercicios", solo mostrar los ejercicios del usuario
+                if (targetId === 'my-exercises') {
+                    const creator = card.dataset.creator;
+                    if (creator === currentUserId) {
+                        card.classList.remove('d-none');
+                    } else {
+                        card.classList.add('d-none');
+                    }
+                } else {
+                    card.classList.remove('d-none');
+                }
+            });
+            
+            noResultsMessage.classList.add('d-none');
+            updateCounters();
+        });
+    });
+    
+    // Inicializar filtros al cargar la página
+    currentCategory = 'all'; // Empezar con la pestaña "Todos"
+    updateCounters();
+});
+</script>
 {% endblock %} 

@@ -9,6 +9,7 @@ import pandas as pd
 import io
 from datetime import datetime
 from gym_tracker.users.permissions import is_admin_or_superuser, is_trainer_or_admin, can_edit_exercise
+from django.conf import settings
 
 class ExerciseListView(generics.ListAPIView):
     """
@@ -339,3 +340,66 @@ def export_exercises(request):
     response['Content-Disposition'] = f'attachment; filename=ejercicios_exportados_{timestamp}.xlsx'
     
     return response
+
+def exercise_list(request):
+    """Vista para mostrar todos los ejercicios disponibles."""
+    # Obtener todos los ejercicios ordenados por nombre
+    exercises = Exercise.objects.all().order_by('name')
+    
+    # Lista para almacenar ejercicios con permisos
+    exercises_with_permissions = []
+    
+    # Obtener categorías únicas para las pestañas
+    categories = Exercise.objects.values_list('category', flat=True).distinct().order_by('category')
+    
+    # Contadores para cada nivel de dificultad
+    beginner_count = 0
+    intermediate_count = 0
+    advanced_count = 0
+    
+    # Verificar permisos para cada ejercicio
+    for exercise in exercises:
+        can_edit = False
+        # Si el usuario es administrador o el creador del ejercicio, puede editarlo
+        if request.user.is_superuser or request.user.role == 'ADMIN' or (
+            exercise.creator and exercise.creator == request.user):
+            can_edit = True
+        
+        exercises_with_permissions.append({
+            'exercise': exercise,
+            'can_edit': can_edit
+        })
+        
+        # Contar ejercicios por dificultad
+        if exercise.difficulty == 'Principiante':
+            beginner_count += 1
+        elif exercise.difficulty == 'Intermedio':
+            intermediate_count += 1
+        elif exercise.difficulty == 'Avanzado':
+            advanced_count += 1
+    
+    # Agregar información de depuración si en modo DEBUG
+    debug_info = {}
+    if settings.DEBUG:
+        debug_info = {
+            'user_id': request.user.id,
+            'username': request.user.username,
+            'role': request.user.role,
+            'is_superuser': request.user.is_superuser,
+            'beginner_count': beginner_count,
+            'intermediate_count': intermediate_count,
+            'advanced_count': advanced_count,
+            'total_count': len(exercises_with_permissions)
+        }
+    
+    context = {
+        'exercises_with_permissions': exercises_with_permissions,
+        'debug_info': debug_info,
+        'categories': categories,
+        'beginner_count': beginner_count,
+        'intermediate_count': intermediate_count,
+        'advanced_count': advanced_count,
+        'total_count': len(exercises_with_permissions)
+    }
+    
+    return render(request, 'exercises/exercise_list.html', context)

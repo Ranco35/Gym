@@ -39,8 +39,8 @@
                         <tr>
                             <td>
                                 <div class="d-flex align-items-center">
-                                    {% if session.trainer_student.student.userprofile.photo %}
-                                    <img src="{{ session.trainer_student.student.userprofile.photo.url }}" class="rounded-circle me-2" width="40" height="40">
+                                    {% if session.trainer_student.student.profile.photo %}
+                                    <img src="{{ session.trainer_student.student.profile.photo.url }}" class="rounded-circle me-2" width="40" height="40">
                                     {% else %}
                                     <div class="avatar-placeholder me-2">
                                         <i class="fas fa-user"></i>
@@ -131,6 +131,7 @@
     </div>
     {% endif %}
 </div>
+{% endblock %}
 
 {% block extra_js %}
 <script>

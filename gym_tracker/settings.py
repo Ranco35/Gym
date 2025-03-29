@@ -136,9 +136,10 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Internacionalización
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+LANGUAGE_CODE = 'es'
+TIME_ZONE = 'America/Santiago'  # Zona horaria para Chile
 USE_I18N = True
+USE_L10N = True  # Formato de fechas local
 USE_TZ = True
 
 # Archivos estáticos y medios

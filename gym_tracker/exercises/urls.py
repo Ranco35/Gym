@@ -6,7 +6,8 @@ from .views import (
     exercise_edit,
     export_exercises_template,
     import_exercises,
-    export_exercises
+    export_exercises,
+    exercise_list
 )
 
 app_name = 'exercises'
@@ -19,7 +20,7 @@ api_patterns = [
 
 # URLs para la interfaz web
 urlpatterns = [
-    path('', ExerciseListView.as_view(), name='exercise-list'),
+    path('', exercise_list, name='exercise-list'),
     path('create/', exercise_create, name='exercise-create'),
     path('<int:pk>/', ExerciseDetailView.as_view(), name='exercise-detail'),
     path('<int:pk>/edit/', exercise_edit, name='exercise-edit'),

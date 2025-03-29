@@ -45,6 +45,43 @@
     <!-- Formulario para añadir nuevo ejercicio -->
     <div class="bg-white rounded-lg shadow-md p-6">
         <h3 class="text-2xl font-semibold mb-4">Añadir nuevo ejercicio</h3>
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Filtrar por músculos</label>
+            <div class="flex flex-wrap gap-2 mb-3" id="muscle_filter_container">
+                <div class="inline-flex items-center">
+                    <input type="checkbox" id="muscle_pecho" value="Pecho" class="muscle-filter-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500" {% if 'Pecho' in day.focus %}checked{% endif %}>
+                    <label for="muscle_pecho" class="ml-2 text-sm text-gray-700">Pecho</label>
+                </div>
+                <div class="inline-flex items-center">
+                    <input type="checkbox" id="muscle_espalda" value="Espalda" class="muscle-filter-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500" {% if 'Espalda' in day.focus %}checked{% endif %}>
+                    <label for="muscle_espalda" class="ml-2 text-sm text-gray-700">Espalda</label>
+                </div>
+                <div class="inline-flex items-center">
+                    <input type="checkbox" id="muscle_piernas" value="Piernas" class="muscle-filter-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500" {% if 'Piernas' in day.focus %}checked{% endif %}>
+                    <label for="muscle_piernas" class="ml-2 text-sm text-gray-700">Piernas</label>
+                </div>
+                <div class="inline-flex items-center">
+                    <input type="checkbox" id="muscle_hombros" value="Hombros" class="muscle-filter-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500" {% if 'Hombros' in day.focus %}checked{% endif %}>
+                    <label for="muscle_hombros" class="ml-2 text-sm text-gray-700">Hombros</label>
+                </div>
+                <div class="inline-flex items-center">
+                    <input type="checkbox" id="muscle_brazos" value="Brazos" class="muscle-filter-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500" {% if 'Brazos' in day.focus %}checked{% endif %}>
+                    <label for="muscle_brazos" class="ml-2 text-sm text-gray-700">Brazos</label>
+                </div>
+                <div class="inline-flex items-center">
+                    <input type="checkbox" id="muscle_abdominales" value="Abdominales" class="muscle-filter-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500" {% if 'Abdominales' in day.focus %}checked{% endif %}>
+                    <label for="muscle_abdominales" class="ml-2 text-sm text-gray-700">Abdominales</label>
+                </div>
+                <div class="inline-flex items-center">
+                    <input type="checkbox" id="muscle_core" value="Core" class="muscle-filter-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500" {% if 'Core' in day.focus %}checked{% endif %}>
+                    <label for="muscle_core" class="ml-2 text-sm text-gray-700">Core</label>
+                </div>
+                <div class="inline-flex items-center">
+                    <input type="checkbox" id="muscle_cardio" value="Cardio" class="muscle-filter-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500" {% if 'Cardio' in day.focus %}checked{% endif %}>
+                    <label for="muscle_cardio" class="ml-2 text-sm text-gray-700">Cardio</label>
+                </div>
+            </div>
+        </div>
         <form method="POST" class="space-y-4">
             {% csrf_token %}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -54,14 +91,14 @@
                         class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
                         <option value="">Selecciona un ejercicio</option>
                         {% for exercise in all_exercises %}
-                        <option value="{{ exercise.pk }}">{{ exercise.name }}</option>
+                        <option value="{{ exercise.pk }}" data-category="{{ exercise.category }}" data-primary-muscles="{{ exercise.primary_muscles }}">{{ exercise.name }} ({{ exercise.category }})</option>
                         {% endfor %}
                     </select>
                 </div>
 
                 <div>
                     <label for="sets" class="block text-sm font-medium text-gray-700 mb-2">Series</label>
-                    <input type="number" name="sets" id="sets" value="3" min="1" required
+                    <input type="number" name="sets" id="sets" value="4" min="1" required
                         class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
                 </div>
 
@@ -93,4 +130,79 @@
         </form>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Filtrar ejercicios por músculos seleccionados usando checkboxes
+    const muscleCheckboxes = document.querySelectorAll('.muscle-filter-checkbox');
+    const exerciseSelect = document.getElementById('exercise_id');
+    
+    if (muscleCheckboxes.length > 0 && exerciseSelect) {
+        // Función para obtener músculos seleccionados de los checkboxes
+        function getSelectedMuscles() {
+            return Array.from(document.querySelectorAll('.muscle-filter-checkbox:checked')).map(cb => cb.value);
+        }
+        
+        // Añadir event listener a todos los checkboxes
+        muscleCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const selectedMuscles = getSelectedMuscles();
+                filterExercises(selectedMuscles);
+            });
+        });
+        
+        // Función para filtrar ejercicios
+        function filterExercises(muscles) {
+            const allOptions = exerciseSelect.querySelectorAll('option');
+            
+            if (!muscles || muscles.length === 0) {
+                // Si no hay músculos seleccionados, mostrar todos los ejercicios
+                allOptions.forEach(option => {
+                    option.style.display = '';
+                });
+                return;
+            }
+            
+            allOptions.forEach(option => {
+                // La primera opción (placeholder) siempre se muestra
+                if (option.value === '') {
+                    return;
+                }
+                
+                const category = option.getAttribute('data-category');
+                const primaryMuscles = option.getAttribute('data-primary-muscles');
+                
+                // Comprobar si el ejercicio coincide con alguno de los músculos seleccionados
+                const matchesCategory = muscles.includes(category);
+                const matchesPrimaryMuscles = primaryMuscles && muscles.some(muscle => 
+                    primaryMuscles.toLowerCase().includes(muscle.toLowerCase())
+                );
+                
+                if (matchesCategory || matchesPrimaryMuscles) {
+                    option.style.display = '';
+                } else {
+                    option.style.display = 'none';
+                }
+            });
+            
+            // Establecer la primera opción visible como seleccionada
+            const firstVisibleOption = Array.from(allOptions).find(option => 
+                option.value !== '' && option.style.display !== 'none'
+            );
+            
+            if (firstVisibleOption) {
+                exerciseSelect.value = firstVisibleOption.value;
+            } else {
+                exerciseSelect.value = ''; // Si no hay coincidencias, seleccionar el placeholder
+            }
+        }
+        
+        // Iniciar filtrado con selección inicial
+        const initialSelectedMuscles = getSelectedMuscles();
+        if (initialSelectedMuscles.length > 0) {
+            filterExercises(initialSelectedMuscles);
+        }
+    }
+});
+</script>
 {% endblock %} 

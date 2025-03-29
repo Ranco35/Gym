@@ -8,6 +8,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.http import JsonResponse, HttpResponseForbidden
 from django.contrib import messages
+import logging
 
 from .models import Workout, WeeklyRoutine, RoutineDay, RoutineExercise
 from .serializers import (
@@ -19,6 +20,7 @@ from .serializers import (
     RoutineExerciseSerializer
 )
 from gym_tracker.exercises.models import Exercise
+from trainers.models import TrainerTraining
 
 # Función de verificación para comprobar si un usuario es administrador o superusuario
 def is_admin_or_superuser(user):
@@ -95,52 +97,118 @@ def routine_selection(request):
 @login_required
 def routine_list(request):
     """
-    Lista todas las rutinas del usuario.
+    Lista todas las rutinas del usuario, incluyendo las asignadas por entrenadores.
     """
-    routines = WeeklyRoutine.objects.filter(user=request.user).order_by('-created_at')
-    return render(request, 'workouts/routine_list.html', {
-        'routines': routines
-    })
+    # Obtener rutinas personales del usuario
+    personal_routines = WeeklyRoutine.objects.filter(user=request.user).order_by('-created_at')
+    
+    # Obtener rutinas asignadas por entrenadores - consulta directa por ID de usuario
+    assigned_routines = TrainerTraining.objects.select_related('created_by').filter(
+        user_id=request.user.id
+    ).order_by('-created_at')
+    
+    # Verificar manualmente todas las rutinas para depuración
+    all_trainings = list(TrainerTraining.objects.all())
+    
+    # Usar Force Evaluation para garantizar que las consultas se ejecuten
+    personal_routines_list = list(personal_routines)
+    assigned_routines_list = list(assigned_routines)
+    
+    context = {
+        'personal_routines': personal_routines_list,
+        'assigned_routines': assigned_routines_list,
+        'debug_info': {
+            'username': request.user.username,
+            'user_id': request.user.id,
+            'personal_count': len(personal_routines_list),
+            'assigned_count': len(assigned_routines_list),
+            'total_trainings': len(all_trainings)
+        }
+    }
+    
+    return render(request, 'workouts/routine_list.html', context)
 
 @login_required
 def routine_detail(request, pk):
     """
-    Muestra los detalles de una rutina.
+    Muestra los detalles de una rutina, sea personal o asignada por entrenador.
     """
-    routine = get_object_or_404(WeeklyRoutine, pk=pk, user=request.user)
+    # Verificar si es una rutina personal
+    routine = None
+    is_assigned_routine = False
+    trainer_info = None
+    
+    try:
+        # Primero intentamos obtener como rutina personal
+        routine = get_object_or_404(WeeklyRoutine, pk=pk, user=request.user)
+    except:
+        # Si no existe como rutina personal, verificar si es una rutina asignada por entrenador
+        routine = get_object_or_404(TrainerTraining, pk=pk, user=request.user)
+        is_assigned_routine = True
+        trainer_info = {
+            'name': routine.created_by.get_full_name() or routine.created_by.username,
+            'date_assigned': routine.created_at
+        }
     
     # Si la solicitud es AJAX, devolver JSON
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         days = []
-        for day in routine.days.all():
-            exercises = []
-            for routine_exercise in day.exercises.all():
-                exercises.append({
-                    'id': routine_exercise.exercise.id,
-                    'name': routine_exercise.exercise.name,
-                    'sets': routine_exercise.sets,
-                    'reps': routine_exercise.reps,
-                    'weight': routine_exercise.weight,
-                    'rest_time': routine_exercise.rest_time
+        
+        if is_assigned_routine:
+            # Para rutinas asignadas por entrenador
+            for day in routine.days.all():
+                exercises = []
+                for trainer_set in day.sets.all():
+                    exercises.append({
+                        'id': trainer_set.id,
+                        'name': trainer_set.exercise,
+                        'sets': trainer_set.sets_count,
+                        'reps': trainer_set.reps,
+                        'weight': trainer_set.weight,
+                        'notes': trainer_set.notes
+                    })
+                
+                days.append({
+                    'id': day.id,
+                    'day_of_week': day.day_of_week,
+                    'focus': day.focus,
+                    'exercises': exercises
                 })
-            
-            days.append({
-                'id': day.id,
-                'day_of_week': day.day_of_week,
-                'focus': day.focus,
-                'exercises': exercises
-            })
+        else:
+            # Para rutinas personales
+            for day in routine.days.all():
+                exercises = []
+                for routine_exercise in day.exercises.all():
+                    exercises.append({
+                        'id': routine_exercise.exercise.id,
+                        'name': routine_exercise.exercise.name,
+                        'sets': routine_exercise.sets,
+                        'reps': routine_exercise.reps,
+                        'weight': routine_exercise.weight,
+                        'rest_time': routine_exercise.rest_time
+                    })
+                
+                days.append({
+                    'id': day.id,
+                    'day_of_week': day.day_of_week,
+                    'focus': day.focus,
+                    'exercises': exercises
+                })
         
         return JsonResponse({
             'routine': {
                 'id': routine.id,
-                'name': routine.name
+                'name': routine.name,
+                'is_assigned': is_assigned_routine
             },
-            'days': days
+            'days': days,
+            'trainer_info': trainer_info
         })
     
     return render(request, 'workouts/routine_detail.html', {
-        'routine': routine
+        'routine': routine,
+        'is_assigned_routine': is_assigned_routine,
+        'trainer_info': trainer_info
     })
 
 @login_required
@@ -154,13 +222,13 @@ def routine_day_detail(request, routine_pk, day_pk):
     # Obtener ejercicios para este día
     exercises = RoutineExercise.objects.filter(routine_day=day).order_by('order')
     
-    # Obtener todos los ejercicios para seleccionar
-    all_exercises = Exercise.objects.all()
+    # Obtener todos los ejercicios para seleccionar, incluyendo sus categorías y músculos
+    all_exercises = Exercise.objects.all().order_by('category', 'name')
     
     if request.method == 'POST':
         # Añadir un nuevo ejercicio a la rutina del día
         exercise_id = request.POST.get('exercise_id')
-        sets = request.POST.get('sets', 3)
+        sets = request.POST.get('sets', 4)
         reps = request.POST.get('reps', '10')
         weight = request.POST.get('weight', '')
         rest_time = request.POST.get('rest_time', 60)
@@ -183,6 +251,12 @@ def routine_day_detail(request, routine_pk, day_pk):
                 rest_time=rest_time,
                 order=next_order
             )
+            
+            # Si hay músculos principales en el ejercicio y no hay enfoque definido,
+            # actualizar el enfoque del día con estos músculos
+            if exercise.primary_muscles and not day.focus:
+                day.focus = exercise.primary_muscles
+                day.save()
             
             return redirect('workouts:workout-day-detail', routine_pk=routine_pk, day_pk=day_pk)
     
@@ -306,3 +380,31 @@ def delete_routine(request, pk):
     return render(request, 'workouts/routine_confirm_delete.html', {
         'routine': routine
     })
+
+# Vista de acceso directo para la rutina con ID 2
+@login_required
+def view_assigned_routine(request):
+    """
+    Vista de acceso directo para ver la rutina asignada con ID 2.
+    """
+    try:
+        # Obtener directamente la rutina con ID 2
+        routine = TrainerTraining.objects.get(id=2)
+        
+        is_assigned_routine = True
+        trainer_info = {
+            'name': routine.created_by.get_full_name() or routine.created_by.username,
+            'date_assigned': routine.created_at
+        }
+        
+        return render(request, 'workouts/routine_detail.html', {
+            'routine': routine,
+            'is_assigned_routine': is_assigned_routine,
+            'trainer_info': trainer_info
+        })
+    except TrainerTraining.DoesNotExist:
+        messages.error(request, "La rutina asignada con ID 2 no existe.")
+        return redirect('workouts:workout-list')
+    except Exception as e:
+        messages.error(request, f"Error al acceder a la rutina: {str(e)}")
+        return redirect('workouts:workout-list')

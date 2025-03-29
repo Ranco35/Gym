@@ -112,13 +112,55 @@
                                     <div class="d-flex justify-content-between align-items-center mb-3">
                                         <div>
                                             <h5>{{ day.day_of_week }}</h5>
-                                            <form method="post" class="mt-2 mb-3 d-flex align-items-center">
+                                            <form method="post" class="mt-2 mb-3">
                                                 {% csrf_token %}
                                                 <input type="hidden" name="update_focus" value="1">
                                                 <input type="hidden" name="day_id" value="{{ day.id }}">
-                                                <div class="input-group" style="max-width: 400px;">
-                                                    <input type="text" class="form-control" name="focus" placeholder="Enfoque (ej: Pecho, Piernas...)" value="{{ day.focus|default:'' }}">
-                                                    <button type="submit" class="btn btn-outline-primary">Actualizar Enfoque</button>
+                                                <div class="row align-items-end g-2">
+                                                    <div class="col-md-4">
+                                                        <label class="form-label small">Enfoque general</label>
+                                                        <input type="text" class="form-control" name="focus" id="focus-{{ day.id }}" placeholder="Nombre del enfoque" value="{{ day.focus|default:'' }}">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label small">Músculos a trabajar</label>
+                                                        <div class="d-flex flex-wrap gap-2 muscle-checkboxes" data-day-id="{{ day.id }}">
+                                                            <div class="form-check form-check-inline">
+                                                                <input class="form-check-input muscle-checkbox" type="checkbox" id="muscle-pecho-{{ day.id }}" name="muscles" value="Pecho" data-day-id="{{ day.id }}" {% if 'Pecho' in day.focus %}checked{% endif %}>
+                                                                <label class="form-check-label" for="muscle-pecho-{{ day.id }}">Pecho</label>
+                                                            </div>
+                                                            <div class="form-check form-check-inline">
+                                                                <input class="form-check-input muscle-checkbox" type="checkbox" id="muscle-espalda-{{ day.id }}" name="muscles" value="Espalda" data-day-id="{{ day.id }}" {% if 'Espalda' in day.focus %}checked{% endif %}>
+                                                                <label class="form-check-label" for="muscle-espalda-{{ day.id }}">Espalda</label>
+                                                            </div>
+                                                            <div class="form-check form-check-inline">
+                                                                <input class="form-check-input muscle-checkbox" type="checkbox" id="muscle-piernas-{{ day.id }}" name="muscles" value="Piernas" data-day-id="{{ day.id }}" {% if 'Piernas' in day.focus %}checked{% endif %}>
+                                                                <label class="form-check-label" for="muscle-piernas-{{ day.id }}">Piernas</label>
+                                                            </div>
+                                                            <div class="form-check form-check-inline">
+                                                                <input class="form-check-input muscle-checkbox" type="checkbox" id="muscle-hombros-{{ day.id }}" name="muscles" value="Hombros" data-day-id="{{ day.id }}" {% if 'Hombros' in day.focus %}checked{% endif %}>
+                                                                <label class="form-check-label" for="muscle-hombros-{{ day.id }}">Hombros</label>
+                                                            </div>
+                                                            <div class="form-check form-check-inline">
+                                                                <input class="form-check-input muscle-checkbox" type="checkbox" id="muscle-brazos-{{ day.id }}" name="muscles" value="Brazos" data-day-id="{{ day.id }}" {% if 'Brazos' in day.focus %}checked{% endif %}>
+                                                                <label class="form-check-label" for="muscle-brazos-{{ day.id }}">Brazos</label>
+                                                            </div>
+                                                            <div class="form-check form-check-inline">
+                                                                <input class="form-check-input muscle-checkbox" type="checkbox" id="muscle-abdominales-{{ day.id }}" name="muscles" value="Abdominales" data-day-id="{{ day.id }}" {% if 'Abdominales' in day.focus %}checked{% endif %}>
+                                                                <label class="form-check-label" for="muscle-abdominales-{{ day.id }}">Abdominales</label>
+                                                            </div>
+                                                            <div class="form-check form-check-inline">
+                                                                <input class="form-check-input muscle-checkbox" type="checkbox" id="muscle-core-{{ day.id }}" name="muscles" value="Core" data-day-id="{{ day.id }}" {% if 'Core' in day.focus %}checked{% endif %}>
+                                                                <label class="form-check-label" for="muscle-core-{{ day.id }}">Core</label>
+                                                            </div>
+                                                            <div class="form-check form-check-inline">
+                                                                <input class="form-check-input muscle-checkbox" type="checkbox" id="muscle-cardio-{{ day.id }}" name="muscles" value="Cardio" data-day-id="{{ day.id }}" {% if 'Cardio' in day.focus %}checked{% endif %}>
+                                                                <label class="form-check-label" for="muscle-cardio-{{ day.id }}">Cardio</label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <button type="submit" class="btn btn-outline-primary w-100">Actualizar</button>
+                                                    </div>
                                                 </div>
                                             </form>
                                         </div>
@@ -229,10 +271,10 @@
                     
                     <div class="mb-3">
                         <label for="exercise" class="form-label">Seleccionar Ejercicio *</label>
-                        <select class="form-select" id="exercise" name="exercise" required>
+                        <select class="form-select" id="exercise" name="exercise" required data-day-id="{{ day.id }}">
                             <option value="">Selecciona un ejercicio</option>
                             {% for exercise in all_exercises %}
-                            <option value="{{ exercise.name }}">{{ exercise.name }} ({{ exercise.category }})</option>
+                            <option value="{{ exercise.name }}" data-category="{{ exercise.category }}" data-primary-muscles="{{ exercise.primary_muscles }}">{{ exercise.name }} ({{ exercise.category }})</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -240,7 +282,7 @@
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label for="sets_count" class="form-label">Series *</label>
-                            <input type="number" class="form-control" id="sets_count" name="sets_count" min="1" value="3" required>
+                            <input type="number" class="form-control" id="sets_count" name="sets_count" min="1" value="4" required>
                         </div>
                         
                         <div class="col-md-4 mb-3">
@@ -286,8 +328,80 @@
                 
                 modalDayId.value = dayId;
                 dayLabel.textContent = `Día: ${dayName}`;
+                
+                // Obtener los músculos seleccionados para este día (usando checkboxes)
+                const muscleCheckboxes = document.querySelectorAll(`.muscle-checkbox[data-day-id="${dayId}"]:checked`);
+                if (muscleCheckboxes.length > 0) {
+                    const selectedMuscles = Array.from(muscleCheckboxes).map(cb => cb.value);
+                    filterExercisesByMuscles(selectedMuscles);
+                }
             });
         }
+        
+        // Filtrar ejercicios por músculos seleccionados
+        function filterExercisesByMuscles(muscles) {
+            const exerciseSelect = document.getElementById('exercise');
+            const allOptions = exerciseSelect.querySelectorAll('option');
+            
+            if (!muscles || muscles.length === 0) {
+                // Si no hay músculos seleccionados, mostrar todos los ejercicios
+                allOptions.forEach(option => {
+                    option.style.display = '';
+                });
+                return;
+            }
+            
+            allOptions.forEach(option => {
+                // La primera opción (placeholder) siempre se muestra
+                if (option.value === '') {
+                    return;
+                }
+                
+                const category = option.getAttribute('data-category');
+                const primaryMuscles = option.getAttribute('data-primary-muscles');
+                
+                // Comprobar si el ejercicio coincide con alguno de los músculos seleccionados
+                const matchesCategory = muscles.includes(category);
+                const matchesPrimaryMuscles = primaryMuscles && muscles.some(muscle => 
+                    primaryMuscles.toLowerCase().includes(muscle.toLowerCase())
+                );
+                
+                if (matchesCategory || matchesPrimaryMuscles) {
+                    option.style.display = '';
+                } else {
+                    option.style.display = 'none';
+                }
+            });
+            
+            // Establecer la primera opción visible como seleccionada
+            const firstVisibleOption = Array.from(allOptions).find(option => 
+                option.value !== '' && option.style.display !== 'none'
+            );
+            
+            if (firstVisibleOption) {
+                exerciseSelect.value = firstVisibleOption.value;
+            } else {
+                exerciseSelect.value = ''; // Si no hay coincidencias, seleccionar el placeholder
+            }
+        }
+        
+        // Manejar cambios en la selección de músculos con checkboxes
+        document.querySelectorAll('.muscle-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const dayId = this.getAttribute('data-day-id');
+                const muscleCheckboxes = document.querySelectorAll(`.muscle-checkbox[data-day-id="${dayId}"]:checked`);
+                const selectedMuscles = Array.from(muscleCheckboxes).map(cb => cb.value);
+                
+                // Actualizar el enfoque en el input
+                const focusInput = document.getElementById(`focus-${dayId}`);
+                if (focusInput) {
+                    focusInput.value = selectedMuscles.join(', ');
+                }
+                
+                // Guardar en localStorage para usar cuando se abra el modal
+                localStorage.setItem(`muscles_day_${dayId}`, JSON.stringify(selectedMuscles));
+            });
+        });
     });
 </script>
 {% endblock %} 
