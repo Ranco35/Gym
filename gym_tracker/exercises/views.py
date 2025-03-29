@@ -61,21 +61,36 @@ class ExerciseDetailView(generics.RetrieveAPIView):
 @login_required
 @user_passes_test(is_trainer_or_admin)
 def exercise_create(request):
-    """
-    Vista para crear un nuevo ejercicio.
-    """
+    """Vista para crear un nuevo ejercicio."""
     if request.method == 'POST':
         try:
-            # Crear un diccionario con los campos requeridos
-            data = {
-                'name': request.POST.get('name'),
-                'description': request.POST.get('description'),
-                'category': request.POST.get('category'),
-                'difficulty': request.POST.get('difficulty'),
-                'creator': request.user,  # Registrar el creador
-            }
+            # Extraer datos del formulario
+            name = request.POST.get('name')
+            description = request.POST.get('description')
             
-            # Añadir campos opcionales si existen en el modelo
+            # Obtener la categoría como objeto ExerciseCategory
+            category_id = request.POST.get('category')
+            try:
+                category = ExerciseCategory.objects.get(id=category_id)
+            except ExerciseCategory.DoesNotExist:
+                messages.error(request, f'La categoría seleccionada no existe.')
+                return render(request, 'exercises/exercise_form.html', {
+                    'editing': False,
+                    'categories': ExerciseCategory.objects.all().order_by('name')
+                })
+                
+            difficulty = request.POST.get('difficulty')
+            
+            # Crear el ejercicio con los campos obligatorios
+            exercise = Exercise(
+                name=name,
+                description=description,
+                category=category,
+                difficulty=difficulty,
+                creator=request.user
+            )
+            
+            # Agregar campos opcionales si están presentes
             optional_fields = [
                 'primary_muscles', 
                 'secondary_muscles', 
@@ -85,23 +100,22 @@ def exercise_create(request):
             ]
             
             for field in optional_fields:
-                if hasattr(Exercise, field) and request.POST.get(field):
-                    data[field] = request.POST.get(field)
+                if request.POST.get(field):
+                    setattr(exercise, field, request.POST.get(field))
             
-            # Crear el ejercicio con los datos limpios
-            exercise = Exercise.objects.create(**data)
+            # Guardar el ejercicio
+            exercise.save()
             
-            # Verificar que el creador se guardó correctamente
-            if not exercise.creator and hasattr(exercise, 'creator'):
-                exercise.creator = request.user
-                exercise.save()
-                
             messages.success(request, 'Ejercicio creado exitosamente.')
-            return redirect('exercises:exercise-list')
+            return redirect('exercises:exercise-detail', pk=exercise.pk)
         except Exception as e:
             messages.error(request, f'Error al crear el ejercicio: {str(e)}')
     
-    return render(request, 'exercises/exercise_form.html')
+    # Renderizar el formulario vacío
+    return render(request, 'exercises/exercise_form.html', {
+        'editing': False,
+        'categories': ExerciseCategory.objects.all().order_by('name')
+    })
 
 @login_required
 @user_passes_test(is_trainer_or_admin)
@@ -123,7 +137,21 @@ def exercise_edit(request, pk):
             # Actualizar campos del ejercicio
             exercise.name = request.POST.get('name')
             exercise.description = request.POST.get('description')
-            exercise.category = request.POST.get('category')
+            
+            # Obtener la categoría como objeto ExerciseCategory
+            category_id = request.POST.get('category')
+            if category_id:
+                try:
+                    category = ExerciseCategory.objects.get(id=category_id)
+                    exercise.category = category
+                except ExerciseCategory.DoesNotExist:
+                    messages.error(request, f'La categoría seleccionada no existe.')
+                    return render(request, 'exercises/exercise_form.html', {
+                        'exercise': exercise,
+                        'editing': True,
+                        'categories': ExerciseCategory.objects.all().order_by('name')
+                    })
+            
             exercise.difficulty = request.POST.get('difficulty')
             
             # Actualizar campos opcionales
@@ -147,7 +175,8 @@ def exercise_edit(request, pk):
     
     return render(request, 'exercises/exercise_form.html', {
         'exercise': exercise,
-        'editing': True
+        'editing': True,
+        'categories': ExerciseCategory.objects.all().order_by('name')
     })
 
 @login_required
@@ -348,13 +377,13 @@ def export_exercises(request):
 def exercise_list(request):
     """Vista para mostrar todos los ejercicios disponibles."""
     # Obtener todos los ejercicios ordenados por nombre
-    exercises = Exercise.objects.all().order_by('name')
+    exercises = Exercise.objects.all().select_related('category').order_by('name')
     
     # Lista para almacenar ejercicios con permisos
     exercises_with_permissions = []
     
     # Obtener categorías únicas para las pestañas
-    categories = Exercise.objects.values_list('category', flat=True).distinct().order_by('category')
+    categories = ExerciseCategory.objects.all().order_by('name')
     
     # Contadores para cada nivel de dificultad
     beginner_count = 0

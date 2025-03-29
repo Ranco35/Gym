@@ -31,14 +31,9 @@
                             <label for="category" class="form-label">Categoría</label>
                             <select class="form-select" id="category" name="category" required>
                                 <option value="" {% if not editing %}selected{% endif %}>Selecciona una categoría</option>
-                                <option value="Pecho" {% if editing and exercise.category == 'Pecho' %}selected{% endif %}>Pecho</option>
-                                <option value="Espalda" {% if editing and exercise.category == 'Espalda' %}selected{% endif %}>Espalda</option>
-                                <option value="Piernas" {% if editing and exercise.category == 'Piernas' %}selected{% endif %}>Piernas</option>
-                                <option value="Hombros" {% if editing and exercise.category == 'Hombros' %}selected{% endif %}>Hombros</option>
-                                <option value="Brazos" {% if editing and exercise.category == 'Brazos' %}selected{% endif %}>Brazos</option>
-                                <option value="Abdominales" {% if editing and exercise.category == 'Abdominales' %}selected{% endif %}>Abdominales</option>
-                                <option value="Core" {% if editing and exercise.category == 'Core' %}selected{% endif %}>Core</option>
-                                <option value="Cardio" {% if editing and exercise.category == 'Cardio' %}selected{% endif %}>Cardio</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}" {% if editing and exercise.category.id == category.id %}selected{% endif %}>{{ category.name }}</option>
+                                {% endfor %}
                             </select>
                         </div>
                         
