@@ -30,34 +30,65 @@
                     <h5 class="mb-0">Información Básica</h5>
                 </div>
                 <div class="card-body">
-                    <form method="post" action="{% url 'trainers:create_training' trainer_student.student.id %}">
-                        {% csrf_token %}
-                        
-                        <div class="mb-3">
-                            <label for="name" class="form-label">Nombre de la Rutina *</label>
-                            <input type="text" class="form-control" id="name" name="name" placeholder="Ej: Rutina de Fuerza, Día de Piernas..." required>
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="createTrainingModalLabel">Crear Rutina para {{ trainer_student.student.user.get_full_name }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info mb-4">
+                            <p class="mb-0">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Crea una rutina inicial para tu alumno. Después podrás añadir ejercicios específicos para cada día.
+                            </p>
                         </div>
-                        
-                        <div class="mb-3">
-                            <label for="date" class="form-label">Fecha *</label>
-                            <input type="date" class="form-control" id="date" name="date" required value="{{ now|date:'Y-m-d' }}">
-                            <div class="form-text">Fecha programada para esta rutina.</div>
+                    
+                        {% if form_errors %}
+                        <div class="alert alert-danger">
+                            <p class="mb-0"><strong>Por favor corrige los siguientes errores:</strong></p>
+                            <ul class="mb-0 mt-2">
+                                {% for error in form_errors %}
+                                <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
                         </div>
+                        {% endif %}
                         
-                        <div class="mb-3">
-                            <label for="description" class="form-label">Descripción</label>
-                            <textarea class="form-control" id="description" name="description" rows="3" placeholder="Descripción o detalles de la rutina..."></textarea>
-                        </div>
-                        
-                        <div class="d-flex justify-content-between">
-                            <a href="{% url 'trainers:student_trainings' trainer_student.student.id %}" class="btn btn-outline-secondary">
-                                <i class="fas fa-times me-2"></i>Cancelar
-                            </a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save me-2"></i>Crear Rutina
-                            </button>
-                        </div>
-                    </form>
+                        <form method="post" action="{% url 'trainers:create_training' trainer_student.student.id %}" id="createTrainingForm">
+                            {% csrf_token %}
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="name" class="form-label">Nombre de la Rutina *</label>
+                                    <input type="text" class="form-control" id="name" name="name" placeholder="Ej: Rutina de Fuerza, Plan de Definición..." required>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="date" class="form-label">Fecha de Inicio *</label>
+                                    <input type="date" class="form-control" id="date" name="date" required>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="form-label">Días de la Semana *</label>
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% for day, day_display in days_of_week %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="days" value="{{ day }}" id="day_{{ day }}">
+                                        <label class="form-check-label" for="day_{{ day }}">
+                                            {{ day_display }}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="form-text">Selecciona los días en que se debe realizar esta rutina. Luego podrás agregar ejercicios para cada día.</div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-end">
+                                <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-primary">Crear Rutina</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>

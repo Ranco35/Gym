@@ -18,9 +18,12 @@
         <div class="col-md-8">
             <h1>{{ training.name }}</h1>
             <p class="text-muted">
-                Fecha: {{ training.date|date:"d/m/Y" }} | 
+                Fecha de inicio: {{ training.date|date:"d/m/Y" }} | 
                 Estudiante: {{ trainer_student.student.get_full_name|default:trainer_student.student.username }}
             </p>
+            <div class="mb-3">
+                <span class="badge bg-primary">Días programados: {{ training.get_scheduled_days_display }}</span>
+            </div>
             {% if training.description %}
             <p>{{ training.description }}</p>
             {% endif %}
@@ -41,48 +44,108 @@
     </div>
 
     <div class="row">
-        <div class="col-md-12">
+        <div class="col-md-12 mb-4">
             <div class="card">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">Ejercicios</h5>
-                </div>
-                <div class="card-body">
-                    {% if sets %}
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Ejercicio</th>
-                                    <th>Series</th>
-                                    <th>Repeticiones</th>
-                                    <th>Peso (kg)</th>
-                                    <th>Notas</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for set in sets %}
-                                <tr>
-                                    <td>{{ forloop.counter }}</td>
-                                    <td><strong>{{ set.exercise }}</strong></td>
-                                    <td>{{ set.sets_count }}</td>
-                                    <td>{{ set.reps }}</td>
-                                    <td>{{ set.weight }}</td>
-                                    <td>{{ set.notes|default:"-" }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% else %}
-                    <div class="text-center py-5">
-                        <i class="fas fa-exclamation-circle text-muted fa-4x mb-3"></i>
-                        <h5>No hay ejercicios en esta rutina</h5>
-                        <p class="text-muted">Edita la rutina para añadir ejercicios.</p>
-                        <a href="{% url 'trainers:edit_training' trainer_student.student.id training.id %}" class="btn btn-primary mt-2">
-                            <i class="fas fa-plus-circle me-2"></i>Añadir Ejercicios
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{{ training.name }}</h5>
+                    <div>
+                        <a href="{% url 'trainers:edit_training' trainer_student.student.id training.id %}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-edit"></i> Editar Rutina
                         </a>
                     </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <p><strong>Fecha de inicio:</strong> {{ training.date|date:"d/m/Y" }}</p>
+                            <p>
+                                <strong>Días programados:</strong> 
+                                {{ training.get_days_display }}
+                            </p>
+                        </div>
+                    </div>
+
+                    {% if days_with_sets %}
+                        <hr>
+                        <div class="mb-4">
+                            <h5 class="mb-3">Ejercicios por Día</h5>
+                            
+                            <ul class="nav nav-tabs mb-4" id="daysTabs" role="tablist">
+                                {% for day, sets in days_with_sets.items %}
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link {% if forloop.first %}active{% endif %}" 
+                                                id="day-{{ day.id }}-tab" 
+                                                data-bs-toggle="tab" 
+                                                data-bs-target="#day-{{ day.id }}" 
+                                                type="button" 
+                                                role="tab" 
+                                                aria-controls="day-{{ day.id }}" 
+                                                aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">
+                                            {{ day.day_of_week }}
+                                        </button>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                            
+                            <div class="tab-content" id="daysTabsContent">
+                                {% for day, sets in days_with_sets.items %}
+                                    <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" 
+                                         id="day-{{ day.id }}" 
+                                         role="tabpanel" 
+                                         aria-labelledby="day-{{ day.id }}-tab">
+                                        
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <div>
+                                                <h5>{{ day.day_of_week }}</h5>
+                                                {% if day.focus %}
+                                                    <div class="badge bg-primary mb-3">{{ day.focus }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        
+                                        {% if sets %}
+                                            <div class="table-responsive">
+                                                <table class="table table-hover">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>#</th>
+                                                            <th>Ejercicio</th>
+                                                            <th>Series</th>
+                                                            <th>Repeticiones</th>
+                                                            <th>Peso (kg)</th>
+                                                            <th>Notas</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for set in sets %}
+                                                        <tr>
+                                                            <td>{{ forloop.counter }}</td>
+                                                            <td><strong>{{ set.exercise }}</strong></td>
+                                                            <td>{{ set.sets_count }}</td>
+                                                            <td>{{ set.reps }}</td>
+                                                            <td>{{ set.weight }}</td>
+                                                            <td>{{ set.notes|default:"-" }}</td>
+                                                        </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        {% else %}
+                                            <div class="alert alert-info">
+                                                No hay ejercicios para este día.
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            Esta rutina aún no tiene ejercicios.
+                            <a href="{% url 'trainers:edit_training' trainer_student.student.id training.id %}" class="alert-link">
+                                Haz clic aquí para añadir ejercicios
+                            </a>
+                        </div>
                     {% endif %}
                 </div>
             </div>

@@ -44,10 +44,9 @@ def can_edit_exercise(user, exercise):
     if user.is_superuser or getattr(user, 'role', None) == 'ADMIN':
         return True
     
-    # Entrenadores solo pueden editar sus propios ejercicios
+    # Entrenadores pueden editar cualquier ejercicio
     if getattr(user, 'role', None) == 'TRAINER':
-        # Si el ejercicio no tiene creador o el creador es este usuario
-        return not exercise.creator or exercise.creator == user
+        return True
     
     # Otros usuarios no pueden editar ejercicios
     return False 

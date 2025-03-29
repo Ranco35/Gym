@@ -4,10 +4,12 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.db.models import Count, Q
 from django.utils import timezone
-from .models import TrainerProfile, TrainerStudent, LiveTrainingSession, LiveSet, TrainerFeedback, TrainerTraining, TrainerSet
+from .models import TrainerProfile, TrainerStudent, LiveTrainingSession, LiveSet, TrainerFeedback, TrainerTraining, TrainerSet, TrainerTrainingDay
 from gym_tracker.trainings.models import Training, Set
 from .decorators import trainer_required
 from django.contrib.auth import get_user_model
+from gym_tracker.workouts.models import WeeklyRoutine
+from gym_tracker.exercises.models import Exercise
 
 @login_required
 @trainer_required
@@ -46,20 +48,33 @@ def student_detail(request, student_id):
         student_id=student_id
     )
     
-    # Obtener entrenamientos recientes
-    recent_trainings = Training.objects.filter(
+    # Obtener entrenamientos recientes asignados al estudiante
+    recent_trainings = TrainerTraining.objects.filter(
         user=trainer_student.student
-    ).order_by('-date')[:10]
+    ).order_by('-date')[:5]
     
     # Obtener feedback reciente
     recent_feedback = TrainerFeedback.objects.filter(
         trainer_student=trainer_student
     ).order_by('-created_at')[:5]
     
+    # Obtener entrenamientos completados
+    completed_trainings = Training.objects.filter(
+        user=trainer_student.student,
+        completed=True
+    ).order_by('-date')[:5]
+    
+    # Obtener rutinas semanales
+    weekly_routines = WeeklyRoutine.objects.filter(
+        user=trainer_student.student
+    ).order_by('-created_at')[:5]
+    
     context = {
         'trainer_student': trainer_student,
         'recent_trainings': recent_trainings,
-        'recent_feedback': recent_feedback
+        'recent_feedback': recent_feedback,
+        'completed_trainings': completed_trainings,
+        'weekly_routines': weekly_routines
     }
     return render(request, 'trainers/student_detail.html', context)
 
@@ -73,13 +88,33 @@ def live_session(request, session_id):
         trainer_student__trainer=request.user
     )
     
-    # Obtener sets completados
-    completed_sets = LiveSet.objects.filter(
-        session=session
-    ).order_by('completed_at')
+    # Obtener los días de entrenamiento
+    training_days = session.training.days.all()
+    
+    # Estructura para almacenar sets por día
+    days_with_sets = {}
+    completed_sets = {}
+    
+    for day in training_days:
+        # Obtener los sets de cada día
+        sets = TrainerSet.objects.filter(training_day=day).order_by('order')
+        days_with_sets[day] = sets
+        
+        # Obtener los sets completados para cada día
+        day_completed_sets = {}
+        for set_obj in sets:
+            live_sets = LiveSet.objects.filter(
+                session=session, 
+                set=set_obj
+            ).order_by('completed_at')
+            if live_sets.exists():
+                day_completed_sets[set_obj.id] = live_sets
+                
+        completed_sets[day.id] = day_completed_sets
     
     context = {
         'session': session,
+        'days_with_sets': days_with_sets,
         'completed_sets': completed_sets
     }
     return render(request, 'trainers/live_session.html', context)
@@ -88,25 +123,131 @@ def live_session(request, session_id):
 @trainer_required
 def start_live_session(request, student_id):
     """Iniciar una nueva sesión de entrenamiento en vivo."""
+    # Verificar la relación entrenador-estudiante
+    trainer_student = get_object_or_404(
+        TrainerStudent,
+        trainer=request.user,
+        student_id=student_id,
+        active=True
+    )
+    
     if request.method == 'POST':
-        trainer_student = get_object_or_404(
-            TrainerStudent,
-            trainer=request.user,
-            student_id=student_id,
-            active=True
-        )
+        routine_type = request.POST.get('routine_type')
+        routine_id = request.POST.get('routine_id')
         
-        training_id = request.POST.get('training_id')
-        training = get_object_or_404(TrainerTraining, id=training_id, user=trainer_student.student)
+        if not routine_type or not routine_id:
+            messages.error(request, 'Debes seleccionar una rutina para iniciar la sesión')
+            return redirect('trainers:select_session_routine', student_id=student_id)
         
-        session = LiveTrainingSession.objects.create(
-            training=training,
-            trainer_student=trainer_student
-        )
-        
+        # Crear sesión según el tipo de rutina seleccionada
+        if routine_type == 'trainer':
+            # Rutina asignada por el entrenador
+            training = get_object_or_404(TrainerTraining, id=routine_id, user=trainer_student.student)
+            
+            # Verificar que la rutina tenga al menos un día con ejercicios
+            if not training.days.exists():
+                messages.error(request, 'La rutina seleccionada no tiene días configurados')
+                return redirect('trainers:select_session_routine', student_id=student_id)
+                
+            session = LiveTrainingSession.objects.create(
+                training=training,
+                trainer_student=trainer_student
+            )
+            
+        elif routine_type == 'weekly':
+            # Rutina semanal del estudiante
+            routine = get_object_or_404(WeeklyRoutine, id=routine_id, user=trainer_student.student)
+            
+            # Crear un TrainerTraining temporal basado en la rutina semanal
+            today = timezone.now().date()
+            training = TrainerTraining.objects.create(
+                user=trainer_student.student,
+                created_by=request.user,
+                name=f"Sesión en vivo: {routine.name}",
+                description=f"Sesión basada en la rutina semanal '{routine.name}'",
+                date=today
+            )
+            
+            # Obtener el día actual de la semana en español
+            days_map = {
+                0: 'Lunes',
+                1: 'Martes',
+                2: 'Miércoles',
+                3: 'Jueves',
+                4: 'Viernes',
+                5: 'Sábado',
+                6: 'Domingo'
+            }
+            current_day_name = days_map.get(today.weekday())
+            
+            # Intentar obtener los ejercicios del día actual, si no hay, usar cualquier día
+            routine_day = routine.days.filter(day_of_week=current_day_name).first()
+            if not routine_day:
+                routine_day = routine.days.first()
+            
+            if routine_day:
+                # Crear el día de entrenamiento
+                training_day = TrainerTrainingDay.objects.create(
+                    training=training,
+                    day_of_week=routine_day.day_of_week,
+                    focus=routine_day.focus
+                )
+                
+                # Copiar los ejercicios de la rutina al entrenamiento temporal
+                for i, exercise in enumerate(routine_day.exercises.all()):
+                    TrainerSet.objects.create(
+                        training_day=training_day,
+                        exercise=exercise.exercise.name,
+                        sets_count=exercise.sets,
+                        reps=exercise.reps,
+                        weight=exercise.weight,
+                        notes=exercise.notes,
+                        order=i+1
+                    )
+            
+            # Crear la sesión con el entrenamiento temporal
+            session = LiveTrainingSession.objects.create(
+                training=training,
+                trainer_student=trainer_student
+            )
+        else:
+            messages.error(request, 'Tipo de rutina no válido')
+            return redirect('trainers:select_session_routine', student_id=student_id)
+            
         return redirect('trainers:live_session', session_id=session.id)
     
-    return redirect('trainers:student_detail', student_id=student_id)
+    # Si es una solicitud GET, redirigir a la página de selección de rutina
+    return redirect('trainers:select_session_routine', student_id=student_id)
+
+@login_required
+@trainer_required
+def select_session_routine(request, student_id):
+    """Seleccionar rutina para iniciar una sesión en vivo."""
+    # Verificar la relación entrenador-estudiante
+    trainer_student = get_object_or_404(
+        TrainerStudent,
+        trainer=request.user,
+        student_id=student_id,
+        active=True
+    )
+    
+    # Obtener las rutinas asignadas por el entrenador
+    trainer_trainings = TrainerTraining.objects.filter(
+        user=trainer_student.student
+    ).order_by('-date')[:10]
+    
+    # Obtener las rutinas semanales del estudiante
+    weekly_routines = WeeklyRoutine.objects.filter(
+        user=trainer_student.student
+    ).order_by('-created_at')
+    
+    context = {
+        'trainer_student': trainer_student,
+        'trainer_trainings': trainer_trainings,
+        'weekly_routines': weekly_routines
+    }
+    
+    return render(request, 'trainers/select_session_routine.html', context)
 
 @login_required
 @trainer_required
@@ -126,7 +267,12 @@ def save_live_set(request):
             trainer_student__trainer=request.user
         )
         
-        set_obj = get_object_or_404(Set, id=set_id)
+        # Obtener el set que ahora está relacionado con training_day en lugar de training directamente
+        set_obj = get_object_or_404(
+            TrainerSet, 
+            id=set_id, 
+            training_day__training=session.training
+        )
         
         live_set = LiveSet.objects.create(
             session=session,
@@ -176,9 +322,17 @@ def end_session(request, session_id):
 @trainer_required
 def session_list(request):
     """Lista de sesiones de entrenamiento del entrenador."""
+    # Obtener todas las sesiones del entrenador con prefetch_related para optimizar consultas
     sessions = LiveTrainingSession.objects.filter(
         trainer_student__trainer=request.user
-    ).select_related('trainer_student__student', 'training').order_by('-started_at')
+    ).select_related(
+        'trainer_student__student', 
+        'trainer_student__student__userprofile',
+        'training'
+    ).prefetch_related(
+        'training__days',
+        'training__days__sets'
+    ).order_by('-started_at')
     
     context = {
         'sessions': sessions
@@ -345,122 +499,161 @@ def student_trainings(request, student_id):
         active=True
     )
     
-    # Obtener todas las rutinas del estudiante
-    trainings = TrainerTraining.objects.filter(
+    # Obtener todas las rutinas asignadas del estudiante
+    trainer_trainings = TrainerTraining.objects.filter(
         user=trainer_student.student
     ).order_by('-date')
     
+    # Obtener rutinas semanales del estudiante
+    weekly_routines = WeeklyRoutine.objects.filter(
+        user=trainer_student.student
+    ).order_by('-created_at')
+    
     context = {
         'trainer_student': trainer_student,
-        'trainings': trainings
+        'trainer_trainings': trainer_trainings,
+        'weekly_routines': weekly_routines
     }
     return render(request, 'trainers/student_trainings.html', context)
 
 @login_required
 @trainer_required
 def training_detail(request, student_id, training_id):
-    """Ver detalle de una rutina específica de un estudiante."""
-    # Verificar la relación entrenador-estudiante
-    trainer_student = get_object_or_404(
-        TrainerStudent,
-        trainer=request.user,
-        student_id=student_id,
-        active=True
-    )
+    """Ver detalles de una rutina específica."""
+    trainer = request.user
+    trainer_student = get_object_or_404(TrainerStudent, trainer=trainer, student_id=student_id)
+    training = get_object_or_404(TrainerTraining, id=training_id, user=trainer_student.student)
     
-    # Obtener la rutina específica
-    training = get_object_or_404(
-        TrainerTraining,
-        id=training_id,
-        user=trainer_student.student
-    )
+    # Obtener los días de entrenamiento
+    training_days = training.days.all()  # El orden ya está definido en el modelo
     
-    # Obtener los sets de la rutina
-    sets = TrainerSet.objects.filter(
-        training=training
-    ).order_by('order')
+    # Crear un diccionario para almacenar los ejercicios por día
+    days_with_sets = {}
+    for day in training_days:
+        sets = TrainerSet.objects.filter(training_day=day).order_by('order')
+        days_with_sets[day] = sets
     
     context = {
         'trainer_student': trainer_student,
         'training': training,
-        'sets': sets
+        'days_with_sets': days_with_sets
     }
+    
     return render(request, 'trainers/training_detail.html', context)
 
 @login_required
 @trainer_required
 def create_training(request, student_id):
     """Crear una nueva rutina para un estudiante."""
-    # Verificar la relación entrenador-estudiante
-    trainer_student = get_object_or_404(
-        TrainerStudent,
-        trainer=request.user,
-        student_id=student_id,
-        active=True
-    )
+    trainer = request.user
+    trainer_student = get_object_or_404(TrainerStudent, trainer=trainer, student_id=student_id)
+    
+    # Definir días de la semana para el formulario
+    days_of_week = [
+        ('Lunes', 'Lunes'),
+        ('Martes', 'Martes'),
+        ('Miércoles', 'Miércoles'),
+        ('Jueves', 'Jueves'),
+        ('Viernes', 'Viernes'),
+        ('Sábado', 'Sábado'),
+        ('Domingo', 'Domingo'),
+    ]
+    
+    form_errors = []
     
     if request.method == 'POST':
-        name = request.POST.get('name')
-        description = request.POST.get('description', '')
-        date = request.POST.get('date')
+        name = request.POST.get('name', '').strip()
+        date = request.POST.get('date', '')
+        selected_days = request.POST.getlist('days', [])
         
-        if not name or not date:
-            messages.error(request, 'El nombre y la fecha son obligatorios')
-            return redirect('trainers:create_training', student_id=student_id)
+        # Validar datos
+        if not name:
+            form_errors.append('El nombre de la rutina es obligatorio.')
+        if not date:
+            form_errors.append('La fecha de inicio es obligatoria.')
+        if not selected_days:
+            form_errors.append('Debes seleccionar al menos un día de la semana.')
         
-        # Crear la nueva rutina
-        training = TrainerTraining.objects.create(
-            user=trainer_student.student,
-            name=name,
-            description=description,
-            date=date,
-            created_by=request.user
-        )
-        
-        messages.success(request, f'Rutina "{name}" creada correctamente')
-        return redirect('trainers:edit_training', student_id=student_id, training_id=training.id)
+        # Si no hay errores, crear la rutina
+        if not form_errors:
+            training = TrainerTraining.objects.create(
+                name=name,
+                date=date,
+                user=trainer_student.student,
+                created_by=trainer
+            )
+            
+            # Crear los días de entrenamiento
+            for day in selected_days:
+                TrainerTrainingDay.objects.create(
+                    training=training,
+                    day_of_week=day
+                )
+            
+            messages.success(request, 'Rutina creada correctamente!')
+            return redirect('trainers:edit_training', student_id=student_id, training_id=training.id)
     
     context = {
-        'trainer_student': trainer_student
+        'trainer_student': trainer_student,
+        'days_of_week': days_of_week,
+        'form_errors': form_errors
     }
+    
     return render(request, 'trainers/create_training.html', context)
 
 @login_required
 @trainer_required
 def edit_training(request, student_id, training_id):
     """Editar una rutina específica de un estudiante."""
-    # Verificar la relación entrenador-estudiante
-    trainer_student = get_object_or_404(
-        TrainerStudent,
-        trainer=request.user,
-        student_id=student_id,
-        active=True
-    )
+    trainer = request.user
+    trainer_student = get_object_or_404(TrainerStudent, trainer=trainer, student_id=student_id)
+    training = get_object_or_404(TrainerTraining, id=training_id, user=trainer_student.student)
     
-    # Obtener la rutina a editar
-    training = get_object_or_404(
-        TrainerTraining,
-        id=training_id,
-        user=trainer_student.student
-    )
+    # Definir días de la semana para el formulario
+    days_of_week = [
+        ('Lunes', 'Lunes'),
+        ('Martes', 'Martes'),
+        ('Miércoles', 'Miércoles'),
+        ('Jueves', 'Jueves'),
+        ('Viernes', 'Viernes'),
+        ('Sábado', 'Sábado'),
+        ('Domingo', 'Domingo'),
+    ]
     
+    # Obtener días seleccionados
+    selected_days = [day.day_of_week for day in training.days.all()]
+    
+    # Obtener todos los días con sus ejercicios
+    training_days = training.days.all()
+    days_with_sets = {}
+    
+    for day in training_days:
+        days_with_sets[day] = TrainerSet.objects.filter(training_day=day).order_by('order')
+    
+    # Obtener todos los ejercicios de la base de datos
+    all_exercises = Exercise.objects.all().order_by('category', 'name')
+
     if request.method == 'POST':
         # Si se está añadiendo un nuevo set
         if 'add_set' in request.POST:
+            day_id = request.POST.get('day_id')
             exercise = request.POST.get('exercise')
             sets_count = request.POST.get('sets_count')
             reps = request.POST.get('reps')
             weight = request.POST.get('weight', None)
             notes = request.POST.get('notes', '')
             
+            # Verificar que existe el día
+            training_day = get_object_or_404(TrainerTrainingDay, id=day_id, training=training)
+            
             # Obtener el último orden
             last_order = TrainerSet.objects.filter(
-                training=training
+                training_day=training_day
             ).order_by('-order').values_list('order', flat=True).first() or 0
             
             # Crear el nuevo set
             TrainerSet.objects.create(
-                training=training,
+                training_day=training_day,
                 exercise=exercise,
                 sets_count=sets_count,
                 reps=reps,
@@ -476,7 +669,7 @@ def edit_training(request, student_id, training_id):
         elif 'delete_set' in request.POST:
             set_id = request.POST.get('set_id')
             try:
-                set_obj = TrainerSet.objects.get(id=set_id, training=training)
+                set_obj = TrainerSet.objects.get(id=set_id, training_day__training=training)
                 exercise_name = set_obj.exercise
                 set_obj.delete()
                 messages.success(request, f'Ejercicio "{exercise_name}" eliminado correctamente')
@@ -486,13 +679,18 @@ def edit_training(request, student_id, training_id):
             return redirect('trainers:edit_training', student_id=student_id, training_id=training_id)
         
         # Si se están actualizando los datos básicos de la rutina
-        else:
+        elif 'update_training' in request.POST:
             name = request.POST.get('name')
             description = request.POST.get('description', '')
             date = request.POST.get('date')
+            selected_days = request.POST.getlist('days')
             
             if not name or not date:
                 messages.error(request, 'El nombre y la fecha son obligatorios')
+                return redirect('trainers:edit_training', student_id=student_id, training_id=training_id)
+                
+            if not selected_days:
+                messages.error(request, 'Debes seleccionar al menos un día de la semana')
                 return redirect('trainers:edit_training', student_id=student_id, training_id=training_id)
             
             # Actualizar la rutina
@@ -501,19 +699,47 @@ def edit_training(request, student_id, training_id):
             training.date = date
             training.save()
             
-            messages.success(request, f'Rutina "{name}" actualizada correctamente')
-            return redirect('trainers:training_detail', student_id=student_id, training_id=training_id)
-    
-    # Obtener los sets de la rutina
-    sets = TrainerSet.objects.filter(
-        training=training
-    ).order_by('order')
+            # Actualizar los días de entrenamiento
+            current_days = set(training.days.values_list('day_of_week', flat=True))
+            selected_days_set = set(selected_days)
+            
+            # Eliminar días que ya no están seleccionados
+            days_to_remove = current_days - selected_days_set
+            if days_to_remove:
+                TrainerTrainingDay.objects.filter(training=training, day_of_week__in=days_to_remove).delete()
+            
+            # Añadir nuevos días seleccionados
+            days_to_add = selected_days_set - current_days
+            for day in days_to_add:
+                TrainerTrainingDay.objects.create(training=training, day_of_week=day)
+            
+            messages.success(request, 'Información actualizada correctamente')
+            return redirect('trainers:edit_training', student_id=student_id, training_id=training_id)
+            
+        # Si se está actualizando el enfoque de un día
+        elif 'update_focus' in request.POST:
+            day_id = request.POST.get('day_id')
+            focus = request.POST.get('focus', '')
+            
+            try:
+                day = TrainerTrainingDay.objects.get(id=day_id, training=training)
+                day.focus = focus
+                day.save()
+                messages.success(request, f'Enfoque actualizado para {day.day_of_week}')
+            except TrainerTrainingDay.DoesNotExist:
+                messages.error(request, 'El día seleccionado no existe')
+                
+            return redirect('trainers:edit_training', student_id=student_id, training_id=training_id)
     
     context = {
         'trainer_student': trainer_student,
         'training': training,
-        'sets': sets
+        'days_of_week': days_of_week,
+        'selected_days': selected_days,
+        'days_with_sets': days_with_sets,
+        'all_exercises': all_exercises,
     }
+    
     return render(request, 'trainers/edit_training.html', context)
 
 @login_required
@@ -551,18 +777,26 @@ def copy_training(request, student_id, training_id):
             created_by=request.user
         )
         
-        # Copiar los sets
-        sets = TrainerSet.objects.filter(training=source_training).order_by('order')
-        for set_obj in sets:
-            TrainerSet.objects.create(
+        # Copiar los días y sus sets
+        for day in source_training.days.all():
+            # Crear nuevo día
+            new_day = TrainerTrainingDay.objects.create(
                 training=new_training,
-                exercise=set_obj.exercise,
-                weight=set_obj.weight,
-                reps=set_obj.reps,
-                sets_count=set_obj.sets_count,
-                notes=set_obj.notes,
-                order=set_obj.order
+                day_of_week=day.day_of_week,
+                focus=day.focus
             )
+            
+            # Copiar sets del día
+            for set_obj in day.sets.all():
+                TrainerSet.objects.create(
+                    training_day=new_day,
+                    exercise=set_obj.exercise,
+                    sets_count=set_obj.sets_count,
+                    reps=set_obj.reps,
+                    weight=set_obj.weight,
+                    notes=set_obj.notes,
+                    order=set_obj.order
+                )
         
         messages.success(request, f'Rutina "{new_training.name}" creada correctamente')
         return redirect('trainers:edit_training', student_id=student_id, training_id=new_training.id)

@@ -46,9 +46,20 @@ class TrainerStudent(models.Model):
     def __str__(self):
         return f"{self.trainer.username} -> {self.student.username}"
 
-# Nuevo modelo para las rutinas de entrenamiento creadas por entrenadores
+# Actualizamos el modelo TrainerTraining sin el campo scheduled_days,
+# ya que ahora los días se manejarán como objetos independientes
 class TrainerTraining(models.Model):
     """Modelo para rutinas de entrenamiento creadas por entrenadores para sus estudiantes."""
+    DAYS_OF_WEEK = [
+        ('Lunes', 'Lunes'),
+        ('Martes', 'Martes'),
+        ('Miércoles', 'Miércoles'),
+        ('Jueves', 'Jueves'),
+        ('Viernes', 'Viernes'),
+        ('Sábado', 'Sábado'),
+        ('Domingo', 'Domingo'),
+    ]
+    
     name = models.CharField("Nombre", max_length=200)
     description = models.TextField("Descripción", blank=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='received_trainings')
@@ -66,10 +77,66 @@ class TrainerTraining(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.date}"
+        
+    def get_days_display(self):
+        """Devuelve una representación legible de los días de la semana programados."""
+        days = self.days.values_list('day_of_week', flat=True).order_by(
+            models.Case(
+                models.When(day_of_week='Lunes', then=models.Value(1)),
+                models.When(day_of_week='Martes', then=models.Value(2)),
+                models.When(day_of_week='Miércoles', then=models.Value(3)),
+                models.When(day_of_week='Jueves', then=models.Value(4)),
+                models.When(day_of_week='Viernes', then=models.Value(5)),
+                models.When(day_of_week='Sábado', then=models.Value(6)),
+                models.When(day_of_week='Domingo', then=models.Value(7)),
+                default=models.Value(10),
+                output_field=models.IntegerField()
+            )
+        )
+        if not days:
+            return "No hay días programados"
+        return ", ".join(days)
 
+# Agregamos un nuevo modelo para los días de entrenamiento
+class TrainerTrainingDay(models.Model):
+    """Modelo para almacenar los días de entrenamiento de una rutina."""
+    DAYS_OF_WEEK = [
+        ('Lunes', 'Lunes'),
+        ('Martes', 'Martes'),
+        ('Miércoles', 'Miércoles'),
+        ('Jueves', 'Jueves'),
+        ('Viernes', 'Viernes'),
+        ('Sábado', 'Sábado'),
+        ('Domingo', 'Domingo'),
+    ]
+    
+    training = models.ForeignKey(TrainerTraining, on_delete=models.CASCADE, related_name='days')
+    day_of_week = models.CharField(max_length=20, choices=DAYS_OF_WEEK)
+    focus = models.CharField(max_length=100, blank=True, null=True)
+    
+    class Meta:
+        ordering = [
+            models.Case(
+                models.When(day_of_week='Lunes', then=models.Value(1)),
+                models.When(day_of_week='Martes', then=models.Value(2)),
+                models.When(day_of_week='Miércoles', then=models.Value(3)),
+                models.When(day_of_week='Jueves', then=models.Value(4)),
+                models.When(day_of_week='Viernes', then=models.Value(5)),
+                models.When(day_of_week='Sábado', then=models.Value(6)),
+                models.When(day_of_week='Domingo', then=models.Value(7)),
+                default=models.Value(10),
+                output_field=models.IntegerField()
+            )
+        ]
+        unique_together = ('training', 'day_of_week')
+
+    def __str__(self):
+        return f"{self.training.name} - {self.day_of_week}"
+
+# Actualizamos el modelo TrainerSet para que se relacione con TrainerTrainingDay
 class TrainerSet(models.Model):
     """Series de ejercicios para rutinas de entrenamiento."""
-    training = models.ForeignKey(TrainerTraining, on_delete=models.CASCADE, related_name='sets')
+    training_day = models.ForeignKey(TrainerTrainingDay, on_delete=models.CASCADE, related_name='sets')
     exercise = models.CharField("Ejercicio", max_length=200)
     sets_count = models.IntegerField("Número de series", default=3)
     reps = models.IntegerField("Repeticiones", default=12)
@@ -84,7 +151,7 @@ class TrainerSet(models.Model):
         verbose_name_plural = "Series de ejercicios"
 
     def __str__(self):
-        return f"{self.exercise} - {self.training.name}"
+        return f"{self.exercise} - {self.training_day}"
 
 class LiveTrainingSession(models.Model):
     """Sesión de entrenamiento en vivo."""

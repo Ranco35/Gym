@@ -26,6 +26,7 @@ urlpatterns = [
     path('sessions/', views.session_list, name='session_list'),
     path('sessions/<int:session_id>/', views.live_session, name='live_session'),
     path('sessions/start/<int:student_id>/', views.start_live_session, name='start_session'),
+    path('students/<int:student_id>/select-routine/', views.select_session_routine, name='select_session_routine'),
     path('feedback/', views.feedback_list, name='feedback_list'),
     path('save-set/', views.save_live_set, name='save_live_set'),
     path('end-session/<int:session_id>/', views.end_session, name='end_session'),

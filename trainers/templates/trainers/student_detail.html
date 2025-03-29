@@ -16,13 +16,9 @@
                 Volver a la Lista
             </a>
             {% if trainer_student.active %}
-                <form method="post" action="{% url 'trainers:start_session' trainer_student.student.id %}" 
-                      class="d-inline">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-success">
-                        Iniciar Sesión
-                    </button>
-                </form>
+                <a href="{% url 'trainers:select_session_routine' trainer_student.student.id %}" class="btn btn-success">
+                    <i class="fas fa-play-circle me-1"></i> Iniciar Sesión
+                </a>
             {% endif %}
         </div>
     </div>
@@ -72,9 +68,13 @@
                     </a>
                 </div>
             </div>
+
+            <!-- Rutinas Asignadas -->
             <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Rutinas Asignadas</h5>
+                </div>
                 <div class="card-body">
-                    <h5 class="card-title">Entrenamientos Recientes</h5>
                     {% if recent_trainings %}
                         <div class="table-responsive">
                             <table class="table">
@@ -101,7 +101,7 @@
                                             {% endif %}
                                         </td>
                                         <td>
-                                            <a href="#" class="btn btn-sm btn-outline-primary">
+                                            <a href="{% url 'trainers:training_detail' trainer_student.student.id training.id %}" class="btn btn-sm btn-outline-primary">
                                                 Ver Detalles
                                             </a>
                                         </td>
@@ -111,15 +111,92 @@
                             </table>
                         </div>
                     {% else %}
-                        <p class="text-muted">No hay entrenamientos recientes.</p>
+                        <p class="text-muted">No hay rutinas asignadas.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Rutinas Semanales -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Rutinas Semanales</h5>
+                </div>
+                <div class="card-body">
+                    {% if weekly_routines %}
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Días</th>
+                                        <th>Ejercicios</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for routine in weekly_routines %}
+                                    <tr>
+                                        <td>{{ routine.name }}</td>
+                                        <td>{{ routine.get_days_display }}</td>
+                                        <td>{{ routine.get_total_exercises }}</td>
+                                        <td>
+                                            <a href="{% url 'workouts:workout-detail' pk=routine.id %}" class="btn btn-sm btn-outline-primary" 
+                                               target="_blank">
+                                                Ver Detalles
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No hay rutinas semanales.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Entrenamientos Completados -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Últimos Ejercicios Completados</h5>
+                </div>
+                <div class="card-body">
+                    {% if completed_trainings %}
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Ejercicio</th>
+                                        <th>Series</th>
+                                        <th>Peso</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for training in completed_trainings %}
+                                    <tr>
+                                        <td>{{ training.date|date:"d/m/Y" }}</td>
+                                        <td>{{ training.exercise.name }}</td>
+                                        <td>{{ training.training_sets.count }}/{{ training.total_sets }}</td>
+                                        <td>{{ training.weight }} kg</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No hay entrenamientos completados.</p>
                     {% endif %}
                 </div>
             </div>
 
             <!-- Feedback Reciente -->
             <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Feedback Reciente</h5>
+                </div>
                 <div class="card-body">
-                    <h5 class="card-title">Feedback Reciente</h5>
                     {% if recent_feedback %}
                         <div class="list-group list-group-flush">
                             {% for feedback in recent_feedback %}

@@ -52,7 +52,40 @@
                                     </div>
                                 </div>
                             </td>
-                            <td>{{ session.training.exercise.name }}</td>
+                            <td>
+                                <strong>{{ session.training.name }}</strong>
+                                {% if session.training.days.exists %}
+                                <div class="mt-1">
+                                    <small class="text-muted">
+                                        Días: {{ session.training.get_days_display }}
+                                    </small>
+                                    <div class="mt-1">
+                                        {% for day in session.training.days.all %}
+                                            {% if day.sets.exists %}
+                                                <a href="#" class="badge bg-light text-dark mb-1" 
+                                                   data-bs-toggle="popover" 
+                                                   data-bs-placement="top" 
+                                                   data-bs-html="true"
+                                                   title="{{ day.day_of_week }}{% if day.focus %} - {{ day.focus }}{% endif %}"
+                                                   data-bs-content="
+                                                   <ul class='list-unstyled mb-0'>
+                                                   {% for set in day.sets.all|slice:':5' %}
+                                                   <li><small>{{ set.exercise }} ({{ set.sets_count }}x{{ set.reps }})</small></li>
+                                                   {% endfor %}
+                                                   {% if day.sets.count > 5 %}
+                                                   <li><small>... y {{ day.sets.count|add:'-5' }} más</small></li>
+                                                   {% endif %}
+                                                   </ul>
+                                                   ">
+                                                {{ day.day_of_week }}
+                                                <span class="badge rounded-pill bg-secondary">{{ day.sets.count }}</span>
+                                            </a>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </td>
                             <td>{{ session.started_at|date:"d/m/Y H:i" }}</td>
                             <td>
                                 {% if session.status == 'active' %}
@@ -98,4 +131,15 @@
     </div>
     {% endif %}
 </div>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar todos los popovers
+        var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
+        var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+            return new bootstrap.Popover(popoverTriggerEl)
+        });
+    });
+</script>
 {% endblock %} 

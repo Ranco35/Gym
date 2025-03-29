@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import TrainerProfile, TrainerStudent, LiveTrainingSession, LiveSet, TrainerFeedback, TrainerTraining, TrainerSet
+from .models import TrainerProfile, TrainerStudent, LiveTrainingSession, LiveSet, TrainerFeedback, TrainerTraining, TrainerSet, TrainerTrainingDay
 
 @admin.register(TrainerProfile)
 class TrainerProfileAdmin(admin.ModelAdmin):
@@ -36,20 +36,33 @@ class TrainerFeedbackAdmin(admin.ModelAdmin):
     search_fields = ('trainer_student__trainer__username', 'trainer_student__student__username')
     readonly_fields = ('created_at',)
 
+class TrainerSetInline(admin.TabularInline):
+    model = TrainerSet
+    extra = 0
+
+# Definimos primero TrainerTrainingDayInline
+class TrainerTrainingDayInline(admin.TabularInline):
+    model = TrainerTrainingDay
+    extra = 0
+
 @admin.register(TrainerTraining)
 class TrainerTrainingAdmin(admin.ModelAdmin):
     list_display = ('name', 'user', 'created_by', 'date', 'completed', 'created_at')
     list_filter = ('completed', 'date', 'created_at')
     search_fields = ('name', 'user__username', 'created_by__username')
     readonly_fields = ('created_at', 'updated_at')
-
-class TrainerSetInline(admin.TabularInline):
-    model = TrainerSet
-    extra = 0
+    inlines = [TrainerTrainingDayInline]
 
 @admin.register(TrainerSet)
 class TrainerSetAdmin(admin.ModelAdmin):
-    list_display = ('exercise', 'training', 'sets_count', 'reps', 'weight', 'order')
+    list_display = ('exercise', 'training_day', 'sets_count', 'reps', 'weight', 'order')
     list_filter = ('created_at',)
-    search_fields = ('exercise', 'training__name', 'training__user__username')
-    ordering = ('training', 'order')
+    search_fields = ('exercise', 'training_day__training__name', 'training_day__training__user__username')
+    ordering = ('training_day', 'order')
+
+@admin.register(TrainerTrainingDay)
+class TrainerTrainingDayAdmin(admin.ModelAdmin):
+    list_display = ('training', 'day_of_week', 'focus')
+    list_filter = ('day_of_week',)
+    search_fields = ('training__name', 'training__user__username', 'focus')
+    inlines = [TrainerSetInline]
