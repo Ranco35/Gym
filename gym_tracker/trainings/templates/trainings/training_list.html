@@ -130,7 +130,11 @@
                                         <tbody>
                                             {% for training in trainings %}
                                             <tr>
-                                                <td>{{ training.exercise.name }}</td>
+                                                <td>{{ training.exercise.name }}
+                                                    {% if "PENDIENTE" in training.notes %}
+                                                    <span class="badge bg-warning text-dark ms-2">Pendiente</span>
+                                                    {% endif %}
+                                                </td>
                                                 <td class="text-center">{{ training.total_sets }}</td>
                                                 <td class="text-center">{{ training.reps }}</td>
                                                 <td class="text-center">{% if training.weight %}{{ training.weight }} kg{% else %}-{% endif %}</td>

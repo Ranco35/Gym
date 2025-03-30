@@ -131,7 +131,7 @@
                                                 <a href="{% url 'trainings:edit-set' set_id=set.id %}" class="btn btn-sm btn-primary" title="Editar serie">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
-                                                <form method="post" action="/trainings/set/{{ set.id }}/delete/" style="display: inline;" onsubmit="return confirm('¿Estás seguro de que deseas eliminar esta serie?');">
+                                                <form method="post" action="/trainings/set/{{ set.id }}/delete/" style="display: inline;" onsubmit="return confirmDeleteSet(event, this);">
                                                     {% csrf_token %}
                                                     <button type="submit" class="btn btn-sm btn-danger" title="Eliminar serie">
                                                         <i class="fas fa-trash"></i>
@@ -336,6 +336,44 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// Función para confirmar eliminación de serie
+function confirmDeleteSet(event, form) {
+    event.preventDefault();
+    if (confirm('¿Estás seguro de que deseas eliminar esta serie?')) {
+        // Mostrar indicador de carga
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalContent = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+        submitBtn.disabled = true;
+        
+        // Enviar formulario con fetch para manejar la respuesta
+        fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: new URLSearchParams(new FormData(form))
+        })
+        .then(response => {
+            if (response.ok) {
+                // Recargar la página para mostrar el progreso actualizado
+                window.location.reload();
+            } else {
+                throw new Error('Error al eliminar la serie');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al eliminar la serie: ' + error.message);
+            // Restaurar el botón
+            submitBtn.innerHTML = originalContent;
+            submitBtn.disabled = false;
+        });
+    }
+    return false;
+}
 </script>
 {% endblock %}
 
