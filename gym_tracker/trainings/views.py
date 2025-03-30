@@ -560,7 +560,7 @@ def training_session_view(request, training_id):
 
 @login_required
 @require_POST
-def save_set(request):
+def save_set(request, training_id=None):
     """
     Guarda una serie de entrenamiento.
     """
@@ -570,6 +570,7 @@ def save_set(request):
         print("Body:", request.body.decode('utf-8'))
         print("POST data:", request.POST)
         print("Headers:", dict(request.headers))
+        print("Training ID desde URL:", training_id)
         
         # Verificar el tipo de contenido
         if not request.content_type or 'application/json' not in request.content_type.lower():
@@ -589,6 +590,10 @@ def save_set(request):
                 'status': 'error',
                 'message': f'JSON inválido: {str(e)}'
             }, status=400)
+
+        # Si training_id se pasó en la URL, usarlo en lugar del que viene en el body
+        if training_id is not None:
+            data['training_id'] = training_id
 
         # Comprobar si tenemos exercise_id en lugar de training_id
         if 'exercise_id' in data and 'training_id' not in data:
@@ -619,7 +624,7 @@ def save_set(request):
                 }, status=400)
 
         # Validar campos requeridos
-        required_fields = ['training_id', 'set_number', 'weight', 'reps']
+        required_fields = ['training_id', 'set_number', 'reps']  # weight puede ser 0
         missing_fields = [field for field in required_fields if field not in data]
         if missing_fields:
             print("Campos faltantes:", missing_fields)
@@ -632,7 +637,7 @@ def save_set(request):
         try:
             training_id = int(data['training_id'])
             set_number = int(data['set_number'])
-            weight = float(data['weight']) if data['weight'] else 0
+            weight = float(data['weight']) if data.get('weight', '') else 0
             reps = int(data['reps'])
             
             print(f"Datos validados: training_id={training_id}, set_number={set_number}, weight={weight}, reps={reps}")
@@ -898,6 +903,19 @@ def training_list(request):
     """Vista para listar entrenamientos."""
     trainings = Training.objects.filter(user=request.user).order_by('-date')
     
+    # Obtener todas las series para contar las series completadas
+    completed_sets_count = {}
+    extra_sets_count = {}
+    for training in trainings:
+        sets_count = Set.objects.filter(training=training, completed=True).count()
+        completed_sets_count[training.id] = sets_count
+        
+        # Calcular series extras (si hay más de las planificadas)
+        if sets_count > training.total_sets:
+            extra_sets_count[training.id] = sets_count - training.total_sets
+        else:
+            extra_sets_count[training.id] = 0
+    
     # Obtener las rutinas del usuario
     routines = Routine.objects.filter(user=request.user).order_by('-created_at')
     
@@ -924,6 +942,10 @@ def training_list(request):
         
         # Asegurarse de que el entrenamiento tenga toda la información necesaria
         training.routine_name = routine_info
+        # Añadir el conteo de series completadas al objeto de entrenamiento
+        training.completed_sets_count = completed_sets_count.get(training.id, 0)
+        # Añadir el conteo de series extras
+        training.extra_sets_count = extra_sets_count.get(training.id, 0)
         grouped_trainings[date_str][routine_info].append(training)
 
     # Ordenar los entrenamientos dentro de cada rutina por el orden original
@@ -934,7 +956,9 @@ def training_list(request):
     return render(request, 'trainings/training_list.html', {
         'grouped_trainings': grouped_trainings,
         'routines': routines,
-        'today': timezone.now().date()
+        'today': timezone.now().date(),
+        'completed_sets_count': completed_sets_count,
+        'extra_sets_count': extra_sets_count
     })
 
 @login_required
@@ -972,3 +996,183 @@ def create_training_session(request):
             return redirect('workouts:workout-detail', pk=routine_id)
     
     return redirect('workouts:workout-list')
+
+@login_required
+def edit_user_training(request, pk):
+    """
+    Permite a un usuario editar su propio entrenamiento.
+    """
+    training = get_object_or_404(Training, pk=pk, user=request.user)
+    
+    # Cargar todas las series explícitamente - usar Set directamente en lugar de set_set
+    training_sets = Set.objects.filter(training=training).order_by('set_number')
+    
+    # Calcular cuántas series completadas hay
+    completed_sets_count = training_sets.count()
+    
+    # Calcular cuántas series extras hay (si hay más de las planificadas)
+    extra_sets_count = 0
+    if completed_sets_count > training.total_sets:
+        extra_sets_count = completed_sets_count - training.total_sets
+    
+    # Añadir esta información al objeto training para uso en el template
+    training.completed_sets_count = completed_sets_count
+    training.extra_sets_count = extra_sets_count
+    
+    if request.method == 'POST':
+        # Imprimir datos recibidos para depuración
+        print("Datos recibidos para actualizar entrenamiento:", request.POST)
+        
+        # Actualizar datos del entrenamiento
+        try:
+            # Actualizar ejercicio si se proporcionó
+            exercise_id = request.POST.get('exercise')
+            if exercise_id:
+                training.exercise_id = exercise_id
+            
+            # Actualizar fecha si se proporcionó
+            date_str = request.POST.get('date')
+            if date_str:
+                training.date = date_str
+            
+            # Actualizar series totales
+            sets_str = request.POST.get('sets')
+            if sets_str and sets_str.strip():
+                training.total_sets = int(sets_str)
+            
+            # Actualizar repeticiones
+            reps_str = request.POST.get('reps')
+            if reps_str and reps_str.strip():
+                training.reps = int(reps_str)
+            
+            # Manejar el peso (puede ser vacío)
+            weight = request.POST.get('weight')
+            if weight and weight.strip():
+                try:
+                    training.weight = float(weight)
+                except ValueError:
+                    training.weight = 0
+            else:
+                training.weight = 0
+            
+            # Actualizar tiempo de descanso
+            rest_time = request.POST.get('rest_time')
+            if rest_time and rest_time.strip():
+                training.rest_time = int(rest_time)
+            
+            # Actualizar intensidad
+            intensity = request.POST.get('intensity')
+            if intensity:
+                training.intensity = intensity
+            
+            # Actualizar notas
+            notes = request.POST.get('notes')
+            if notes is not None:  # Permitir notas vacías
+                training.notes = notes
+            
+            # Actualizar estado completado
+            training.completed = 'completed' in request.POST
+            
+            # Guardar cambios
+            training.save()
+            
+            # Informar éxito
+            messages.success(request, 'Entrenamiento actualizado correctamente.')
+            
+            # Redirección después de guardar
+            return redirect('trainings:training-list-create')
+        except Exception as e:
+            # Si hay algún error, mostrarlo al usuario
+            print("Error al actualizar entrenamiento:", str(e))
+            messages.error(request, f'Error al actualizar el entrenamiento: {str(e)}')
+    
+    # Preparar datos para la vista
+    exercises = GymExercise.objects.all().order_by('name')
+    
+    return render(request, 'trainings/edit_training.html', {
+        'training': training,
+        'training_sets': training_sets,
+        'exercises': exercises
+    })
+
+@login_required
+@require_POST
+def delete_set(request, set_id):
+    """
+    Elimina una serie específica de un entrenamiento.
+    """
+    try:
+        # Obtener la serie
+        set_obj = get_object_or_404(Set, id=set_id)
+        
+        # Verificar que el usuario sea el propietario
+        if set_obj.user != request.user:
+            messages.error(request, 'No tienes permiso para eliminar esta serie.')
+            return redirect('trainings:training-list-create')
+        
+        # Guardar el ID del entrenamiento para redireccionar después
+        training_id = set_obj.training.id
+        
+        # Eliminar la serie
+        set_obj.delete()
+        
+        messages.success(request, 'Serie eliminada correctamente.')
+        
+        # Redireccionar a la edición del entrenamiento
+        return redirect('trainings:edit-training', pk=training_id)
+    
+    except Exception as e:
+        messages.error(request, f'Error al eliminar la serie: {str(e)}')
+        return redirect('trainings:training-list-create')
+
+@login_required
+def edit_set(request, set_id):
+    """
+    Edita una serie existente.
+    """
+    # Obtener la serie
+    set_obj = get_object_or_404(Set, id=set_id)
+    
+    # Verificar que el usuario es el propietario de la serie
+    if set_obj.user != request.user:
+        messages.error(request, "No tienes permiso para editar esta serie.")
+        return redirect('trainings:training-list-create')
+    
+    # Obtener el entrenamiento asociado
+    training = set_obj.training
+    
+    if request.method == 'POST':
+        try:
+            # Actualizar los valores de la serie
+            weight_str = request.POST.get('weight', '')
+            reps_str = request.POST.get('reps', '')
+            
+            # Validar datos
+            if not reps_str:
+                messages.error(request, "El campo de repeticiones es obligatorio.")
+                return redirect('trainings:edit-training', pk=training.id)
+            
+            # Convertir a tipos adecuados
+            reps = int(reps_str)
+            weight = float(weight_str) if weight_str.strip() else 0
+            
+            # Actualizar la serie
+            set_obj.weight = weight
+            set_obj.reps = reps
+            set_obj.save()
+            
+            messages.success(request, f"Serie {set_obj.set_number} actualizada correctamente.")
+            return redirect('trainings:edit-training', pk=training.id)
+            
+        except ValueError:
+            messages.error(request, "Por favor ingresa valores numéricos válidos.")
+            return redirect('trainings:edit-set', set_id=set_id)
+        except Exception as e:
+            messages.error(request, f"Error al actualizar la serie: {str(e)}")
+            return redirect('trainings:edit-set', set_id=set_id)
+    
+    # Si es GET, mostrar el formulario
+    return render(request, 'trainings/edit_set.html', {
+        'set': set_obj,
+        'training': training
+    })

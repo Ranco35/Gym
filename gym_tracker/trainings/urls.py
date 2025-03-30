@@ -17,8 +17,13 @@ urlpatterns = [
     path('training/', views.training_list, name='training-list-create'),
     path('training/<int:pk>/', views.training_list, name='training-detail'),
     path('training/<int:pk>/delete/', views.delete_training, name='delete-training'),
+    path('training/<int:pk>/edit/', views.edit_user_training, name='edit-training'),
     path('training/create-from-routine/', views.create_training_from_routine, name='create-training-from-routine'),
     path('routine/<int:routine_id>/days/', views.get_routine_days, name='get-routine-days'),
+    
+    # Series
+    path('set/<int:set_id>/edit/', views.edit_set, name='edit-set'),
+    path('set/<int:set_id>/delete/', views.delete_set, name='delete-set'),
     
     # Ejecución de entrenamientos
     path('execute/<int:routine_id>/day/<int:day_id>/', views.execute_training, name='execute-training'),

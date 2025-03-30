@@ -68,18 +68,34 @@
                                 {% with total_sets=0 completed_sets=0 %}
                                     {% for training in trainings %}
                                         {% with training_total_sets=training.total_sets %}
-                                            {% with training_completed_sets=training.set_set.count %}
+                                            {% with training_completed_sets=training.completed_sets_count %}
                                                 {% with new_total=total_sets|add:training_total_sets %}
                                                     {% with new_completed=completed_sets|add:training_completed_sets %}
                                                         {% if forloop.last %}
                                                             <div class="d-flex align-items-center">
                                                                 <div class="progress me-3" style="width: 150px; height: 10px;">
-                                                                    <div class="progress-bar bg-success" role="progressbar" 
-                                                                        style="width: {% widthratio new_completed new_total 100 %}%">
-                                                                    </div>
+                                                                    {% if training.completed %}
+                                                                        <div class="progress-bar bg-success" role="progressbar" style="width: 100%"></div>
+                                                                    {% else %}
+                                                                        {% if new_total > 0 %}
+                                                                            <div class="progress-bar bg-success" role="progressbar" 
+                                                                                style="width: {% widthratio new_completed new_total 100 %}%">
+                                                                            </div>
+                                                                        {% else %}
+                                                                            <div class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
+                                                                        {% endif %}
+                                                                    {% endif %}
                                                                 </div>
                                                                 <span class="badge bg-success">
-                                                                    {% widthratio new_completed new_total 100 %}%
+                                                                    {% if training.completed %}
+                                                                        100%
+                                                                    {% else %}
+                                                                        {% if new_total > 0 %}
+                                                                            {% widthratio new_completed new_total 100 %}%
+                                                                        {% else %}
+                                                                            0%
+                                                                        {% endif %}
+                                                                    {% endif %}
                                                                 </span>
                                                                 <i class="fas fa-chevron-down ms-3 toggle-icon"></i>
                                                             </div>
@@ -119,14 +135,31 @@
                                                 <td class="text-center">{{ training.reps }}</td>
                                                 <td class="text-center">{% if training.weight %}{{ training.weight }} kg{% else %}-{% endif %}</td>
                                                 <td class="text-center">
-                                                    {% with completed_sets=training.set_set.count %}
                                                     <div class="progress" style="height: 8px;">
-                                                        <div class="progress-bar bg-success" role="progressbar" 
-                                                            style="width: {% widthratio completed_sets training.total_sets 100 %}%">
-                                                        </div>
+                                                        {% if training.completed %}
+                                                        <div class="progress-bar bg-success" role="progressbar" style="width: 100%"></div>
+                                                        {% else %}
+                                                            {% if training.completed_sets_count >= training.total_sets %}
+                                                            <div class="progress-bar bg-success" role="progressbar" style="width: 100%"></div>
+                                                            {% else %}
+                                                            <div class="progress-bar bg-success" role="progressbar" 
+                                                                style="width: {% widthratio training.completed_sets_count training.total_sets 100 %}%">
+                                                            </div>
+                                                            {% endif %}
+                                                        {% endif %}
                                                     </div>
-                                                    <small class="mt-1 d-block">{{ completed_sets }}/{{ training.total_sets }}</small>
-                                                    {% endwith %}
+                                                    <small class="mt-1 d-block">
+                                                        {% if training.completed %}
+                                                        {{ training.total_sets }}/{{ training.total_sets }}
+                                                        {% else %}
+                                                            {% if training.extra_sets_count > 0 %}
+                                                            <span class="text-success">{{ training.completed_sets_count }}/{{ training.total_sets }}</span>
+                                                            <span class="badge bg-warning text-dark" title="Series extras">+{{ training.extra_sets_count }}</span>
+                                                            {% else %}
+                                                            {{ training.completed_sets_count }}/{{ training.total_sets }}
+                                                            {% endif %}
+                                                        {% endif %}
+                                                    </small>
                                                 </td>
                                                 <td class="text-end">
                                                     <div class="btn-group btn-group-sm">
@@ -280,176 +313,156 @@
     </div>
 </div>
 
-<!-- Modal para añadir serie -->
-<div class="modal fade" id="addSetModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Añadir Serie</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="addSetForm">
-                {% csrf_token %}
-                <input type="hidden" id="training_id_for_set" name="training_id">
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label for="weight" class="form-label">Peso (kg)</label>
-                            <input type="number" step="0.5" min="0" class="form-control" id="weight" name="weight">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="reps" class="form-label">Repeticiones</label>
-                            <input type="number" min="1" class="form-control" id="reps" name="reps" required>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Guardar</button>
-                </div>
-            </form>
-        </div>
+<!-- Modal para añadir serie manualmente -->
+<div class="modal fade" id="addSetModal" tabindex="-1" aria-labelledby="addSetModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addSetModalLabel">Añadir Serie Manualmente</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="add-set-form">
+          <input type="hidden" id="set-training-id" name="training_id">
+          
+          <div class="mb-3">
+            <label for="set-number" class="form-label">Número de Serie</label>
+            <input type="number" class="form-control" id="set-number" name="set_number" required min="1">
+          </div>
+          
+          <div class="mb-3">
+            <label for="set-weight" class="form-label">Peso (kg)</label>
+            <input type="number" class="form-control" id="set-weight" name="weight" step="0.5" min="0">
+          </div>
+          
+          <div class="mb-3">
+            <label for="set-reps" class="form-label">Repeticiones</label>
+            <input type="number" class="form-control" id="set-reps" name="reps" required min="1">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="save-set-btn">Guardar</button>
+      </div>
     </div>
+  </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Manejo de eliminación de entrenamientos
+    // Toggle para mostrar/ocultar detalles de rutina
+    document.querySelectorAll('.routine-header').forEach(header => {
+        header.addEventListener('click', function() {
+            const routineDetails = this.nextElementSibling;
+            const toggleIcon = this.querySelector('.toggle-icon');
+            routineDetails.classList.toggle('d-none');
+            toggleIcon.classList.toggle('fa-chevron-down');
+            toggleIcon.classList.toggle('fa-chevron-up');
+        });
+    });
+    
+    // Redirección al editar un entrenamiento
+    document.querySelectorAll('.edit-training').forEach(button => {
+        button.addEventListener('click', function() {
+            const trainingId = this.getAttribute('data-training-id');
+            window.location.href = `/trainings/training/${trainingId}/edit/`;
+        });
+    });
+    
+    // Confirmación antes de eliminar un entrenamiento
     document.querySelectorAll('.delete-training').forEach(button => {
         button.addEventListener('click', function() {
-            if (confirm('¿Estás seguro de eliminar este entrenamiento?')) {
+            const trainingId = this.getAttribute('data-training-id');
+            if (confirm('¿Estás seguro de que deseas eliminar este entrenamiento?')) {
+                // Enviar formulario de eliminación
                 const form = document.createElement('form');
                 form.method = 'POST';
-                form.action = `{% url 'trainings:delete-training' 0 %}`.replace('0', this.dataset.trainingId);
+                form.action = `/trainings/training/${trainingId}/delete/`;
                 
-                const csrf = document.createElement('input');
-                csrf.type = 'hidden';
-                csrf.name = 'csrfmiddlewaretoken';
-                csrf.value = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                // Añadir CSRF token
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfmiddlewaretoken';
+                csrfInput.value = csrfToken;
+                form.appendChild(csrfInput);
                 
-                form.appendChild(csrf);
                 document.body.appendChild(form);
                 form.submit();
             }
         });
     });
 
-    // Manejo de selección de rutina y días
-    const routineSelect = document.getElementById('routineSelect');
-    const routineDaySelect = document.getElementById('routineDaySelect');
-
-    if (routineSelect) {
-        routineSelect.addEventListener('change', function() {
-            const routineId = this.value;
-            routineDaySelect.disabled = true;
-            routineDaySelect.innerHTML = '<option value="">Cargando días...</option>';
-
-            if (routineId) {
-                // Cargar los días de la rutina seleccionada
-                fetch(`{% url 'workouts:workout-detail' 0 %}`.replace('0', routineId), {
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        let options = '<option value="">Selecciona un día</option>';
-                        if (data.days && Array.isArray(data.days)) {
-                            data.days.forEach(day => {
-                                options += `<option value="${day.id}">${day.day_of_week} - ${day.focus || 'Sin enfoque'}</option>`;
-                            });
-                        }
-                        routineDaySelect.innerHTML = options;
-                        routineDaySelect.disabled = false;
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        routineDaySelect.innerHTML = '<option value="">Error al cargar los días</option>';
-                    });
-            } else {
-                routineDaySelect.innerHTML = '<option value="">Primero selecciona una rutina</option>';
-            }
-        });
-    }
-    
-    // Manejo de expansión de detalles de rutina
-    document.querySelectorAll('.routine-header').forEach(header => {
-        header.addEventListener('click', function() {
-            const details = this.nextElementSibling;
-            const icon = this.querySelector('.toggle-icon');
-            
-            if (details.classList.contains('d-none')) {
-                details.classList.remove('d-none');
-                icon.classList.remove('fa-chevron-down');
-                icon.classList.add('fa-chevron-up');
-            } else {
-                details.classList.add('d-none');
-                icon.classList.remove('fa-chevron-up');
-                icon.classList.add('fa-chevron-down');
-            }
-        });
-    });
-    
-    // Manejo de añadir serie
-    const addSetModal = new bootstrap.Modal(document.getElementById('addSetModal'));
-    
+    // Botón para añadir una serie manualmente
     document.querySelectorAll('.add-set-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            document.getElementById('training_id_for_set').value = this.dataset.trainingId;
-            addSetModal.show();
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const trainingId = this.getAttribute('data-training-id');
+            const modal = document.querySelector(`#detailsModal${trainingId}`);
+            
+            // Abrir modal para añadir serie
+            const setModal = new bootstrap.Modal(document.getElementById('addSetModal'));
+            document.getElementById('set-training-id').value = trainingId;
+            
+            // Limpiar campos
+            document.getElementById('set-number').value = '';
+            document.getElementById('set-weight').value = '';
+            document.getElementById('set-reps').value = '';
+            
+            setModal.show();
         });
     });
     
-    // Guardar nueva serie
-    document.getElementById('addSetForm').addEventListener('submit', function(e) {
-        e.preventDefault();
+    // Guardar serie manualmente
+    document.getElementById('save-set-btn').addEventListener('click', function() {
+        const form = document.getElementById('add-set-form');
+        const trainingId = document.getElementById('set-training-id').value;
+        const setNumber = document.getElementById('set-number').value;
+        const weight = document.getElementById('set-weight').value;
+        const reps = document.getElementById('set-reps').value;
         
-        const trainingId = document.getElementById('training_id_for_set').value;
-        const weight = document.getElementById('weight').value;
-        const reps = document.getElementById('reps').value;
-        
-        // Aquí iría el código para enviar a través de AJAX
-        // Por ahora solo simularemos la respuesta
-        console.log(`Añadiendo serie: Training ID=${trainingId}, Peso=${weight}, Reps=${reps}`);
-        
-        // Simulación de éxito (en producción esto vendría del backend)
-        const setNumber = document.querySelectorAll(`#sets-table-${trainingId} tr`).length + 1;
-        const newRow = `
-            <tr>
-                <td>${setNumber}</td>
-                <td>${weight ? weight + ' kg' : '-'}</td>
-                <td>${reps}</td>
-                <td class="text-end">
-                    <button class="btn btn-sm btn-outline-danger delete-set-btn" data-set-id="temp-${Date.now()}">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
-            </tr>
-        `;
-        
-        const setsTable = document.getElementById(`sets-table-${trainingId}`);
-        if (setsTable.querySelector('td[colspan="4"]')) {
-            setsTable.innerHTML = ''; // Eliminar mensaje de "No hay series"
+        if (!setNumber || !reps) {
+            alert('Por favor completa todos los campos obligatorios');
+            return;
         }
-        setsTable.insertAdjacentHTML('beforeend', newRow);
         
-        // Cerrar modal y limpiar
-        addSetModal.hide();
-        this.reset();
-    });
-    
-    // Delegación de eventos para eliminar series
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('.delete-set-btn')) {
-            const button = e.target.closest('.delete-set-btn');
-            if (confirm('¿Estás seguro de eliminar esta serie?')) {
-                // Aquí iría código para eliminar mediante AJAX
-                // Por ahora solo eliminamos visualmente
-                button.closest('tr').remove();
+        // Crear datos para la API
+        const data = {
+            training_id: trainingId,
+            set_number: setNumber,
+            weight: weight || 0,
+            reps: reps
+        };
+        
+        // Enviar datos a la API
+        fetch('/trainings/session/' + trainingId + '/sets/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.status === 'success') {
+                // Cerrar modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addSetModal'));
+                modal.hide();
+                
+                // Recargar la página para mostrar los cambios
+                window.location.reload();
+            } else {
+                alert('Error al guardar la serie: ' + result.message);
             }
-        }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al guardar la serie');
+        });
     });
 });
 </script>

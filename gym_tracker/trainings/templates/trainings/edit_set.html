@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Serie{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-6 mx-auto">
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-header bg-primary text-white py-3">
+                    <h5 class="m-0">
+                        <i class="fas fa-edit me-2"></i>Editar Serie
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <p class="mb-3">
+                        <strong>Ejercicio:</strong> {{ training.exercise.name }}<br>
+                        <strong>Serie:</strong> {{ set.set_number }}
+                        {% if set.set_number > training.total_sets %}
+                        <span class="badge bg-warning text-dark">Extra</span>
+                        {% endif %}
+                    </p>
+
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="reps" class="form-label">Repeticiones*</label>
+                            <input type="number" name="reps" id="reps" class="form-control" 
+                                   value="{{ set.reps }}" min="1" max="100" required>
+                            <div class="invalid-feedback">
+                                Este campo es obligatorio. Ingresa un valor entre 1 y 100.
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="weight" class="form-label">Peso (kg)</label>
+                            <input type="number" name="weight" id="weight" class="form-control" 
+                                   value="{% if set.weight %}{{ set.weight }}{% endif %}" 
+                                   min="0" step="0.5">
+                            <div class="form-text">
+                                Deja en blanco si no aplica.
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'trainings:edit-training' pk=training.id %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </a>
+                            <button type="submit" class="btn btn-success" id="saveButton">
+                                <i class="fas fa-save me-2"></i>Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Validación de formulario
+(function() {
+    'use strict'
+
+    // Fetch all forms we want to apply validation styles to
+    var forms = document.querySelectorAll('.needs-validation')
+
+    // Loop over them and prevent submission
+    Array.prototype.slice.call(forms)
+        .forEach(function(form) {
+            form.addEventListener('submit', function(event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                } else {
+                    // Si el formulario es válido, mostrar mensaje de guardando...
+                    const saveButton = document.getElementById('saveButton');
+                    if (saveButton) {
+                        saveButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Guardando...';
+                        saveButton.disabled = true;
+                    }
+                }
+
+                form.classList.add('was-validated')
+            }, false)
+        })
+})()
+</script>
+{% endblock %} 
