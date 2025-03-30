@@ -380,7 +380,7 @@ def execute_training(request, routine_id, day_id):
     
     # Procesar el peso del ejercicio actual
     if exercise_weight == '' or exercise_weight is None:
-        exercise_weight = None
+        exercise_weight = 0
     
     # Obtener o crear el entrenamiento actual
     training, created = Training.objects.get_or_create(
@@ -420,12 +420,14 @@ def execute_training(request, routine_id, day_id):
         weight = request.POST.get('weight')
         reps = int(request.POST.get('reps', exercise_reps))
 
-        # Convertir peso a float si existe
+        # Convertir peso a float si existe, o asignar 0 por defecto
         if weight:
             try:
                 weight = float(weight)
             except ValueError:
-                weight = None
+                weight = 0
+        else:
+            weight = 0
 
         # Crear la serie
         Set.objects.create(
@@ -630,7 +632,7 @@ def save_set(request):
         try:
             training_id = int(data['training_id'])
             set_number = int(data['set_number'])
-            weight = float(data['weight']) if data['weight'] else None
+            weight = float(data['weight']) if data['weight'] else 0
             reps = int(data['reps'])
             
             print(f"Datos validados: training_id={training_id}, set_number={set_number}, weight={weight}, reps={reps}")
