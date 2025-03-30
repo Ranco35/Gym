@@ -1,5 +1,6 @@
 from django import forms
 from .models import Exercise, ExerciseCategory
+from django.core.exceptions import ValidationError
 
 class ExerciseCategoryForm(forms.ModelForm):
     class Meta:
@@ -31,3 +32,32 @@ class ExerciseCategoryForm(forms.ModelForm):
                 raise forms.ValidationError("Ya existe una categoría con este nombre.")
         
         return name 
+
+class ExerciseForm(forms.ModelForm):
+    class Meta:
+        model = Exercise
+        fields = [
+            'name', 'description', 'category', 'difficulty',
+            'primary_muscles', 'secondary_muscles', 'equipment',
+            'instructions', 'tips', 'image', 'youtube_link'
+        ]
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 4}),
+            'instructions': forms.Textarea(attrs={'rows': 4}),
+            'tips': forms.Textarea(attrs={'rows': 3}),
+            'youtube_link': forms.URLInput(attrs={'placeholder': 'https://www.youtube.com/watch?v=...'}),
+        }
+
+    def clean_image(self):
+        image = self.cleaned_data.get('image')
+        if image:
+            # Verificar el tamaño del archivo (máximo 5MB)
+            if image.size > 5 * 1024 * 1024:
+                raise ValidationError('El tamaño máximo permitido es 5MB')
+            
+            # Verificar el formato
+            allowed_formats = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+            if image.content_type not in allowed_formats:
+                raise ValidationError('Solo se permiten archivos JPG, PNG, GIF o WEBP')
+        
+        return image 

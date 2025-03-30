@@ -13,7 +13,7 @@ from django.conf import settings
 from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import UserPassesTestMixin
-from .forms import ExerciseCategoryForm
+from .forms import ExerciseForm, ExerciseCategoryForm
 
 class ExerciseListView(generics.ListAPIView):
     """
@@ -59,124 +59,66 @@ class ExerciseDetailView(generics.RetrieveAPIView):
         })
 
 @login_required
-@user_passes_test(is_trainer_or_admin)
-def exercise_create(request):
-    """Vista para crear un nuevo ejercicio."""
-    if request.method == 'POST':
-        try:
-            # Extraer datos del formulario
-            name = request.POST.get('name')
-            description = request.POST.get('description')
-            
-            # Obtener la categoría como objeto ExerciseCategory
-            category_id = request.POST.get('category')
-            try:
-                category = ExerciseCategory.objects.get(id=category_id)
-            except ExerciseCategory.DoesNotExist:
-                messages.error(request, f'La categoría seleccionada no existe.')
-                return render(request, 'exercises/exercise_form.html', {
-                    'editing': False,
-                    'categories': ExerciseCategory.objects.all().order_by('name')
-                })
-                
-            difficulty = request.POST.get('difficulty')
-            
-            # Crear el ejercicio con los campos obligatorios
-            exercise = Exercise(
-                name=name,
-                description=description,
-                category=category,
-                difficulty=difficulty,
-                creator=request.user
-            )
-            
-            # Agregar campos opcionales si están presentes
-            optional_fields = [
-                'primary_muscles', 
-                'secondary_muscles', 
-                'equipment', 
-                'instructions', 
-                'tips'
-            ]
-            
-            for field in optional_fields:
-                if request.POST.get(field):
-                    setattr(exercise, field, request.POST.get(field))
-            
-            # Guardar el ejercicio
-            exercise.save()
-            
-            messages.success(request, 'Ejercicio creado exitosamente.')
-            return redirect('exercises:exercise-detail', pk=exercise.pk)
-        except Exception as e:
-            messages.error(request, f'Error al crear el ejercicio: {str(e)}')
+def exercise_list(request):
+    """Vista para mostrar todos los ejercicios disponibles."""
+    # Obtener todos los ejercicios ordenados por nombre
+    exercises = Exercise.objects.all().select_related('category', 'creator').order_by('name')
     
-    # Renderizar el formulario vacío
+    # Obtener categorías para el filtrado
+    categories = ExerciseCategory.objects.all().order_by('name')
+    
+    # Contadores para cada nivel de dificultad
+    difficulty_counts = {
+        'Principiante': exercises.filter(difficulty='Principiante').count(),
+        'Intermedio': exercises.filter(difficulty='Intermedio').count(),
+        'Avanzado': exercises.filter(difficulty='Avanzado').count(),
+    }
+    
+    context = {
+        'exercises': exercises,
+        'categories': categories,
+        'difficulty_counts': difficulty_counts,
+        'total_count': exercises.count()
+    }
+    
+    return render(request, 'exercises/exercise_list.html', context)
+
+@login_required
+def exercise_create(request):
+    if request.method == 'POST':
+        form = ExerciseForm(request.POST, request.FILES)
+        if form.is_valid():
+            exercise = form.save(commit=False)
+            exercise.creator = request.user
+            exercise.save()
+            messages.success(request, 'Ejercicio creado exitosamente.')
+            return redirect('exercises:exercise-list')
+    else:
+        form = ExerciseForm()
+    
     return render(request, 'exercises/exercise_form.html', {
-        'editing': False,
-        'categories': ExerciseCategory.objects.all().order_by('name')
+        'form': form,
+        'title': 'Crear Ejercicio',
+        'button_text': 'Crear'
     })
 
 @login_required
-@user_passes_test(is_trainer_or_admin)
 def exercise_edit(request, pk):
-    """
-    Vista para editar un ejercicio existente.
-    Solo los administradores pueden editar cualquier ejercicio.
-    Los entrenadores solo pueden editar los ejercicios que ellos crearon.
-    """
     exercise = get_object_or_404(Exercise, pk=pk)
-    
-    # Verificar si el usuario tiene permiso para editar
-    if not can_edit_exercise(request.user, exercise):
-        messages.error(request, 'No tienes permiso para editar este ejercicio.')
-        return redirect('exercises:exercise-detail', pk=pk)
-    
     if request.method == 'POST':
-        try:
-            # Actualizar campos del ejercicio
-            exercise.name = request.POST.get('name')
-            exercise.description = request.POST.get('description')
-            
-            # Obtener la categoría como objeto ExerciseCategory
-            category_id = request.POST.get('category')
-            if category_id:
-                try:
-                    category = ExerciseCategory.objects.get(id=category_id)
-                    exercise.category = category
-                except ExerciseCategory.DoesNotExist:
-                    messages.error(request, f'La categoría seleccionada no existe.')
-                    return render(request, 'exercises/exercise_form.html', {
-                        'exercise': exercise,
-                        'editing': True,
-                        'categories': ExerciseCategory.objects.all().order_by('name')
-                    })
-            
-            exercise.difficulty = request.POST.get('difficulty')
-            
-            # Actualizar campos opcionales
-            optional_fields = [
-                'primary_muscles', 
-                'secondary_muscles', 
-                'equipment', 
-                'instructions', 
-                'tips'
-            ]
-            
-            for field in optional_fields:
-                if hasattr(Exercise, field) and request.POST.get(field) is not None:
-                    setattr(exercise, field, request.POST.get(field))
-            
-            exercise.save()
+        form = ExerciseForm(request.POST, request.FILES, instance=exercise)
+        if form.is_valid():
+            form.save()
             messages.success(request, 'Ejercicio actualizado exitosamente.')
-            return redirect('exercises:exercise-detail', pk=pk)
-        except Exception as e:
-            messages.error(request, f'Error al actualizar el ejercicio: {str(e)}')
+            return redirect('exercises:exercise-list')
+    else:
+        form = ExerciseForm(instance=exercise)
     
     return render(request, 'exercises/exercise_form.html', {
+        'form': form,
         'exercise': exercise,
-        'editing': True,
-        'categories': ExerciseCategory.objects.all().order_by('name')
+        'title': 'Editar Ejercicio',
+        'button_text': 'Actualizar'
     })
 
 @login_required
@@ -373,69 +315,6 @@ def export_exercises(request):
     response['Content-Disposition'] = f'attachment; filename=ejercicios_exportados_{timestamp}.xlsx'
     
     return response
-
-def exercise_list(request):
-    """Vista para mostrar todos los ejercicios disponibles."""
-    # Obtener todos los ejercicios ordenados por nombre
-    exercises = Exercise.objects.all().select_related('category').order_by('name')
-    
-    # Lista para almacenar ejercicios con permisos
-    exercises_with_permissions = []
-    
-    # Obtener categorías únicas para las pestañas
-    categories = ExerciseCategory.objects.all().order_by('name')
-    
-    # Contadores para cada nivel de dificultad
-    beginner_count = 0
-    intermediate_count = 0
-    advanced_count = 0
-    
-    # Verificar permisos para cada ejercicio
-    for exercise in exercises:
-        can_edit = False
-        # Si el usuario es administrador o el creador del ejercicio, puede editarlo
-        if request.user.is_superuser or request.user.role == 'ADMIN' or (
-            exercise.creator and exercise.creator == request.user):
-            can_edit = True
-        
-        exercises_with_permissions.append({
-            'exercise': exercise,
-            'can_edit': can_edit
-        })
-        
-        # Contar ejercicios por dificultad
-        if exercise.difficulty == 'Principiante':
-            beginner_count += 1
-        elif exercise.difficulty == 'Intermedio':
-            intermediate_count += 1
-        elif exercise.difficulty == 'Avanzado':
-            advanced_count += 1
-    
-    # Agregar información de depuración si en modo DEBUG
-    debug_info = {}
-    if settings.DEBUG:
-        debug_info = {
-            'user_id': request.user.id,
-            'username': request.user.username,
-            'role': request.user.role,
-            'is_superuser': request.user.is_superuser,
-            'beginner_count': beginner_count,
-            'intermediate_count': intermediate_count,
-            'advanced_count': advanced_count,
-            'total_count': len(exercises_with_permissions)
-        }
-    
-    context = {
-        'exercises_with_permissions': exercises_with_permissions,
-        'debug_info': debug_info,
-        'categories': categories,
-        'beginner_count': beginner_count,
-        'intermediate_count': intermediate_count,
-        'advanced_count': advanced_count,
-        'total_count': len(exercises_with_permissions)
-    }
-    
-    return render(request, 'exercises/exercise_list.html', context)
 
 # Verificación de permisos
 def is_admin_or_superuser(user):

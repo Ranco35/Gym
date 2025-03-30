@@ -2,97 +2,70 @@
 {% load static %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3">{% if editing %}Editar Ejercicio{% else %}Agregar Nuevo Ejercicio{% endif %}</h1>
-        <a href="{% if editing %}{% url 'exercises:exercise-detail' exercise.id %}{% else %}{% url 'exercises:exercise-list' %}{% endif %}" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left me-2"></i>Volver
-        </a>
-    </div>
-
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Información del ejercicio</h5>
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h2>{{ title }}</h2>
                 </div>
                 <div class="card-body">
-                    <form method="post">
+                    <form method="post" enctype="multipart/form-data" id="exerciseForm">
                         {% csrf_token %}
                         
+                        {% for field in form %}
                         <div class="mb-3">
-                            <label for="name" class="form-label">Nombre del Ejercicio</label>
-                            <input type="text" class="form-control" id="name" name="name" 
-                                  placeholder="Ej. Press de Banca" required
-                                  value="{% if editing %}{{ exercise.name }}{% endif %}">
+                            <label for="{{ field.id_for_label }}" class="form-label">
+                                {{ field.label }}
+                                {% if field.field.required %}
+                                    <span class="text-danger">*</span>
+                                {% endif %}
+                            </label>
+                            
+                            {% if field.name == 'image' %}
+                                <div class="mb-2">
+                                    {% if exercise and exercise.image %}
+                                        <div class="current-image mb-2">
+                                            <img src="{{ exercise.image.url }}" alt="Imagen actual" class="img-thumbnail" style="max-height: 200px;">
+                                            <p class="text-muted">Imagen actual</p>
+                                        </div>
+                                    {% endif %}
+                                    {{ field }}
+                                    <div id="imagePreview" class="mt-2" style="display: none;">
+                                        <img src="" alt="Vista previa" class="img-thumbnail" style="max-height: 200px;">
+                                    </div>
+                                </div>
+                            {% else %}
+                                {{ field }}
+                            {% endif %}
+                            
+                            {% if field.help_text %}
+                                <div class="form-text text-muted">{{ field.help_text }}</div>
+                            {% endif %}
+                            
+                            {% if field.errors %}
+                                <div class="alert alert-danger mt-1">
+                                    {{ field.errors }}
+                                </div>
+                            {% endif %}
                         </div>
-                        
-                        <div class="mb-3">
-                            <label for="category" class="form-label">Categoría</label>
-                            <select class="form-select" id="category" name="category" required>
-                                <option value="" {% if not editing %}selected{% endif %}>Selecciona una categoría</option>
-                                {% for category in categories %}
-                                <option value="{{ category.id }}" {% if editing and exercise.category.id == category.id %}selected{% endif %}>{{ category.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="difficulty" class="form-label">Dificultad</label>
-                            <select class="form-select" id="difficulty" name="difficulty" required>
-                                <option value="" {% if not editing %}selected{% endif %}>Selecciona el nivel de dificultad</option>
-                                <option value="Principiante" {% if editing and exercise.difficulty == 'Principiante' %}selected{% endif %}>Principiante</option>
-                                <option value="Intermedio" {% if editing and exercise.difficulty == 'Intermedio' %}selected{% endif %}>Intermedio</option>
-                                <option value="Avanzado" {% if editing and exercise.difficulty == 'Avanzado' %}selected{% endif %}>Avanzado</option>
-                            </select>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="description" class="form-label">Descripción</label>
-                            <textarea class="form-control" id="description" name="description" 
-                                     rows="3" placeholder="Descripción detallada del ejercicio..." required>{% if editing %}{{ exercise.description }}{% endif %}</textarea>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="primary_muscles" class="form-label">Músculos Principales</label>
-                            <input type="text" class="form-control" id="primary_muscles" name="primary_muscles" 
-                                  placeholder="Ej. Pectorales, Tríceps"
-                                  value="{% if editing %}{{ exercise.primary_muscles }}{% endif %}">
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="secondary_muscles" class="form-label">Músculos Secundarios</label>
-                            <input type="text" class="form-control" id="secondary_muscles" name="secondary_muscles" 
-                                  placeholder="Ej. Deltoides Anterior"
-                                  value="{% if editing %}{{ exercise.secondary_muscles }}{% endif %}">
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="equipment" class="form-label">Equipamiento Necesario</label>
-                            <input type="text" class="form-control" id="equipment" name="equipment" 
-                                  placeholder="Ej. Mancuernas, Banco"
-                                  value="{% if editing %}{{ exercise.equipment }}{% endif %}">
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="instructions" class="form-label">Instrucciones</label>
-                            <textarea class="form-control" id="instructions" name="instructions" 
-                                     rows="4" placeholder="Instrucciones paso a paso...">{% if editing %}{{ exercise.instructions }}{% endif %}</textarea>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="tips" class="form-label">Consejos</label>
-                            <textarea class="form-control" id="tips" name="tips" 
-                                     rows="3" placeholder="Consejos para realizar el ejercicio correctamente...">{% if editing %}{{ exercise.tips }}{% endif %}</textarea>
-                        </div>
-                        
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <a href="{% if editing %}{% url 'exercises:exercise-detail' exercise.id %}{% else %}{% url 'exercises:exercise-list' %}{% endif %}" class="btn btn-outline-secondary me-md-2">
-                                Cancelar
-                            </a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save me-2"></i>{% if editing %}Actualizar{% else %}Guardar{% endif %} Ejercicio
-                            </button>
+                        {% endfor %}
+
+                        {% if exercise and exercise.youtube_link %}
+                            <div class="mb-3">
+                                <label class="form-label">Vista previa del video:</label>
+                                <div class="ratio ratio-16x9">
+                                    <iframe src="{{ exercise.get_youtube_embed_url }}" 
+                                            title="YouTube video" 
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                            allowfullscreen></iframe>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">{{ button_text }}</button>
+                            <a href="{% url 'exercises:exercise-list' %}" class="btn btn-secondary">Cancelar</a>
                         </div>
                     </form>
                 </div>
@@ -100,4 +73,42 @@
         </div>
     </div>
 </div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Vista previa de imagen
+    const imageInput = document.querySelector('input[type="file"]');
+    const imagePreview = document.getElementById('imagePreview');
+    const previewImage = imagePreview.querySelector('img');
+
+    imageInput.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                previewImage.src = e.target.result;
+                imagePreview.style.display = 'block';
+            }
+            
+            reader.readAsDataURL(this.files[0]);
+        } else {
+            imagePreview.style.display = 'none';
+        }
+    });
+
+    // Validación del enlace de YouTube
+    const youtubeInput = document.querySelector('input[name="youtube_link"]');
+    if (youtubeInput) {
+        youtubeInput.addEventListener('change', function() {
+            const url = this.value.trim();
+            if (url && !url.includes('youtube.com') && !url.includes('youtu.be')) {
+                alert('Por favor, ingresa un enlace válido de YouTube');
+                this.value = '';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
 {% endblock %} 
