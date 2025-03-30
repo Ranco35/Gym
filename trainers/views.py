@@ -10,6 +10,7 @@ from .decorators import trainer_required
 from django.contrib.auth import get_user_model
 from gym_tracker.workouts.models import WeeklyRoutine
 from gym_tracker.exercises.models import Exercise
+from django.urls import reverse
 
 @login_required
 @trainer_required
@@ -722,19 +723,28 @@ def edit_training(request, student_id, training_id):
             )
             
             messages.success(request, f'Ejercicio "{exercise}" añadido correctamente')
-            return redirect('trainers:edit_training', student_id=student_id, training_id=training_id)
+            # Redirigir a la misma página con un parámetro para mantener activa la pestaña del día donde se agregó el ejercicio
+            base_url = reverse('trainers:edit_training', kwargs={'student_id': student_id, 'training_id': training_id})
+            return redirect(f'{base_url}?active_day={day_id}')
         
         # Si se está eliminando un set
         elif 'delete_set' in request.POST:
             set_id = request.POST.get('set_id')
+            day_id = None
             try:
                 set_obj = TrainerSet.objects.get(id=set_id, training_day__training=training)
+                # Guardar el ID del día antes de eliminar el set
+                day_id = set_obj.training_day.id
                 exercise_name = set_obj.exercise
                 set_obj.delete()
                 messages.success(request, f'Ejercicio "{exercise_name}" eliminado correctamente')
             except TrainerSet.DoesNotExist:
                 messages.error(request, 'El ejercicio no existe o no pertenece a esta rutina')
             
+            # Si tenemos el ID del día, redirigir manteniendo activa esa pestaña
+            if day_id:
+                base_url = reverse('trainers:edit_training', kwargs={'student_id': student_id, 'training_id': training_id})
+                return redirect(f'{base_url}?active_day={day_id}')
             return redirect('trainers:edit_training', student_id=student_id, training_id=training_id)
         
         # Si se están actualizando los datos básicos de la rutina
@@ -795,8 +805,13 @@ def edit_training(request, student_id, training_id):
                 messages.success(request, f'Enfoque actualizado para {day.day_of_week}')
             except TrainerTrainingDay.DoesNotExist:
                 messages.error(request, 'El día seleccionado no existe')
-                
-            return redirect('trainers:edit_training', student_id=student_id, training_id=training_id)
+            
+            # Redirigir a la misma página con un parámetro para mantener activa la pestaña del día actualizado
+            base_url = reverse('trainers:edit_training', kwargs={'student_id': student_id, 'training_id': training_id})
+            return redirect(f'{base_url}?active_day={day_id}')
+    
+    # Obtener el día activo de la URL (si existe)
+    active_day = request.GET.get('active_day')
     
     context = {
         'trainer_student': trainer_student,
@@ -805,6 +820,7 @@ def edit_training(request, student_id, training_id):
         'selected_days': selected_days,
         'days_with_sets': days_with_sets,
         'all_exercises': all_exercises,
+        'active_day': active_day,  # Pasar el día activo al contexto
     }
     
     return render(request, 'trainers/edit_training.html', context)

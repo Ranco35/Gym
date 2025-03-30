@@ -89,14 +89,14 @@
                         <ul class="nav nav-tabs mb-4" id="daysTabs" role="tablist">
                             {% for day, sets in days_with_sets.items %}
                                 <li class="nav-item" role="presentation">
-                                    <button class="nav-link {% if forloop.first %}active{% endif %}" 
+                                    <button class="nav-link {% if active_day and active_day == day.id|stringformat:'i' %}active{% elif not active_day and forloop.first %}active{% endif %}" 
                                             id="day-{{ day.id }}-tab" 
                                             data-bs-toggle="tab" 
                                             data-bs-target="#day-{{ day.id }}" 
                                             type="button" 
                                             role="tab" 
                                             aria-controls="day-{{ day.id }}" 
-                                            aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">
+                                            aria-selected="{% if active_day and active_day == day.id|stringformat:'i' %}true{% elif not active_day and forloop.first %}true{% else %}false{% endif %}">
                                         {{ day.day_of_week }}
                                     </button>
                                 </li>
@@ -104,7 +104,7 @@
                         </ul>
                         <div class="tab-content" id="daysTabsContent">
                             {% for day, sets in days_with_sets.items %}
-                                <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" 
+                                <div class="tab-pane fade {% if active_day and active_day == day.id|stringformat:'i' %}show active{% elif not active_day and forloop.first %}show active{% endif %}" 
                                      id="day-{{ day.id }}" 
                                      role="tabpanel" 
                                      aria-labelledby="day-{{ day.id }}-tab">
@@ -402,6 +402,22 @@
                 localStorage.setItem(`muscles_day_${dayId}`, JSON.stringify(selectedMuscles));
             });
         });
+        
+        // Mantener activa la pestaña seleccionada después de recarga
+        const urlParams = new URLSearchParams(window.location.search);
+        const activeDay = urlParams.get('active_day');
+        
+        if (activeDay) {
+            // Activar la pestaña correspondiente al día activo
+            const tab = document.getElementById(`day-${activeDay}-tab`);
+            if (tab) {
+                // Asegurarse de que Bootstrap esté cargado antes de intentar activar la pestaña
+                if (typeof bootstrap !== 'undefined') {
+                    const bsTab = new bootstrap.Tab(tab);
+                    bsTab.show();
+                }
+            }
+        }
     });
 </script>
 {% endblock %} 
