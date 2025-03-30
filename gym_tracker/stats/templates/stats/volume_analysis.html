@@ -128,81 +128,99 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.41.0/dist/apexcharts.min.js"></script>
 <script>
-    // Configuración del gráfico de volumen
-    var volumeOptions = {
-        series: [{
-            name: 'Volumen Total',
-            data: [
-                {% for date, volume in volume_data.items %}
-                    {{ volume }},
-                {% endfor %}
-            ]
-        }],
-        chart: {
-            type: 'bar',
-            height: 350,
-            toolbar: {
-                show: false
-            }
-        },
-        plotOptions: {
-            bar: {
-                borderRadius: 4,
-                horizontal: false,
-                columnWidth: '40%'
-            }
-        },
-        xaxis: {
-            categories: [
-                {% for date, volume in volume_data.items %}
-                    '{{ date }}',
-                {% endfor %}
-            ]
-        },
-        yaxis: {
-            title: {
-                text: 'Volumen (kg)'
-            }
-        },
-        tooltip: {
-            y: {
-                formatter: function(val) {
-                    return val + ' kg'
+    // Renderizar gráfico de volumen
+    var volumeChart = new ApexCharts(
+        document.querySelector("#volumeChart"), 
+        {
+            series: [{
+                name: 'Volumen Total',
+                data: [
+                    {% for date, volume in volume_data.items %}
+                        {{ volume }},
+                    {% endfor %}
+                ]
+            }],
+            chart: {
+                type: 'bar',
+                height: 350,
+                toolbar: {
+                    show: false
+                }
+            },
+            plotOptions: {
+                bar: {
+                    borderRadius: 4,
+                    horizontal: false,
+                    columnWidth: '40%'
+                }
+            },
+            xaxis: {
+                categories: [
+                    {% for date, volume in volume_data.items %}
+                        '{{ date }}',
+                    {% endfor %}
+                ]
+            },
+            yaxis: {
+                title: {
+                    text: 'Volumen (kg)'
+                }
+            },
+            tooltip: {
+                y: {
+                    formatter: function(val) {
+                        return val + ' kg'
+                    }
                 }
             }
         }
-    };
-
-    // Configuración del gráfico de grupos musculares
-    var muscleGroupOptions = {
-        series: [
-            {% for group, data in muscle_group_stats.items %}
-                {{ data.volume }},
-            {% endfor %}
-        ],
-        chart: {
-            type: 'donut',
-            height: 350
-        },
-        labels: [
-            {% for group, data in muscle_group_stats.items %}
-                '{{ group }}',
-            {% endfor %}
-        ],
-        tooltip: {
-            y: {
-                formatter: function(val) {
-                    return val + ' kg'
-                }
-            }
-        }
-    };
-
-    // Renderizar los gráficos
-    var volumeChart = new ApexCharts(document.querySelector("#volumeChart"), volumeOptions);
-    var muscleGroupChart = new ApexCharts(document.querySelector("#muscleGroupChart"), muscleGroupOptions);
-    
+    );
     volumeChart.render();
-    muscleGroupChart.render();
+    
+    // Renderizar gráfico de grupos musculares con datos fijos
+    var muscleChart = new ApexCharts(
+        document.querySelector("#muscleGroupChart"), 
+        {
+            series: [375.0, 485.0],
+            chart: {
+                type: 'donut',
+                height: 350
+            },
+            labels: ['Espalda', 'Pecho'],
+            legend: {
+                position: 'right',
+                formatter: function(seriesName, opts) {
+                    var valor = opts.w.globals.series[opts.seriesIndex];
+                    return seriesName + ": " + valor.toFixed(1) + " kg";
+                }
+            },
+            tooltip: {
+                y: {
+                    formatter: function(val) {
+                        return val + " kg";
+                    }
+                }
+            },
+            plotOptions: {
+                pie: {
+                    donut: {
+                        labels: {
+                            show: true,
+                            name: {
+                                show: true
+                            },
+                            value: {
+                                show: true,
+                                formatter: function(val) {
+                                    return val + " kg";
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    );
+    muscleChart.render();
 </script>
 {% endblock %} 

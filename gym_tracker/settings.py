@@ -256,3 +256,5 @@ ADMIN_INTERFACE_THEME_SETTINGS = {
     'theme': 'default',
     'dark_mode_theme': True
 }
+
+

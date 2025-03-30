@@ -4,8 +4,9 @@ from django.db.models import Count, Avg, Sum, Max, Min
 from django.db.models.functions import ExtractWeek, ExtractMonth, ExtractYear
 from datetime import datetime, timedelta
 from gym_tracker.trainings.models import Training, Set
-from gym_tracker.exercises.models import Exercise
+from gym_tracker.exercises.models import Exercise, ExerciseCategory
 from gym_tracker.workouts.models import WeeklyRoutine
+from django.db import connection
 
 @login_required
 def dashboard(request):
@@ -133,26 +134,40 @@ def volume_analysis(request):
 
     # Volumen por grupo muscular
     muscle_group_stats = {}
-    total_volume = volume_stats['total_volume'] or 0
-
-    muscle_groups = Training.objects.filter(
-        user=request.user,
-        date__range=[start_date, end_date],
-        completed=True
-    ).values('exercise__category').distinct()
-
-    for group in muscle_groups:
-        category = group['exercise__category'] or 'Sin categoría'
-        group_volume = completed_sets.filter(
-            training__exercise__category=category
-        ).aggregate(volume=Sum('weight', default=0))['volume']
+    
+    # Consulta SQL directa para obtener nombres de categorías y volúmenes
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT ec.name as category_name, SUM(s.weight) as total_volume
+            FROM trainings_set s
+            JOIN trainings_training t ON s.training_id = t.id
+            JOIN exercises_exercise e ON t.exercise_id = e.id
+            JOIN exercises_exercisecategory ec ON e.category_id = ec.id
+            WHERE t.user_id = %s
+            AND t.date BETWEEN %s AND %s
+            AND t.completed = true
+            GROUP BY ec.id, ec.name
+            HAVING SUM(s.weight) > 0
+            ORDER BY ec.name
+        """, [request.user.id, start_date, end_date])
         
-        if group_volume > 0:
-            percentage = (group_volume / total_volume * 100) if total_volume > 0 else 0
-            muscle_group_stats[category] = {
-                'volume': group_volume,
+        results = cursor.fetchall()
+        
+        # Calcular volumen total para porcentajes
+        sql_total_volume = sum(row[1] for row in results) or 0
+        
+        # Crear diccionario con los resultados
+        for row in results:
+            category_name = row[0]
+            volume = row[1]
+            percentage = (volume / sql_total_volume * 100) if sql_total_volume > 0 else 0
+            
+            muscle_group_stats[category_name] = {
+                'volume': volume,
                 'percentage': percentage
             }
+    
+    print("MUSCLE GROUP STATS:", muscle_group_stats)
 
     context = {
         'period': period,
@@ -168,35 +183,115 @@ def volume_analysis(request):
 @login_required
 def personal_records(request):
     """Vista de récords personales."""
+    period = request.GET.get('period', 'all')
+    end_date = datetime.now().date()
+    
+    # Definir el rango de fechas según el período seleccionado
+    if period == 'week':
+        start_date = end_date - timedelta(days=7)
+    elif period == 'month':
+        start_date = end_date - timedelta(days=30)
+    elif period == 'year':
+        start_date = end_date - timedelta(days=365)
+    else:
+        start_date = None  # Sin límite para todos los datos
+    
     # Récords por ejercicio
     exercise_records = {}
+    
+    # Variables para el resumen total
+    total_max_weight = 0
+    total_max_weight_date = None
+    total_max_reps = 0
+    total_max_reps_date = None
+    total_max_volume = 0
+    total_max_volume_date = None
+    
+    # Filtrar ejercicios realizados por el usuario
     exercises = Exercise.objects.filter(training__user=request.user).distinct()
 
     for exercise in exercises:
-        records = Training.objects.filter(
-            user=request.user,
-            exercise=exercise,
-            completed=True
-        ).aggregate(
+        # Crear el filtro base para los entrenamientos
+        training_filter = {
+            'user': request.user,
+            'exercise': exercise,
+            'completed': True
+        }
+        
+        # Añadir filtro de fecha si se ha seleccionado un período
+        if start_date:
+            training_filter['date__range'] = [start_date, end_date]
+        
+        # Obtener récords para este ejercicio
+        records = Training.objects.filter(**training_filter).aggregate(
             max_weight=Max('training_sets__weight'),
             max_reps=Max('training_sets__reps'),
             total_volume=Sum('training_sets__weight'),
             avg_weight=Avg('training_sets__weight')
         )
         
-        # Obtener la fecha del récord de peso
+        # Si no hay datos para este ejercicio, continuar con el siguiente
+        if not records['max_weight'] and not records['max_reps'] and not records['total_volume']:
+            continue
+            
+        # Obtener las fechas de los récords
+        
+        # Fecha del récord de peso máximo
         max_weight_set = Set.objects.filter(
             training__user=request.user,
             training__exercise=exercise,
             weight=records['max_weight']
-        ).first()
-
-        records['date_achieved'] = max_weight_set.training.date if max_weight_set else None
+        ).order_by('-training__date').first()
+        
+        records['max_weight_date'] = max_weight_set.training.date if max_weight_set else None
+        
+        # Fecha del récord de repeticiones máximas
+        max_reps_set = Set.objects.filter(
+            training__user=request.user,
+            training__exercise=exercise,
+            reps=records['max_reps']
+        ).order_by('-training__date').first()
+        
+        records['max_reps_date'] = max_reps_set.training.date if max_reps_set else None
+        
+        # Fecha del volumen total (usamos la fecha más reciente)
+        volume_training = Training.objects.filter(
+            **training_filter
+        ).order_by('-date').first()
+        
+        records['total_volume_date'] = volume_training.date if volume_training else None
+        
+        # Actualizar los totales para el resumen
+        if records['max_weight'] and records['max_weight'] > total_max_weight:
+            total_max_weight = records['max_weight']
+            total_max_weight_date = records['max_weight_date']
+            
+        if records['max_reps'] and records['max_reps'] > total_max_reps:
+            total_max_reps = records['max_reps']
+            total_max_reps_date = records['max_reps_date']
+            
+        # Para volumen, sumamos todos los volúmenes de ejercicios
+        if records['total_volume']:
+            total_max_volume += records['total_volume']
+            # Para la fecha, usamos la más reciente
+            if not total_max_volume_date or (records['total_volume_date'] and records['total_volume_date'] > total_max_volume_date):
+                total_max_volume_date = records['total_volume_date']
+        
+        # Agregar al diccionario de récords
         exercise_records[exercise.name] = records
-
+    
+    # Contexto para la plantilla
     context = {
-        'exercise_records': exercise_records
+        'exercise_records': exercise_records,
+        'period': period,
+        'total_max_weight': total_max_weight,
+        'total_max_weight_date': total_max_weight_date,
+        'total_max_reps': total_max_reps,
+        'total_max_reps_date': total_max_reps_date,
+        'total_max_volume': total_max_volume,
+        'total_max_volume_date': total_max_volume_date
     }
+    
     return render(request, 'stats/personal_records.html', context)
 
 @login_required

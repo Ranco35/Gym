@@ -346,10 +346,9 @@ def execute_training(request, routine_id, day_id):
         # Convertir TrainerSet a formato compatible con la vista
         for trainer_set in exercise_objects:
             # Buscar o crear el objeto Exercise correspondiente
-            try:
-                # Intentar buscar el ejercicio existente por nombre
-                exercise_obj = GymExercise.objects.get(name=trainer_set.exercise)
-            except GymExercise.DoesNotExist:
+            # Usamos filter().first() en lugar de get() para evitar MultipleObjectsReturned
+            exercise_obj = GymExercise.objects.filter(name=trainer_set.exercise).first()
+            if not exercise_obj:
                 # Si no existe, crear un objeto temporal (no se guarda en la BD)
                 exercise_obj = GymExercise(name=trainer_set.exercise)
             
