@@ -174,7 +174,7 @@
                         <div class="card-body">
                             <div class="list-group">
                                 {% for pending in pending_exercises %}
-                                <a href="{{ request.path }}?step={{ forloop.counter0 }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                <a href="{{ request.path }}?step={{ pending.index_in_routine }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                                     <span>{{ pending.exercise.name }}</span>
                                     <span class="badge bg-warning text-dark">Pendiente</span>
                                 </a>

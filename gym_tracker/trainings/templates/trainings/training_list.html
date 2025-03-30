@@ -1,11 +1,303 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Mis Entrenamientos{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Estilos para la página de listado de entrenamientos */
+
+/* Cabeceras de semana */
+.week-header {
+    transition: all 0.3s ease;
+    border-left: 5px solid #0d6efd;
+    border-radius: 8px 8px 0 0;
+    background: linear-gradient(135deg, #0d6efd, #3a8bfe);
+}
+
+.week-title {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* Contenedor de semana con efecto de elevación */
+.week-container {
+    transition: all 0.4s ease;
+    margin-bottom: 2rem;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.week-container:hover {
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    transform: translateY(-2px);
+}
+
+/* Barras de progreso con efectos de degradado */
+.week-progress {
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.progress-level-low .progress-bar {
+    background: linear-gradient(to right, #dc3545, #f55556) !important;
+}
+
+.progress-level-medium .progress-bar {
+    background: linear-gradient(to right, #ffc107, #ffdb4a) !important;
+}
+
+.progress-level-high .progress-bar {
+    background: linear-gradient(to right, #28a745, #34ce57) !important;
+}
+
+/* Badges de estadísticas en cabecera de semana */
+.week-stats-badge {
+    font-size: 0.9rem;
+    padding: 6px 12px;
+    border-radius: 50px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    background-color: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(5px);
+    transition: all 0.3s ease;
+}
+
+.week-stats-badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Tarjetas de días */
+.day-container {
+    transition: all 0.4s ease;
+}
+
+.day-card {
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    border: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    margin-bottom: 1rem;
+}
+
+.day-card:hover {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.day-header {
+    background: linear-gradient(to right, #f8f9fa, #e9ecef);
+    border-bottom: 1px solid #dee2e6;
+    padding: 15px;
+}
+
+/* Tarjetas de rutina con efectos de hover */
+.training-routine-card {
+    transition: all 0.3s ease;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.training-routine-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.training-routine-card:hover .routine-header {
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+/* Cabecera de rutina */
+.routine-header {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-left: 3px solid transparent;
+}
+
+.routine-header.expanded {
+    border-left-color: #0d6efd;
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+/* Animación de la flecha que indica expandible */
+.toggle-icon {
+    transition: transform 0.3s ease;
+}
+
+.expanded .toggle-icon {
+    transform: rotate(180deg);
+}
+
+/* Botones de acción más modernos */
+.action-btn {
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.action-btn:hover {
+    transform: scale(1.15);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* Diseño de tabla mejorado */
+.modern-table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.modern-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+    border-top: none;
+    padding: 12px 15px;
+    white-space: nowrap;
+}
+
+.modern-table tbody tr {
+    transition: all 0.2s;
+}
+
+.modern-table tbody tr:hover {
+    background-color: rgba(13, 110, 253, 0.08);
+    transition: background-color 0.2s ease;
+}
+
+/* Modales más modernos */
+.modal-content {
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+}
+
+.modal-header.bg-primary {
+    background: linear-gradient(135deg, #0d6efd, #3a8bfe) !important;
+}
+
+/* Estilos para mensaje de sin entrenamientos */
+.alert-no-trainings {
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    background: linear-gradient(to bottom right, #f8f9fa, #e9ecef);
+    border: none;
+}
+
+/* Tarjetas de filtro */
+.filter-card {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    transition: all 0.3s ease;
+}
+
+.filter-card:hover {
+    box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+}
+
+/* Utilidades */
+.cursor-pointer {
+    cursor: pointer;
+}
+
+/* Formatos de fecha */
+.fecha-completa {
+    display: inline-block;
+}
+
+.fecha-corta {
+    display: none;
+}
+
+/* Mejoras en visualización de contenido colapsable */
+.routine-details {
+    transition: all 0.3s ease;
+    max-height: 0;
+    overflow: hidden;
+}
+
+.routine-details.show {
+    max-height: 2000px; /* Valor alto para asegurar que se muestre todo el contenido */
+    overflow: visible;
+}
+
+/* Estilos para controlar específicamente los botones con clases específicas */
+.edit-training, .delete-training {
+    z-index: 5;
+}
+
+/* Mejorar el estado activo de la semana */
+.week-container.active {
+    box-shadow: 0 8px 30px rgba(13, 110, 253, 0.2);
+    border-left: 5px solid #0d6efd;
+}
+
+/* Mejoras en el formulario de fechas */
+.input-group-text {
+    background-color: #f8f9fa;
+    border-right: none;
+}
+
+input[type="date"] {
+    border-left: none;
+    background-color: #fff;
+}
+
+input[type="date"]:focus {
+    box-shadow: none;
+    border-color: #ced4da;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease forwards;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .fecha-completa {
+        display: none;
+    }
+    
+    .fecha-corta {
+        display: inline-block !important;
+    }
+    
+    .week-stats-badge {
+        font-size: 0.8rem;
+        padding: 4px 8px;
+    }
+    
+    .week-title {
+        font-size: 1.1rem;
+    }
+}
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="fw-bold">Mis Entrenamientos</h1>
+        <h1 class="fw-bold text-primary">
+            <i class="fas fa-dumbbell me-2"></i>Mis Entrenamientos
+        </h1>
         <div>
             <a href="{% url 'workouts:workout-list' %}" class="btn btn-outline-primary me-2">
                 <i class="fas fa-list me-2"></i> Rutinas
@@ -17,16 +309,22 @@
     </div>
 
     <!-- Filtros -->
-    <div class="card shadow-sm mb-4">
+    <div class="card shadow-sm mb-4 border-0 rounded-3 filter-card">
         <div class="card-body">
             <form method="get" class="row g-3">
                 <div class="col-md-4">
                     <label for="date_from" class="form-label">Desde</label>
-                    <input type="date" name="date_from" id="date_from" class="form-control" value="{{ request.GET.date_from }}">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="far fa-calendar-alt"></i></span>
+                        <input type="date" name="date_from" id="date_from" class="form-control" value="{{ request.GET.date_from }}">
+                    </div>
                 </div>
                 <div class="col-md-4">
                     <label for="date_to" class="form-label">Hasta</label>
-                    <input type="date" name="date_to" id="date_to" class="form-control" value="{{ request.GET.date_to }}">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="far fa-calendar-alt"></i></span>
+                        <input type="date" name="date_to" id="date_to" class="form-control" value="{{ request.GET.date_to }}">
+                    </div>
                 </div>
                 <div class="col-md-4 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary ms-auto">
@@ -42,212 +340,222 @@
         </div>
     </div>
 
-    {% if grouped_trainings %}
+    {% if weekly_trainings %}
     <div class="row">
-        {% for date, routines in grouped_trainings.items %}
-        <div class="col-12 mb-4">
-            <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
-                <div class="card-header bg-light py-3">
-                    <h5 class="m-0 text-dark">
-                        <i class="far fa-calendar-alt me-2"></i>{{ date|date:"l d F, Y" }}
-                    </h5>
+        {% for week_key, week_data in weekly_trainings.items %}
+        <div class="col-12">
+            <!-- Cabecera de la semana con progreso -->
+            <div class="week-container fade-in">
+                <div class="card-header bg-primary text-white py-3 week-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="m-0 week-title">
+                            <i class="far fa-calendar-week me-2"></i>Semana: {{ week_key }}
+                        </h4>
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-white text-primary me-2 week-stats-badge">
+                                <i class="fas fa-check-circle me-1"></i>
+                                {{ week_data.completed_exercises }}/{{ week_data.total_exercises }} ejercicios
+                            </span>
+                            <span class="badge bg-white text-primary week-stats-badge">
+                                <i class="fas fa-percentage me-1"></i>
+                                {{ week_data.percentage }}%
+                            </span>
+                        </div>
+                    </div>
+                    <div class="progress mt-3 week-progress 
+                              {% if week_data.percentage < 33 %}progress-level-low{% elif week_data.percentage < 66 %}progress-level-medium{% else %}progress-level-high{% endif %}">
+                        <div class="progress-bar" role="progressbar" 
+                             style="width: {{ week_data.percentage }}%" 
+                             aria-valuenow="{{ week_data.percentage }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                        </div>
+                    </div>
                 </div>
-                <div class="list-group list-group-flush">
-                    {% for routine_name, trainings in routines.items %}
-                    <!-- Tarjeta de rutina con progreso -->
-                    <div class="list-group-item p-0">
-                        <div class="training-routine-card" data-routine-id="{{ forloop.counter }}-{{ date|date:'Ymd' }}">
-                            <div class="routine-header p-3 d-flex justify-content-between align-items-center cursor-pointer">
-                                <div>
-                                    <h5 class="mb-1">
-                                        <i class="fas fa-dumbbell me-2 text-primary"></i>{{ routine_name }}
-                                    </h5>
-                                    <small class="text-muted">{{ trainings|length }} ejercicios</small>
-                                </div>
-                                
-                                {% with total_sets=0 completed_sets=0 %}
-                                    {% for training in trainings %}
-                                        {% with training_total_sets=training.total_sets %}
-                                            {% with training_completed_sets=training.completed_sets_count %}
-                                                {% with new_total=total_sets|add:training_total_sets %}
-                                                    {% with new_completed=completed_sets|add:training_completed_sets %}
-                                                        {% if forloop.last %}
-                                                            <div class="d-flex align-items-center">
-                                                                <div class="progress me-3" style="width: 150px; height: 10px;">
+                
+                <!-- Contenedor de días dentro de la semana -->
+                <div class="p-3 bg-white">
+                    {% for date_str, date_routines in week_data.dates.items %}
+                    <div class="day-container mb-3">
+                        <div class="day-card">
+                            <div class="card-header day-header py-3">
+                                <h5 class="m-0 text-dark">
+                                    <i class="far fa-calendar-alt me-2 text-primary"></i>
+                                    <span class="fecha-completa">{{ date_str|date:"l d F, Y" }}</span>
+                                    <span class="fecha-corta d-none d-sm-inline">{{ date_str|date:"d/m/Y" }}</span>
+                                </h5>
+                            </div>
+                            <div class="list-group list-group-flush">
+                                {% for routine_name, routine_data in date_routines.items %}
+                                <!-- Tarjeta de rutina con progreso -->
+                                <div class="list-group-item p-0">
+                                    <div class="training-routine-card" data-routine-id="{{ forloop.counter }}-{{ date_str|date:'Ymd' }}">
+                                        <div class="routine-header p-3 d-flex justify-content-between align-items-center cursor-pointer">
+                                            <div>
+                                                <h5 class="mb-1">
+                                                    <i class="fas fa-dumbbell me-2 text-primary"></i>{{ routine_name }}
+                                                </h5>
+                                                <small class="text-muted">{{ routine_data.trainings|length }} ejercicios</small>
+                                            </div>
+                                            
+                                            <div class="d-flex align-items-center">
+                                                <div class="progress me-3" style="width: 150px; height: 8px; border-radius: 4px;">
+                                                    {% if routine_data.progress.has_pending %}
+                                                        <div class="progress-bar bg-warning" role="progressbar" 
+                                                            style="width: {{ routine_data.progress.percentage }}%">
+                                                        </div>
+                                                    {% else %}
+                                                        <div class="progress-bar bg-success" role="progressbar" 
+                                                            style="width: {{ routine_data.progress.percentage }}%">
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                                <span class="badge {% if routine_data.progress.has_pending %}bg-warning{% else %}bg-success{% endif %} rounded-pill">
+                                                    {{ routine_data.progress.percentage }}%
+                                                </span>
+                                                <i class="fas fa-chevron-down ms-3 toggle-icon"></i>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Detalles de ejercicios (colapsable) -->
+                                        <div class="routine-details bg-light p-0 d-none">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover mb-0 modern-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Ejercicio</th>
+                                                            <th class="text-center">Series</th>
+                                                            <th class="text-center">Repeticiones</th>
+                                                            <th class="text-center">Peso</th>
+                                                            <th class="text-center">Progreso</th>
+                                                            <th class="text-end">Acciones</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for training in routine_data.trainings %}
+                                                        <tr>
+                                                            <td>{{ training.exercise.name }}
+                                                                {% if "PENDIENTE" in training.notes %}
+                                                                <span class="badge bg-warning text-dark ms-2 rounded-pill">Pendiente</span>
+                                                                {% endif %}
+                                                            </td>
+                                                            <td class="text-center">{{ training.total_sets }}</td>
+                                                            <td class="text-center">{{ training.reps }}</td>
+                                                            <td class="text-center">{% if training.weight %}{{ training.weight }} kg{% else %}-{% endif %}</td>
+                                                            <td class="text-center">
+                                                                <div class="progress" style="height: 8px; border-radius: 4px;">
                                                                     {% if training.completed %}
-                                                                        <div class="progress-bar bg-success" role="progressbar" style="width: 100%"></div>
+                                                                    <div class="progress-bar bg-success" role="progressbar" style="width: 100%"></div>
                                                                     {% else %}
-                                                                        {% if new_total > 0 %}
-                                                                            <div class="progress-bar bg-success" role="progressbar" 
-                                                                                style="width: {% widthratio new_completed new_total 100 %}%">
-                                                                            </div>
+                                                                        {% if training.completed_sets_count >= training.total_sets %}
+                                                                        <div class="progress-bar bg-success" role="progressbar" style="width: 100%"></div>
                                                                         {% else %}
-                                                                            <div class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
+                                                                        <div class="progress-bar bg-success" role="progressbar" 
+                                                                            style="width: {% widthratio training.completed_sets_count training.total_sets 100 %}%">
+                                                                        </div>
                                                                         {% endif %}
                                                                     {% endif %}
                                                                 </div>
-                                                                <span class="badge bg-success">
+                                                                <small class="mt-1 d-block">
                                                                     {% if training.completed %}
-                                                                        100%
+                                                                    {{ training.total_sets }}/{{ training.total_sets }}
                                                                     {% else %}
-                                                                        {% if new_total > 0 %}
-                                                                            {% widthratio new_completed new_total 100 %}%
+                                                                        {% if training.extra_sets_count > 0 %}
+                                                                        <span class="text-success">{{ training.completed_sets_count }}/{{ training.total_sets }}</span>
+                                                                        <span class="badge bg-warning text-dark rounded-pill" title="Series extras">+{{ training.extra_sets_count }}</span>
                                                                         {% else %}
-                                                                            0%
+                                                                        {{ training.completed_sets_count }}/{{ training.total_sets }}
                                                                         {% endif %}
                                                                     {% endif %}
-                                                                </span>
-                                                                <i class="fas fa-chevron-down ms-3 toggle-icon"></i>
-                                                            </div>
-                                                        {% endif %}
-                                                        {% with total_sets=new_total %}
-                                                            {% with completed_sets=new_completed %}
-                                                                <!-- Solo para mantener los valores acumulados -->
-                                                            {% endwith %}
-                                                        {% endwith %}
-                                                    {% endwith %}
-                                                {% endwith %}
-                                            {% endwith %}
-                                        {% endwith %}
+                                                                </small>
+                                                            </td>
+                                                            <td class="text-end">
+                                                                <div class="btn-group">
+                                                                    <button type="button" class="btn btn-sm btn-info action-btn me-1" 
+                                                                            data-bs-toggle="modal" 
+                                                                            data-bs-target="#detailsModal{{ training.id }}"
+                                                                            title="Ver detalles">
+                                                                        <i class="fas fa-info-circle"></i>
+                                                                    </button>
+                                                                    <button type="button" class="btn btn-sm btn-primary action-btn edit-training me-1" 
+                                                                            data-training-id="{{ training.id }}" 
+                                                                            title="Editar">
+                                                                        <i class="fas fa-edit"></i>
+                                                                    </button>
+                                                                    <button type="button" class="btn btn-sm btn-danger action-btn delete-training" 
+                                                                            data-training-id="{{ training.id }}" 
+                                                                            title="Eliminar">
+                                                                        <i class="fas fa-trash"></i>
+                                                                    </button>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Modales de detalles para cada ejercicio -->
+                                    {% for training in routine_data.trainings %}
+                                    <div class="modal fade" id="detailsModal{{ training.id }}" tabindex="-1">
+                                        <div class="modal-dialog modal-dialog-centered">
+                                            <div class="modal-content border-0 shadow">
+                                                <div class="modal-header bg-primary text-white">
+                                                    <h5 class="modal-title">{{ training.exercise.name }}</h5>
+                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="d-flex justify-content-between mb-3">
+                                                        <h6 class="mb-0">Series completadas</h6>
+                                                        <button class="btn btn-sm btn-primary add-set-btn rounded-pill" data-training-id="{{ training.id }}">
+                                                            <i class="fas fa-plus me-1"></i> Añadir serie
+                                                        </button>
+                                                    </div>
+                                                    
+                                                    <div class="table-responsive">
+                                                        <table class="table table-striped modern-table">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Serie</th>
+                                                                    <th>Peso</th>
+                                                                    <th>Repeticiones</th>
+                                                                    <th class="text-end">Acciones</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody id="sets-table-{{ training.id }}">
+                                                                {% for set in training.set_set.all %}
+                                                                <tr>
+                                                                    <td>{{ set.set_number }}</td>
+                                                                    <td>{% if set.weight %}{{ set.weight }} kg{% else %}-{% endif %}</td>
+                                                                    <td>{{ set.reps }}</td>
+                                                                    <td class="text-end">
+                                                                        <button class="btn btn-sm btn-outline-danger action-btn delete-set-btn" data-set-id="{{ set.id }}">
+                                                                            <i class="fas fa-trash"></i>
+                                                                        </button>
+                                                                    </td>
+                                                                </tr>
+                                                                {% empty %}
+                                                                <tr>
+                                                                    <td colspan="4" class="text-center">No hay series completadas</td>
+                                                                </tr>
+                                                                {% endfor %}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cerrar</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                     {% endfor %}
-                                {% endwith %}
-                            </div>
-                            
-                            <!-- Detalles de ejercicios (colapsable) -->
-                            <div class="routine-details bg-light p-0 d-none">
-                                <div class="table-responsive">
-                                    <table class="table table-hover mb-0">
-                                        <thead>
-                                            <tr>
-                                                <th>Ejercicio</th>
-                                                <th class="text-center">Series</th>
-                                                <th class="text-center">Repeticiones</th>
-                                                <th class="text-center">Peso</th>
-                                                <th class="text-center">Progreso</th>
-                                                <th class="text-end">Acciones</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for training in trainings %}
-                                            <tr>
-                                                <td>{{ training.exercise.name }}
-                                                    {% if "PENDIENTE" in training.notes %}
-                                                    <span class="badge bg-warning text-dark ms-2">Pendiente</span>
-                                                    {% endif %}
-                                                </td>
-                                                <td class="text-center">{{ training.total_sets }}</td>
-                                                <td class="text-center">{{ training.reps }}</td>
-                                                <td class="text-center">{% if training.weight %}{{ training.weight }} kg{% else %}-{% endif %}</td>
-                                                <td class="text-center">
-                                                    <div class="progress" style="height: 8px;">
-                                                        {% if training.completed %}
-                                                        <div class="progress-bar bg-success" role="progressbar" style="width: 100%"></div>
-                                                        {% else %}
-                                                            {% if training.completed_sets_count >= training.total_sets %}
-                                                            <div class="progress-bar bg-success" role="progressbar" style="width: 100%"></div>
-                                                            {% else %}
-                                                            <div class="progress-bar bg-success" role="progressbar" 
-                                                                style="width: {% widthratio training.completed_sets_count training.total_sets 100 %}%">
-                                                            </div>
-                                                            {% endif %}
-                                                        {% endif %}
-                                                    </div>
-                                                    <small class="mt-1 d-block">
-                                                        {% if training.completed %}
-                                                        {{ training.total_sets }}/{{ training.total_sets }}
-                                                        {% else %}
-                                                            {% if training.extra_sets_count > 0 %}
-                                                            <span class="text-success">{{ training.completed_sets_count }}/{{ training.total_sets }}</span>
-                                                            <span class="badge bg-warning text-dark" title="Series extras">+{{ training.extra_sets_count }}</span>
-                                                            {% else %}
-                                                            {{ training.completed_sets_count }}/{{ training.total_sets }}
-                                                            {% endif %}
-                                                        {% endif %}
-                                                    </small>
-                                                </td>
-                                                <td class="text-end">
-                                                    <div class="btn-group btn-group-sm">
-                                                        <button type="button" class="btn btn-sm btn-info" 
-                                                                data-bs-toggle="modal" 
-                                                                data-bs-target="#detailsModal{{ training.id }}"
-                                                                title="Ver detalles">
-                                                            <i class="fas fa-info-circle"></i>
-                                                        </button>
-                                                        <button type="button" class="btn btn-sm btn-primary edit-training" 
-                                                                data-training-id="{{ training.id }}" 
-                                                                title="Editar">
-                                                            <i class="fas fa-edit"></i>
-                                                        </button>
-                                                        <button type="button" class="btn btn-sm btn-danger delete-training" 
-                                                                data-training-id="{{ training.id }}" 
-                                                                title="Eliminar">
-                                                            <i class="fas fa-trash"></i>
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
                                 </div>
+                                {% endfor %}
                             </div>
                         </div>
-                        
-                        <!-- Modales de detalles para cada ejercicio -->
-                        {% for training in trainings %}
-                        <div class="modal fade" id="detailsModal{{ training.id }}" tabindex="-1">
-                            <div class="modal-dialog modal-dialog-centered">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title">{{ training.exercise.name }}</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <div class="d-flex justify-content-between mb-3">
-                                            <h6 class="mb-0">Series completadas</h6>
-                                            <button class="btn btn-sm btn-primary add-set-btn" data-training-id="{{ training.id }}">
-                                                <i class="fas fa-plus me-1"></i> Añadir serie
-                                            </button>
-                                        </div>
-                                        
-                                        <div class="table-responsive">
-                                            <table class="table table-striped">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Serie</th>
-                                                        <th>Peso</th>
-                                                        <th>Repeticiones</th>
-                                                        <th class="text-end">Acciones</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="sets-table-{{ training.id }}">
-                                                    {% for set in training.set_set.all %}
-                                                    <tr>
-                                                        <td>{{ set.set_number }}</td>
-                                                        <td>{% if set.weight %}{{ set.weight }} kg{% else %}-{% endif %}</td>
-                                                        <td>{{ set.reps }}</td>
-                                                        <td class="text-end">
-                                                            <button class="btn btn-sm btn-outline-danger delete-set-btn" data-set-id="{{ set.id }}">
-                                                                <i class="fas fa-trash"></i>
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                    {% empty %}
-                                                    <tr>
-                                                        <td colspan="4" class="text-center">No hay series completadas</td>
-                                                    </tr>
-                                                    {% endfor %}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
                     </div>
                     {% endfor %}
                 </div>
@@ -256,15 +564,15 @@
         {% endfor %}
     </div>
     {% else %}
-    <div class="alert alert-info text-center p-5 shadow-sm">
+    <div class="alert alert-info text-center p-5 shadow-sm rounded-3 alert-no-trainings">
         <i class="fas fa-info-circle fa-3x mb-3 d-block"></i>
         <h4>No tienes entrenamientos registrados</h4>
         <p>Crea tu primer entrenamiento o inicia una rutina.</p>
         <div class="mt-3">
-            <button type="button" class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#newTrainingModal">
+            <button type="button" class="btn btn-primary me-2 rounded-pill" data-bs-toggle="modal" data-bs-target="#newTrainingModal">
                 <i class="fas fa-plus me-2"></i> Nuevo Entrenamiento
             </button>
-            <a href="{% url 'workouts:workout-list' %}" class="btn btn-outline-primary">
+            <a href="{% url 'workouts:workout-list' %}" class="btn btn-outline-primary rounded-pill">
                 <i class="fas fa-dumbbell me-2"></i> Ver Rutinas
             </a>
         </div>
@@ -276,9 +584,9 @@
 <div class="modal fade" id="newTrainingModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header">
+            <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title">Nuevo Entrenamiento</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form method="post" action="{% url 'trainings:create-training-from-routine' %}">
                 {% csrf_token %}
@@ -303,14 +611,18 @@
 
                         <div class="col-md-12">
                             <label class="form-label">Fecha del Entrenamiento</label>
-                            <input type="date" name="training_date" class="form-control" required 
-                                   value="{{ today|date:'Y-m-d' }}">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="far fa-calendar-alt"></i></span>
+                                <input type="date" name="training_date" class="form-control" required 
+                                      value="{{ today|date:'Y-m-d' }}">
+                            </div>
+                            <small class="form-text text-muted">Selecciona la fecha en que realizarás este entrenamiento</small>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Comenzar Entrenamiento</button>
+                    <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary rounded-pill">Comenzar Entrenamiento</button>
                 </div>
             </form>
         </div>
@@ -319,11 +631,11 @@
 
 <!-- Modal para añadir serie manualmente -->
 <div class="modal fade" id="addSetModal" tabindex="-1" aria-labelledby="addSetModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-primary text-white">
         <h5 class="modal-title" id="addSetModalLabel">Añadir Serie Manualmente</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
         <form id="add-set-form">
@@ -346,8 +658,8 @@
         </form>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-primary" id="save-set-btn">Guardar</button>
+        <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary rounded-pill" id="save-set-btn">Guardar</button>
       </div>
     </div>
   </div>
@@ -356,82 +668,336 @@
 
 {% block extra_js %}
 <script>
+/**
+ * GymTracker 360 - Módulo de gestión de entrenamientos
+ * Funcionalidades para la lista de entrenamientos organizados por semana
+ */
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Toggle para mostrar/ocultar detalles de rutina
+    // Inicializar componentes
+    initializeRoutineSelector();
+    initializeRoutineToggles();
+    initializeFirstWeekExpansion();
+    setupEditTrainingButtons();
+    setupDeleteTrainingButtons();
+    setupAddSetButtons();
+    setupSaveSetButton();
+    enhanceTrainingCards();
+});
+
+/**
+ * Inicializa el selector de rutinas y carga los días asociados
+ */
+function initializeRoutineSelector() {
+    const routineSelect = document.getElementById('routineSelect');
+    const routineDaySelect = document.getElementById('routineDaySelect');
+    
+    if (!routineSelect || !routineDaySelect) return;
+    
+    routineSelect.addEventListener('change', function() {
+        const routineId = this.value;
+        
+        // Gestionar estado de selección vacía
+        if (!routineId) {
+            routineDaySelect.innerHTML = '<option value="">Primero selecciona una rutina</option>';
+            routineDaySelect.disabled = true;
+            return;
+        }
+        
+        // Activar selector y mostrar cargando
+        routineDaySelect.disabled = false;
+        routineDaySelect.innerHTML = '<option value="">Cargando días...</option>';
+        
+        // Animación de carga
+        routineSelect.classList.add('loading');
+        
+        // Cargar días de la rutina usando fetch API
+        fetch(`/trainings/routine/${routineId}/days/`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error en la respuesta del servidor');
+                }
+                return response.json();
+            })
+            .then(data => {
+                populateRoutineDays(data, routineDaySelect);
+                routineSelect.classList.remove('loading');
+            })
+            .catch(error => {
+                console.error('Error al cargar los días:', error);
+                routineDaySelect.innerHTML = '<option value="">Error al cargar días</option>';
+                routineSelect.classList.remove('loading');
+            });
+    });
+}
+
+/**
+ * Rellena el selector de días con los datos obtenidos del servidor
+ */
+function populateRoutineDays(data, routineDaySelect) {
+    // Limpiar selector
+    routineDaySelect.innerHTML = '';
+    
+    // Añadir opción por defecto
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    defaultOption.textContent = 'Selecciona un día';
+    routineDaySelect.appendChild(defaultOption);
+    
+    // Añadir cada día disponible
+    data.days.forEach(day => {
+        const option = document.createElement('option');
+        option.value = day.id;
+        option.textContent = `${day.day_of_week} - ${day.focus || 'Sin enfoque'}`;
+        routineDaySelect.appendChild(option);
+    });
+    
+    // Efecto de aparición
+    routineDaySelect.classList.add('fade-in');
+    setTimeout(() => routineDaySelect.classList.remove('fade-in'), 500);
+}
+
+/**
+ * Inicializa los toggles para mostrar/ocultar detalles de rutina
+ */
+function initializeRoutineToggles() {
     document.querySelectorAll('.routine-header').forEach(header => {
         header.addEventListener('click', function() {
             const routineDetails = this.nextElementSibling;
             const toggleIcon = this.querySelector('.toggle-icon');
-            routineDetails.classList.toggle('d-none');
-            toggleIcon.classList.toggle('fa-chevron-down');
-            toggleIcon.classList.toggle('fa-chevron-up');
-        });
-    });
-    
-    // Redirección al editar un entrenamiento
-    document.querySelectorAll('.edit-training').forEach(button => {
-        button.addEventListener('click', function() {
-            const trainingId = this.getAttribute('data-training-id');
-            window.location.href = `/trainings/training/${trainingId}/edit/`;
-        });
-    });
-    
-    // Confirmación antes de eliminar un entrenamiento
-    document.querySelectorAll('.delete-training').forEach(button => {
-        button.addEventListener('click', function() {
-            const trainingId = this.getAttribute('data-training-id');
-            if (confirm('¿Estás seguro de que deseas eliminar este entrenamiento?')) {
-                // Enviar formulario de eliminación
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = `/trainings/training/${trainingId}/delete/`;
+            
+            // Alternar clases para efecto visual - mejor manejo que toggle
+            if (routineDetails.classList.contains('d-none')) {
+                routineDetails.classList.remove('d-none');
+                routineDetails.classList.add('show');
+                this.classList.add('expanded');
                 
-                // Añadir CSRF token
-                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-                const csrfInput = document.createElement('input');
-                csrfInput.type = 'hidden';
-                csrfInput.name = 'csrfmiddlewaretoken';
-                csrfInput.value = csrfToken;
-                form.appendChild(csrfInput);
+                // Animar el icono
+                toggleIcon.classList.replace('fa-chevron-down', 'fa-chevron-up');
+            } else {
+                routineDetails.classList.add('d-none');
+                routineDetails.classList.remove('show');
+                this.classList.remove('expanded');
                 
-                document.body.appendChild(form);
-                form.submit();
+                // Animar el icono
+                toggleIcon.classList.replace('fa-chevron-up', 'fa-chevron-down');
             }
         });
     });
+}
 
-    // Botón para añadir una serie manualmente
+/**
+ * Expande automáticamente la primera semana al cargar la página
+ */
+function initializeFirstWeekExpansion() {
+    const weekContainers = document.querySelectorAll('.week-container');
+    if (weekContainers.length === 0) return;
+    
+    // Esperar un momento para aplicar la animación después de que la página cargue
+    setTimeout(() => {
+        // Mostrar la primera semana expandida con clase de animación
+        const firstWeek = weekContainers[0];
+        firstWeek.classList.add('active');
+        
+        // Expandir automáticamente el primer día y rutina para mostrar el contenido
+        const firstRoutineHeader = firstWeek.querySelector('.routine-header');
+        if (firstRoutineHeader) {
+            firstRoutineHeader.click();
+        }
+    }, 500);
+}
+
+/**
+ * Configura los botones de edición de entrenamiento
+ */
+function setupEditTrainingButtons() {
+    document.querySelectorAll('.edit-training').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.stopPropagation(); // Evitar propagación del clic
+            const trainingId = this.getAttribute('data-training-id');
+            
+            // Animación antes de la redirección
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            this.disabled = true;
+            
+            // Redireccionar después de una breve animación
+            setTimeout(() => {
+                window.location.href = `/trainings/training/${trainingId}/edit/`;
+            }, 300);
+        });
+    });
+}
+
+/**
+ * Configura los botones para eliminar entrenamientos con confirmación mejorada
+ */
+function setupDeleteTrainingButtons() {
+    document.querySelectorAll('.delete-training').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.stopPropagation(); // Evitar propagación del clic
+            const trainingId = this.getAttribute('data-training-id');
+            
+            // Crear overlay de confirmación con animación
+            showDeleteConfirmation(trainingId);
+        });
+    });
+}
+
+/**
+ * Muestra un diálogo de confirmación personalizado para eliminar un entrenamiento
+ */
+function showDeleteConfirmation(trainingId) {
+    // Crear overlay de confirmación
+    const confirmBox = document.createElement('div');
+    confirmBox.className = 'position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center';
+    confirmBox.style.backgroundColor = 'rgba(0,0,0,0.5)';
+    confirmBox.style.zIndex = '9999';
+    confirmBox.style.opacity = '0';
+    confirmBox.style.transition = 'opacity 0.3s ease';
+    
+    // HTML del diálogo
+    confirmBox.innerHTML = `
+        <div class="card shadow p-3 border-0 rounded-3" style="max-width: 400px; transform: scale(0.9); transition: transform 0.3s ease;">
+            <div class="card-body text-center">
+                <i class="fas fa-exclamation-triangle text-warning fa-3x mb-3"></i>
+                <h5>¿Eliminar este entrenamiento?</h5>
+                <p class="text-muted">Esta acción no se puede deshacer</p>
+                <div class="d-flex justify-content-center mt-3">
+                    <button class="btn btn-secondary me-2 confirm-cancel">Cancelar</button>
+                    <button class="btn btn-danger confirm-delete">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Añadir al DOM y animar entrada
+    document.body.appendChild(confirmBox);
+    setTimeout(() => {
+        confirmBox.style.opacity = '1';
+        confirmBox.querySelector('.card').style.transform = 'scale(1)';
+    }, 10);
+    
+    // Manejar cancelación
+    confirmBox.querySelector('.confirm-cancel').addEventListener('click', function() {
+        animateAndRemoveConfirmBox(confirmBox);
+    });
+    
+    // Manejar confirmación
+    confirmBox.querySelector('.confirm-delete').addEventListener('click', function() {
+        // Mostrar animación de carga
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        this.disabled = true;
+        
+        // Crear y enviar formulario de eliminación
+        setTimeout(() => {
+            submitDeleteForm(trainingId);
+        }, 300);
+    });
+    
+    // Cerrar al hacer clic fuera del diálogo
+    confirmBox.addEventListener('click', function(e) {
+        if (e.target === confirmBox) {
+            animateAndRemoveConfirmBox(confirmBox);
+        }
+    });
+}
+
+/**
+ * Anima la salida y elimina el cuadro de confirmación
+ */
+function animateAndRemoveConfirmBox(confirmBox) {
+    confirmBox.style.opacity = '0';
+    confirmBox.querySelector('.card').style.transform = 'scale(0.9)';
+    setTimeout(() => {
+        document.body.removeChild(confirmBox);
+    }, 300);
+}
+
+/**
+ * Envía el formulario para eliminar un entrenamiento
+ */
+function submitDeleteForm(trainingId) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/trainings/training/${trainingId}/delete/`;
+    
+    // Añadir CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = 'csrfmiddlewaretoken';
+    csrfInput.value = csrfToken;
+    form.appendChild(csrfInput);
+    
+    document.body.appendChild(form);
+    form.submit();
+}
+
+/**
+ * Configura los botones para añadir series manualmente
+ */
+function setupAddSetButtons() {
     document.querySelectorAll('.add-set-btn').forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
             const trainingId = this.getAttribute('data-training-id');
-            const modal = document.querySelector(`#detailsModal${trainingId}`);
             
-            // Abrir modal para añadir serie
-            const setModal = new bootstrap.Modal(document.getElementById('addSetModal'));
-            document.getElementById('set-training-id').value = trainingId;
+            // Animar botón con efecto de pulso
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            this.classList.add('pulse');
             
-            // Limpiar campos
-            document.getElementById('set-number').value = '';
-            document.getElementById('set-weight').value = '';
-            document.getElementById('set-reps').value = '';
-            
-            setModal.show();
+            // Abrir modal para añadir serie con ligero retraso para la animación
+            setTimeout(() => {
+                this.innerHTML = '<i class="fas fa-plus me-1"></i> Añadir serie';
+                this.classList.remove('pulse');
+                
+                openAddSetModal(trainingId);
+            }, 300);
         });
     });
+}
+
+/**
+ * Abre el modal para añadir una serie con animación
+ */
+function openAddSetModal(trainingId) {
+    const setModal = new bootstrap.Modal(document.getElementById('addSetModal'));
+    document.getElementById('set-training-id').value = trainingId;
     
-    // Guardar serie manualmente
-    document.getElementById('save-set-btn').addEventListener('click', function() {
-        const form = document.getElementById('add-set-form');
+    // Limpiar campos
+    document.getElementById('set-number').value = '';
+    document.getElementById('set-weight').value = '';
+    document.getElementById('set-reps').value = '';
+    
+    // Restablecer estado de los campos
+    document.querySelectorAll('#add-set-form .form-control').forEach(control => {
+        control.classList.remove('is-invalid');
+    });
+    
+    setModal.show();
+}
+
+/**
+ * Configura el botón para guardar series
+ */
+function setupSaveSetButton() {
+    const saveButton = document.getElementById('save-set-btn');
+    if (!saveButton) return;
+    
+    saveButton.addEventListener('click', function() {
         const trainingId = document.getElementById('set-training-id').value;
         const setNumber = document.getElementById('set-number').value;
         const weight = document.getElementById('set-weight').value;
         const reps = document.getElementById('set-reps').value;
         
-        if (!setNumber || !reps) {
-            alert('Por favor completa todos los campos obligatorios');
+        // Validar campos requeridos
+        if (!validateSetForm(setNumber, reps)) {
             return;
         }
+        
+        // Animar botón
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        this.disabled = true;
         
         // Crear datos para la API
         const data = {
@@ -442,50 +1008,155 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         
         // Enviar datos a la API
-        fetch('/trainings/session/' + trainingId + '/sets/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            },
-            body: JSON.stringify(data)
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.status === 'success') {
-                // Cerrar modal
-                const modal = bootstrap.Modal.getInstance(document.getElementById('addSetModal'));
-                modal.hide();
-                
-                // Recargar la página para mostrar los cambios
-                window.location.reload();
-            } else {
-                alert('Error al guardar la serie: ' + result.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error al guardar la serie');
+        saveSet(data, this);
+    });
+}
+
+/**
+ * Valida el formulario de series
+ */
+function validateSetForm(setNumber, reps) {
+    let isValid = true;
+    const formControls = document.querySelectorAll('#add-set-form .form-control');
+    
+    formControls.forEach(control => {
+        // Limpiar estado previo
+        control.classList.remove('is-invalid');
+        
+        // Validar campos requeridos
+        if (control.hasAttribute('required') && !control.value) {
+            control.classList.add('is-invalid');
+            // Efecto de shake para campos inválidos
+            control.classList.add('shake');
+            setTimeout(() => control.classList.remove('shake'), 500);
+            isValid = false;
+        }
+    });
+    
+    return isValid;
+}
+
+/**
+ * Guarda una serie mediante una llamada a la API
+ */
+function saveSet(data, button) {
+    fetch('/trainings/session/' + data.training_id + '/sets/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Error en la respuesta del servidor');
+        }
+        return response.json();
+    })
+    .then(result => {
+        handleSetSaveResult(result, button);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showSaveError(button, 'Error al guardar la serie');
+    });
+}
+
+/**
+ * Gestiona el resultado del guardado de la serie
+ */
+function handleSetSaveResult(result, button) {
+    if (result.status === 'success') {
+        // Mostrar indicador de éxito
+        button.innerHTML = '<i class="fas fa-check"></i>';
+        button.classList.replace('btn-primary', 'btn-success');
+        
+        // Efecto de confeti
+        showSuccessAnimation();
+        
+        // Cerrar modal con retraso para ver la animación
+        setTimeout(() => {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addSetModal'));
+            modal.hide();
+            
+            // Recargar la página para mostrar los cambios
+            window.location.reload();
+        }, 800);
+    } else {
+        showSaveError(button, 'Error al guardar la serie: ' + result.message);
+    }
+}
+
+/**
+ * Muestra animación de éxito
+ */
+function showSuccessAnimation() {
+    // Implementar confeti u otra animación de éxito aquí si se desea
+}
+
+/**
+ * Muestra error al guardar
+ */
+function showSaveError(button, message) {
+    button.innerHTML = '<i class="fas fa-times"></i>';
+    button.classList.replace('btn-primary', 'btn-danger');
+    alert(message);
+    
+    // Restaurar botón después de mostrar el error
+    setTimeout(() => {
+        button.innerHTML = 'Guardar';
+        button.classList.replace('btn-danger', 'btn-primary');
+        button.disabled = false;
+    }, 1500);
+}
+
+/**
+ * Mejora las tarjetas de entrenamiento con efectos visuales
+ */
+function enhanceTrainingCards() {
+    document.querySelectorAll('.training-routine-card').forEach(card => {
+        // Efectos de hover avanzados
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-3px)';
+            this.style.boxShadow = '0 8px 15px rgba(0,0,0,0.1)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = '0 2px 5px rgba(0,0,0,0.05)';
         });
     });
-});
-</script>
+}
 
-<style>
-    .cursor-pointer {
-        cursor: pointer;
+// Añadir estilos dinámicos para animaciones
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
     }
     
-    .training-routine-card {
-        transition: all 0.3s ease;
+    .pulse {
+        animation: pulse 0.5s ease infinite;
     }
     
-    .training-routine-card:hover .routine-header {
-        background-color: rgba(0,0,0,0.02);
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
     }
     
-    .toggle-icon {
-        transition: transform 0.2s ease;
+    .shake {
+        animation: shake 0.4s ease;
     }
-</style>
+    
+    .loading {
+        opacity: 0.7;
+        pointer-events: none;
+    }
+`;
+document.head.appendChild(style);
+</script>
 {% endblock %} 

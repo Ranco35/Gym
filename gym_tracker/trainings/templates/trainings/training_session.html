@@ -159,10 +159,44 @@
                         <div id="seriesProgress" class="progress-bar bg-success" role="progressbar" style="width: 0%" 
                              aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
                     </div>
+
+                    <!-- Botones de control de series (Saltar Serie/Completar Serie) -->
+                    <div class="d-flex justify-content-between mt-4">
+                        <button id="skipSerieBtn" class="btn btn-warning">
+                            <i class="fas fa-forward me-2"></i>Saltar Serie
+                        </button>
+                        <button id="completeSerieBtn" class="btn btn-success">
+                            <i class="fas fa-check me-2"></i>Completar Serie <span id="currentSerieNumber">1</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Sección de ejercicios pendientes -->
+    {% if pending_trainings %}
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="card shadow-sm bg-warning bg-opacity-25">
+                <div class="card-header bg-warning text-dark py-2">
+                    <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Ejercicios Pendientes</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for training in pending_trainings %}
+                        <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center pending-exercise cursor-pointer" 
+                             data-training-id="{{ training.id }}" style="cursor: pointer;">
+                            <span>{{ training.exercise.name }}</span>
+                            <span class="badge bg-warning text-dark">Pendiente</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <!-- Audio para el temporizador -->
@@ -182,6 +216,23 @@ document.addEventListener('DOMContentLoaded', function() {
     // Botones de navegación
     const continueNextBtn = document.getElementById('continueNextBtn');
     const completeWorkoutBtn = document.getElementById('completeWorkoutBtn');
+    
+    // Función para actualizar la visualización de la serie actual
+    function updateActiveSerieRow() {
+        // Primero eliminar la clase activa de todas las filas
+        document.querySelectorAll('#setsTableBody tr').forEach(r => {
+            r.classList.remove('table-active');
+        });
+        
+        // Luego agregar la clase activa a la fila de la serie actual
+        const activeRow = document.querySelector(`tr[data-set-number="${nextSerieToComplete}"]`);
+        if (activeRow) {
+            activeRow.classList.add('table-active');
+            
+            // Desplazarse a la fila activa
+            activeRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
     
     // Comprobar si hay series ya completadas previamente
     const checkCompletedSets = async () => {
@@ -221,6 +272,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Actualizar progreso
                 updateProgress();
+                
+                // Actualizar la visualización de la serie actual
+                updateActiveSerieRow();
             }
         } catch (error) {
             console.error('Error al cargar series completadas:', error);
@@ -237,6 +291,24 @@ document.addEventListener('DOMContentLoaded', function() {
         seriesProgress.style.width = `${percentage}%`;
         seriesProgress.textContent = `${percentage}%`;
         seriesProgress.setAttribute('aria-valuenow', percentage);
+        
+        // Actualizar número de serie en el botón "Completar Serie"
+        nextSerieToComplete = completedSets + 1;
+        if (nextSerieToComplete > totalSets) {
+            nextSerieToComplete = totalSets;
+            // Desactivar botones cuando todas las series están completadas
+            skipSerieBtn.disabled = true;
+            completeSerieBtn.disabled = true;
+        } else {
+            // Activar botones si aún quedan series por completar
+            skipSerieBtn.disabled = false;
+            completeSerieBtn.disabled = false;
+            // Actualizar número en el botón
+            currentSerieNumber.textContent = nextSerieToComplete;
+        }
+        
+        // Actualizar la visualización de la serie activa
+        updateActiveSerieRow();
         
         // Mostrar botón de siguiente si todas las series están completadas
         if (completedSets >= totalSets) {
@@ -424,9 +496,31 @@ document.addEventListener('DOMContentLoaded', function() {
                     completedSets++;
                     updateProgress();
                     
+                    // Mostrar mensaje de confirmación
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-success mt-3';
+                    alertDiv.innerHTML = `Serie ${setNumber} completada con éxito!`;
+                    document.querySelector('.card-body').insertBefore(alertDiv, document.querySelector('.table-responsive'));
+                    
+                    setTimeout(() => {
+                        alertDiv.remove();
+                    }, 3000);
+                    
                     // Iniciar el temporizador automáticamente
                     resetTimer();
                     startTimer();
+                    
+                    // Verificar si hay más series para completar
+                    if (nextSerieToComplete <= totalSets) {
+                        // Enfoque en el input de peso de la siguiente serie
+                        const nextRow = document.querySelector(`tr[data-set-number="${nextSerieToComplete}"]`);
+                        if (nextRow) {
+                            const nextWeightInput = nextRow.querySelector('.weight-input');
+                            if (nextWeightInput) {
+                                nextWeightInput.focus();
+                            }
+                        }
+                    }
                 } else {
                     throw new Error(data.message || 'Error al guardar la serie');
                 }
@@ -478,6 +572,159 @@ document.addEventListener('DOMContentLoaded', function() {
         
         return cookieValue;
     }
+
+    // Hacer que los ejercicios pendientes sean clicables
+    document.querySelectorAll('.pending-exercise').forEach(item => {
+        item.addEventListener('click', function(e) {
+            const trainingId = this.getAttribute('data-training-id');
+            if (trainingId) {
+                window.location.href = `/trainings/session/${trainingId}/`;
+            }
+        });
+    });
+
+    // Manejar botones de Saltar Serie y Completar Serie
+    const skipSerieBtn = document.getElementById('skipSerieBtn');
+    const completeSerieBtn = document.getElementById('completeSerieBtn');
+    const currentSerieNumber = document.getElementById('currentSerieNumber');
+    
+    // Variable global para seguir la serie actual
+    let nextSerieToComplete = completedSets + 1;
+    if (nextSerieToComplete > totalSets) {
+        nextSerieToComplete = totalSets;
+    }
+    currentSerieNumber.textContent = nextSerieToComplete;
+    
+    // Función para saltar una serie
+    skipSerieBtn.addEventListener('click', function() {
+        // Verificar si hay series pendientes
+        if (completedSets >= totalSets) {
+            alert('Ya has completado todas las series.');
+            return;
+        }
+        
+        // Confirmar que el usuario quiere saltar la serie
+        if (confirm(`¿Estás seguro que deseas saltar la serie ${nextSerieToComplete}?`)) {
+            // Marcar la serie como saltada (pendiente)
+            const row = document.querySelector(`tr[data-set-number="${nextSerieToComplete}"]`);
+            if (row) {
+                const statusCell = row.querySelector('td:nth-child(4)');
+                statusCell.innerHTML = '<span class="badge bg-warning">Saltada</span>';
+                
+                // Deshabilitar inputs y botón
+                const weightInput = row.querySelector('.weight-input');
+                const repsInput = row.querySelector('.reps-input');
+                const saveButton = row.querySelector('.save-set');
+                
+                weightInput.disabled = true;
+                repsInput.disabled = true;
+                saveButton.disabled = true;
+                
+                // Mostrar mensaje de confirmación
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-warning mt-3';
+                alertDiv.innerHTML = `Serie ${nextSerieToComplete} saltada.`;
+                document.querySelector('.card-body').insertBefore(alertDiv, document.querySelector('.table-responsive'));
+                
+                setTimeout(() => {
+                    alertDiv.remove();
+                }, 3000);
+                
+                // Incrementar el contador de series para pasar a la siguiente
+                nextSerieToComplete++;
+                
+                // Actualizar el número de serie en el botón
+                if (nextSerieToComplete <= totalSets) {
+                    currentSerieNumber.textContent = nextSerieToComplete;
+                    
+                    // Hacer scroll a la siguiente serie
+                    const nextRow = document.querySelector(`tr[data-set-number="${nextSerieToComplete}"]`);
+                    if (nextRow) {
+                        nextRow.classList.add('table-active');
+                        nextRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        
+                        // Enfoque en el input de peso de la siguiente serie
+                        const nextWeightInput = nextRow.querySelector('.weight-input');
+                        if (nextWeightInput) {
+                            nextWeightInput.focus();
+                        }
+                    }
+                } else {
+                    // Si ya se saltaron todas las series, mostrar botón de siguiente ejercicio
+                    if (continueNextBtn) {
+                        continueNextBtn.classList.remove('d-none');
+                    }
+                    if (completeWorkoutBtn) {
+                        completeWorkoutBtn.classList.remove('d-none');
+                    }
+                }
+            }
+        }
+    });
+    
+    // Función para completar una serie rápidamente
+    completeSerieBtn.addEventListener('click', function() {
+        // Verificar si hay series pendientes
+        if (completedSets >= totalSets) {
+            alert('Ya has completado todas las series.');
+            return;
+        }
+        
+        // Obtener la fila correspondiente a la serie actual
+        const row = document.querySelector(`tr[data-set-number="${nextSerieToComplete}"]`);
+        if (!row) return;
+        
+        // Obtener los inputs de peso y repeticiones
+        const weightInput = row.querySelector('.weight-input');
+        const repsInput = row.querySelector('.reps-input');
+        
+        // Verificar si hay valores
+        if (!weightInput.value || !repsInput.value) {
+            alert('Por favor, ingresa valores para peso y repeticiones antes de completar la serie.');
+            return;
+        }
+        
+        // Simular un clic en el botón de guardar
+        const saveButton = row.querySelector('.save-set');
+        if (saveButton) {
+            saveButton.click();
+            
+            // Actualizar el número de la serie actual
+            nextSerieToComplete++;
+            if (nextSerieToComplete <= totalSets) {
+                currentSerieNumber.textContent = nextSerieToComplete;
+            }
+        }
+    });
 });
 </script>
+
+<style>
+    /* Estilo para la serie activa */
+    .table-active {
+        background-color: rgba(13, 110, 253, 0.1) !important;
+        border-left: 4px solid #0d6efd;
+        font-weight: bold;
+    }
+    
+    /* Estilo para serie completada */
+    tr:has(.badge.bg-success) {
+        background-color: rgba(25, 135, 84, 0.05);
+    }
+    
+    /* Estilo para serie saltada */
+    tr:has(.badge.bg-warning) {
+        background-color: rgba(255, 193, 7, 0.05);
+    }
+    
+    /* Animación para los mensajes de alerta */
+    .alert {
+        animation: fadeIn 0.3s;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
 {% endblock %} 

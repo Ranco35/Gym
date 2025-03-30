@@ -1,0 +1,307 @@
+/* Estilos para la página de listado de entrenamientos */
+
+/* Cabeceras de semana */
+.week-header {
+    transition: all 0.3s ease;
+    border-left: 5px solid #0d6efd;
+    border-radius: 8px 8px 0 0;
+    background: linear-gradient(135deg, #0d6efd, #3a8bfe);
+}
+
+.week-title {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* Contenedor de semana con efecto de elevación */
+.week-container {
+    transition: all 0.4s ease;
+    margin-bottom: 2rem;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.week-container:hover {
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    transform: translateY(-2px);
+}
+
+/* Barras de progreso con efectos de degradado */
+.week-progress {
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.progress-level-low .progress-bar {
+    background: linear-gradient(to right, #dc3545, #f55556) !important;
+}
+
+.progress-level-medium .progress-bar {
+    background: linear-gradient(to right, #ffc107, #ffdb4a) !important;
+}
+
+.progress-level-high .progress-bar {
+    background: linear-gradient(to right, #28a745, #34ce57) !important;
+}
+
+/* Badges de estadísticas en cabecera de semana */
+.week-stats-badge {
+    font-size: 0.9rem;
+    padding: 6px 12px;
+    border-radius: 50px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    background-color: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(5px);
+    transition: all 0.3s ease;
+}
+
+.week-stats-badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Tarjetas de días */
+.day-container {
+    transition: all 0.4s ease;
+}
+
+.day-card {
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    border: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    margin-bottom: 1rem;
+}
+
+.day-card:hover {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.day-header {
+    background: linear-gradient(to right, #f8f9fa, #e9ecef);
+    border-bottom: 1px solid #dee2e6;
+    padding: 15px;
+}
+
+/* Tarjetas de rutina con efectos de hover */
+.training-routine-card {
+    transition: all 0.3s ease;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.training-routine-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.training-routine-card:hover .routine-header {
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+/* Cabecera de rutina */
+.routine-header {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-left: 3px solid transparent;
+}
+
+.routine-header.expanded {
+    border-left-color: #0d6efd;
+}
+
+/* Animación de la flecha que indica expandible */
+.toggle-icon {
+    transition: transform 0.3s ease;
+}
+
+.expanded .toggle-icon {
+    transform: rotate(180deg);
+}
+
+/* Botones de acción más modernos */
+.action-btn {
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.action-btn:hover {
+    transform: scale(1.15);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* Diseño de tabla mejorado */
+.modern-table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.modern-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+    border-top: none;
+    padding: 12px 15px;
+}
+
+.modern-table tbody tr {
+    transition: all 0.2s;
+}
+
+.modern-table tbody tr:hover {
+    background-color: rgba(13, 110, 253, 0.04);
+}
+
+/* Modales más modernos */
+.modal-content {
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+}
+
+.modal-header.bg-primary {
+    background: linear-gradient(135deg, #0d6efd, #3a8bfe) !important;
+}
+
+/* Estilos para mensaje de sin entrenamientos */
+.alert-no-trainings {
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    background: linear-gradient(to bottom right, #f8f9fa, #e9ecef);
+    border: none;
+}
+
+/* Tarjetas de filtro */
+.filter-card {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    transition: all 0.3s ease;
+}
+
+.filter-card:hover {
+    box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+}
+
+/* Utilidades */
+.cursor-pointer {
+    cursor: pointer;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease forwards;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .week-stats-badge {
+        font-size: 0.8rem;
+        padding: 4px 8px;
+    }
+    
+    .week-title {
+        font-size: 1.1rem;
+    }
+}
+
+/* Formatos de fecha */
+.fecha-completa {
+    display: inline-block;
+}
+
+.fecha-corta {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .fecha-completa {
+        display: none;
+    }
+    
+    .fecha-corta {
+        display: inline-block !important;
+    }
+    
+    .week-stats-badge {
+        font-size: 0.8rem;
+        padding: 4px 8px;
+    }
+    
+    .week-title {
+        font-size: 1.1rem;
+    }
+}
+
+/* Mejoras en visualización de contenido colapsable */
+.routine-details {
+    transition: all 0.3s ease;
+    max-height: 0;
+    overflow: hidden;
+}
+
+.routine-details.show {
+    max-height: 2000px; /* Valor alto para asegurar que se muestre todo el contenido */
+    overflow: visible;
+}
+
+/* Estilos para controlar específicamente los botones con clases específicas */
+.edit-training, .delete-training {
+    z-index: 5;
+}
+
+/* Mejorar el estado activo de la semana */
+.week-container.active {
+    box-shadow: 0 8px 30px rgba(13, 110, 253, 0.2);
+    border-left: 5px solid #0d6efd;
+}
+
+/* Destacar la tarjeta de rutina cuando está expandida */
+.routine-header.expanded {
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+/* Mejoras en el formulario de fechas */
+.input-group-text {
+    background-color: #f8f9fa;
+    border-right: none;
+}
+
+input[type="date"] {
+    border-left: none;
+    background-color: #fff;
+}
+
+input[type="date"]:focus {
+    box-shadow: none;
+    border-color: #ced4da;
+}
+
+/* Mostrar claramente el estado de hover en las filas de la tabla */
+.modern-table tbody tr:hover {
+    background-color: rgba(13, 110, 253, 0.08);
+    transition: background-color 0.2s ease;
+}
+
+.modern-table th {
+    white-space: nowrap;
+} 
