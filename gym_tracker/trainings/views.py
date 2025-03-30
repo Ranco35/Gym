@@ -17,7 +17,7 @@ from .serializers import TrainingSerializer
 from gym_tracker.exercises.models import Exercise as GymExercise
 from gym_tracker.workouts.models import WeeklyRoutine as Routine, RoutineDay, RoutineExercise
 from .forms import TrainingForm, SetForm
-from trainers.models import LiveTrainingSession, TrainerStudent
+from trainers.models import LiveTrainingSession, TrainerStudent, TrainerTraining, TrainerTrainingDay, TrainerSet
 
 # API REST Views
 class TrainingListCreateView(generics.ListCreateAPIView):
@@ -256,8 +256,36 @@ def execute_training(request, routine_id, day_id):
     Vista para ejecutar un entrenamiento paso a paso.
     Muestra los ejercicios uno por uno y permite modificar los parámetros.
     """
-    routine = get_object_or_404(Routine, pk=routine_id, user=request.user)
-    routine_day = get_object_or_404(RoutineDay, pk=day_id, routine=routine)
+    # Convertir IDs a enteros y verificar si son válidos (diferentes de 0)
+    try:
+        routine_id = int(routine_id)
+        day_id = int(day_id)
+    except (ValueError, TypeError):
+        messages.warning(request, "IDs de rutina o día inválidos")
+        return redirect('trainings:training-list-create')
+        
+    if routine_id == 0 or day_id == 0:
+        messages.warning(request, "Por favor, selecciona una rutina y un día válidos")
+        return redirect('trainings:training-list-create')
+    
+    # Intentar obtener rutina como WeeklyRoutine o como TrainerTraining
+    routine = None
+    routine_day = None
+    is_trainer_routine = False
+    
+    try:
+        # Primero intentar obtener como WeeklyRoutine
+        routine = get_object_or_404(Routine, pk=routine_id, user=request.user)
+        routine_day = get_object_or_404(RoutineDay, pk=day_id, routine=routine)
+    except:
+        # Si falla, intentar obtener como TrainerTraining
+        try:
+            routine = get_object_or_404(TrainerTraining, pk=routine_id, user=request.user)
+            routine_day = get_object_or_404(TrainerTrainingDay, pk=day_id, training=routine)
+            is_trainer_routine = True
+        except:
+            messages.error(request, "No se encontró la rutina especificada.")
+            return redirect('trainings:training-list-create')
     
     # Obtener la fecha de entrenamiento de la sesión
     training_date_str = request.session.get('training_date')
@@ -268,9 +296,37 @@ def execute_training(request, routine_id, day_id):
     training_date = datetime.strptime(training_date_str, '%Y-%m-%d').date()
     
     # Obtener todos los ejercicios del día ordenados
-    exercises = routine_day.exercises.all().order_by('order')
+    exercises = []
+    if is_trainer_routine:
+        # Para TrainerTraining, usar TrainerSet
+        exercise_objects = routine_day.sets.all().order_by('order')
+        
+        # Convertir TrainerSet a formato compatible con la vista
+        for trainer_set in exercise_objects:
+            # Buscar o crear el objeto Exercise correspondiente
+            try:
+                # Intentar buscar el ejercicio existente por nombre
+                exercise_obj = GymExercise.objects.get(name=trainer_set.exercise)
+            except GymExercise.DoesNotExist:
+                # Si no existe, crear un objeto temporal (no se guarda en la BD)
+                exercise_obj = GymExercise(name=trainer_set.exercise)
+            
+            # Crear un objeto similar a RoutineExercise para mantener la compatibilidad
+            exercises.append({
+                'exercise': exercise_obj,
+                'sets': trainer_set.sets_count,
+                'reps': trainer_set.reps,
+                'weight': trainer_set.weight,
+                'rest_time': 60,  # Valor por defecto
+                'notes': trainer_set.notes,
+                'order': trainer_set.order
+            })
+    else:
+        # Para WeeklyRoutine, usar RoutineExercise
+        exercise_objects = routine_day.exercises.all().order_by('order')
+        exercises = list(exercise_objects)
     
-    if not exercises.exists():
+    if not exercises:
         messages.error(request, "No hay ejercicios configurados para este día de entrenamiento.")
         return redirect('trainings:training-list-create')
     
@@ -280,8 +336,8 @@ def execute_training(request, routine_id, day_id):
     # Asegurar que el índice esté dentro de los límites
     if current_exercise_index < 0:
         current_exercise_index = 0
-    elif current_exercise_index >= exercises.count():
-        current_exercise_index = exercises.count() - 1
+    elif current_exercise_index >= len(exercises):
+        current_exercise_index = len(exercises) - 1
     
     current_exercise = exercises[current_exercise_index]
     
@@ -290,13 +346,28 @@ def execute_training(request, routine_id, day_id):
     next_exercise = None
     if current_exercise_index > 0:
         prev_exercise = exercises[current_exercise_index - 1]
-    if current_exercise_index < exercises.count() - 1:
+    if current_exercise_index < len(exercises) - 1:
         next_exercise = exercises[current_exercise_index + 1]
+    
+    # Para TrainerTraining, necesitamos adaptar algunos objetos
+    if is_trainer_routine:
+        # Obtener el objeto exercise para histórico
+        exercise_obj = current_exercise['exercise']
+        exercise_sets = current_exercise['sets']
+        exercise_reps = current_exercise['reps']
+        exercise_weight = current_exercise['weight']
+        exercise_rest_time = current_exercise['rest_time']
+    else:
+        exercise_obj = current_exercise.exercise
+        exercise_sets = current_exercise.sets
+        exercise_reps = current_exercise.reps
+        exercise_weight = current_exercise.weight
+        exercise_rest_time = current_exercise.rest_time
     
     # Obtener historial de entrenamientos para este ejercicio
     exercise_history = Training.objects.filter(
         user=request.user,
-        exercise=current_exercise.exercise,
+        exercise=exercise_obj,
         completed=True
     ).order_by('-date')[:5]
     
@@ -308,23 +379,22 @@ def execute_training(request, routine_id, day_id):
         ).order_by('set_number')
     
     # Procesar el peso del ejercicio actual
-    exercise_weight = current_exercise.weight
     if exercise_weight == '' or exercise_weight is None:
         exercise_weight = None
     
     # Obtener o crear el entrenamiento actual
     training, created = Training.objects.get_or_create(
         user=request.user,
-        exercise=current_exercise.exercise,
+        exercise=exercise_obj,
         date=training_date,
         defaults={
             'day_of_week': training_date.strftime('%A'),
-            'total_sets': current_exercise.sets,
-            'reps': current_exercise.reps,
+            'total_sets': exercise_sets,
+            'reps': exercise_reps,
             'weight': exercise_weight,
-            'rest_time': current_exercise.rest_time,
+            'rest_time': exercise_rest_time,
             'intensity': 'Moderado',
-            'notes': f"Rutina: {routine.name} - Día: {routine_day.day_of_week} ({routine_day.focus})",
+            'notes': f"Rutina: {routine.name} - Día: {routine_day.day_of_week} ({routine_day.focus if hasattr(routine_day, 'focus') else ''})",
             'completed': False
         }
     )
@@ -337,14 +407,18 @@ def execute_training(request, routine_id, day_id):
     
     # Determinar la serie actual
     current_set = completed_sets.count() + 1
-    if current_set > current_exercise.sets:
-        current_set = current_exercise.sets
+    if is_trainer_routine:
+        if current_set > exercise_sets:
+            current_set = exercise_sets
+    else:
+        if current_set > current_exercise.sets:
+            current_set = current_exercise.sets
 
     # Procesar el envío del formulario
     if request.method == 'POST':
         set_number = int(request.POST.get('current_set', 1))
         weight = request.POST.get('weight')
-        reps = int(request.POST.get('reps', current_exercise.reps))
+        reps = int(request.POST.get('reps', exercise_reps))
 
         # Convertir peso a float si existe
         if weight:
@@ -357,7 +431,7 @@ def execute_training(request, routine_id, day_id):
         Set.objects.create(
             training=training,
             user=request.user,
-            exercise=current_exercise.exercise,
+            exercise=exercise_obj,
             set_number=set_number,
             weight=weight,
             reps=reps,
@@ -365,14 +439,24 @@ def execute_training(request, routine_id, day_id):
         )
 
         # Si completamos todas las series del ejercicio actual
-        if set_number >= current_exercise.sets:
+        if is_trainer_routine:
+            max_sets = exercise_sets
+        else:
+            max_sets = current_exercise.sets
+            
+        if set_number >= max_sets:
             # Marcar el entrenamiento como completado
             training.completed = True
             training.save()
 
             # Si hay siguiente ejercicio, ir a él
-            if current_exercise_index + 1 < exercises.count():
-                messages.success(request, f"¡{current_exercise.exercise.name} completado! Siguiente ejercicio.")
+            if current_exercise_index + 1 < len(exercises):
+                if is_trainer_routine:
+                    exercise_name = exercise_obj.name
+                else:
+                    exercise_name = current_exercise.exercise.name
+                    
+                messages.success(request, f"¡{exercise_name} completado! Siguiente ejercicio.")
                 return redirect(f"{request.path}?step={current_exercise_index + 1}")
             else:
                 # Si no hay más ejercicios, finalizar el entrenamiento
@@ -380,7 +464,7 @@ def execute_training(request, routine_id, day_id):
                 return redirect('trainings:training-list-create')
         else:
             # Continuar con la siguiente serie
-            messages.success(request, f"Serie {set_number} completada. ¡{current_exercise.sets - set_number} series restantes!")
+            messages.success(request, f"Serie {set_number} completada. ¡{max_sets - set_number} series restantes!")
             return redirect(request.path + f"?step={current_exercise_index}")
     
     # Traducir el día de la semana
@@ -398,14 +482,15 @@ def execute_training(request, routine_id, day_id):
     # Calcular el progreso
     progress = {
         'current': current_exercise_index + 1,
-        'total': exercises.count(),
-        'percentage': int(((current_exercise_index + 1) / exercises.count()) * 100)
+        'total': len(exercises),
+        'percentage': int(((current_exercise_index + 1) / len(exercises)) * 100)
     }
     
     context = {
         'routine': routine,
         'routine_day': routine_day,
         'exercise': current_exercise,
+        'is_trainer_routine': is_trainer_routine,
         'training': training,
         'current_set': current_set,
         'completed_sets': completed_sets,
@@ -414,12 +499,12 @@ def execute_training(request, routine_id, day_id):
         'prev_exercise': prev_exercise,
         'next_exercise': next_exercise,
         'current_exercise_index': current_exercise_index,
-        'total_exercises': exercises.count(),
+        'total_exercises': len(exercises),
         'day_of_week': day_of_week,
         'training_date': training_date,
         'progress': progress,
         'all_exercises': exercises,
-        'next_index': current_exercise_index + 1 if current_exercise_index + 1 < exercises.count() else None,
+        'next_index': current_exercise_index + 1 if current_exercise_index + 1 < len(exercises) else None,
         'prev_index': current_exercise_index - 1 if current_exercise_index > 0 else None
     }
     

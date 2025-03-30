@@ -32,4 +32,7 @@ urlpatterns = [
     path('feedback/', views.feedback_list, name='feedback_list'),
     path('save-set/', views.save_live_set, name='save_live_set'),
     path('end-session/<int:session_id>/', views.end_session, name='end_session'),
+    
+    # Añadir la nueva URL
+    path('training/<int:training_id>/use/<int:session_id>/<int:student_id>/', views.use_training_routine, name='use_training_routine'),
 ] 

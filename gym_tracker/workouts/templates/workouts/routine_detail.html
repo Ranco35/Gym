@@ -295,34 +295,72 @@
             document.getElementById('training_date').value = today;
         }
         
-        // Manejar el envío del formulario masivo
+        // Variables definidas al principio para evitar accesos antes de inicialización
         const daySelect = document.getElementById('routine_day_id');
-        const dateInput = document.getElementById('training_date');
+        const trainingDateInput = document.getElementById('training_date');
         const bulkDayInput = document.getElementById('bulk_day_id');
         const bulkDateInput = document.getElementById('bulk_date');
         
-        document.getElementById('bulk-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            if (!daySelect.value) {
-                alert('Por favor, selecciona un día de entrenamiento');
-                return;
-            }
-            bulkDayInput.value = daySelect.value;
-            bulkDateInput.value = dateInput.value;
-            this.submit();
-        });
+        // Manejar el envío del formulario masivo
+        if (document.getElementById('bulk-form')) {
+            document.getElementById('bulk-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (!daySelect.value) {
+                    alert('Por favor, selecciona un día de entrenamiento');
+                    return;
+                }
+                bulkDayInput.value = daySelect.value;
+                bulkDateInput.value = trainingDateInput.value;
+                this.submit();
+            });
+        }
         
         // Manejar el botón de ejecutar paso a paso
-        document.getElementById('step-by-step-btn').addEventListener('click', function(e) {
-            e.preventDefault();
-            if (!daySelect.value) {
-                alert('Por favor, selecciona un día de entrenamiento');
-                return;
-            }
-            const routineId = document.getElementById('routine_id').value;
-            const dayId = daySelect.value;
-            window.location.href = "{% url 'trainings:execute-training' 0 0 %}".replace('0/0', routineId + '/' + dayId);
-        });
+        if (document.getElementById('step-by-step-btn')) {
+            document.getElementById('step-by-step-btn').addEventListener('click', function(e) {
+                e.preventDefault();
+                if (!daySelect.value) {
+                    alert('Por favor, selecciona un día de entrenamiento');
+                    return;
+                }
+                const routineId = document.getElementById('routine_id').value;
+                const dayId = daySelect.value;
+                const date = trainingDateInput.value;
+                
+                // Guardar la fecha en la sesión y redirigir directamente a la ejecución paso a paso
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = "{% url 'trainings:create-training-from-routine' %}";
+                
+                const csrfToken = document.createElement('input');
+                csrfToken.type = 'hidden';
+                csrfToken.name = 'csrfmiddlewaretoken';
+                csrfToken.value = '{{ csrf_token }}';
+                
+                const routineIdInput = document.createElement('input');
+                routineIdInput.type = 'hidden';
+                routineIdInput.name = 'routine_id';
+                routineIdInput.value = routineId;
+                
+                const dayIdInput = document.createElement('input');
+                dayIdInput.type = 'hidden';
+                dayIdInput.name = 'routine_day_id';
+                dayIdInput.value = dayId;
+                
+                const hiddenDateInput = document.createElement('input');
+                hiddenDateInput.type = 'hidden';
+                hiddenDateInput.name = 'training_date';
+                hiddenDateInput.value = date;
+                
+                form.appendChild(csrfToken);
+                form.appendChild(routineIdInput);
+                form.appendChild(dayIdInput);
+                form.appendChild(hiddenDateInput);
+                
+                document.body.appendChild(form);
+                form.submit();
+            });
+        }
     });
 </script>
 {% endblock %}

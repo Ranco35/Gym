@@ -13,7 +13,7 @@
                         <div>
                             <h4 class="mb-1">{{ routine.name }}</h4>
                             <p class="text-muted mb-0">
-                                {{ routine_day.day_of_week }} - {{ routine_day.focus }}
+                                {{ routine_day.day_of_week }} - {% if routine_day.focus %}{{ routine_day.focus }}{% endif %}
                                 <span class="mx-2">|</span>
                                 {{ training_date|date:"d/m/Y" }}
                             </p>
@@ -42,7 +42,11 @@
             <div class="card shadow-sm bg-light">
                 <div class="card-body">
                     <h6 class="text-muted mb-1">Ejercicio Anterior</h6>
+                    {% if is_trainer_routine %}
                     <p class="mb-0">{{ prev_exercise.exercise.name }}</p>
+                    {% else %}
+                    <p class="mb-0">{{ prev_exercise.exercise.name }}</p>
+                    {% endif %}
                 </div>
             </div>
             {% endif %}
@@ -51,7 +55,11 @@
             <div class="card shadow-sm bg-primary text-white">
                 <div class="card-body">
                     <h6 class="mb-1">Ejercicio Actual</h6>
+                    {% if is_trainer_routine %}
                     <p class="mb-0">{{ exercise.exercise.name }}</p>
+                    {% else %}
+                    <p class="mb-0">{{ exercise.exercise.name }}</p>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -60,7 +68,11 @@
             <div class="card shadow-sm bg-light">
                 <div class="card-body">
                     <h6 class="text-muted mb-1">Siguiente Ejercicio</h6>
+                    {% if is_trainer_routine %}
                     <p class="mb-0">{{ next_exercise.exercise.name }}</p>
+                    {% else %}
+                    <p class="mb-0">{{ next_exercise.exercise.name }}</p>
+                    {% endif %}
                 </div>
             </div>
             {% endif %}
@@ -73,8 +85,13 @@
             <div class="card shadow-sm">
                 <div class="card-header bg-light">
                     <div class="d-flex justify-content-between align-items-center">
+                        {% if is_trainer_routine %}
                         <h5 class="mb-0">{{ exercise.exercise.name }}</h5>
                         <span class="badge bg-primary">Serie {{ current_set }} de {{ exercise.sets }}</span>
+                        {% else %}
+                        <h5 class="mb-0">{{ exercise.exercise.name }}</h5>
+                        <span class="badge bg-primary">Serie {{ current_set }} de {{ exercise.sets }}</span>
+                        {% endif %}
                     </div>
                 </div>
                 <div class="card-body">
@@ -109,19 +126,19 @@
                             <div class="col-md-6">
                                 <label for="weight" class="form-label">Peso (kg)</label>
                                 <input type="number" class="form-control" id="weight" name="weight" 
-                                       value="{{ current_exercise.weight|default:'' }}" step="0.5" min="0">
+                                       value="{% if is_trainer_routine %}{{ exercise.weight|default:'' }}{% else %}{{ exercise.weight|default:'' }}{% endif %}" step="0.5" min="0">
                             </div>
                             <div class="col-md-6">
                                 <label for="reps" class="form-label">Repeticiones</label>
                                 <input type="number" class="form-control" id="reps" name="reps" 
-                                       value="{{ current_exercise.reps }}" min="1" required>
+                                       value="{% if is_trainer_routine %}{{ exercise.reps }}{% else %}{{ exercise.reps }}{% endif %}" min="1" required>
                             </div>
                             
                             <!-- Temporizador -->
                             <div class="col-12 mt-4">
                                 <div class="card bg-light">
                                     <div class="card-body text-center">
-                                        <h3 id="timer" class="display-4 mb-3">{{ current_exercise.rest_time }}s</h3>
+                                        <h3 id="timer" class="display-4 mb-3">{% if is_trainer_routine %}{{ exercise.rest_time }}{% else %}{{ exercise.rest_time }}{% endif %}s</h3>
                                         <div class="btn-group">
                                             <button type="button" class="btn btn-primary" id="startTimer">
                                                 <i class="fas fa-play me-2"></i>Iniciar descanso
@@ -146,13 +163,25 @@
                                     {% endif %}
 
                                     <button type="submit" class="btn btn-success">
-                                        {% if current_set < exercise.sets %}
-                                        Siguiente serie<i class="fas fa-arrow-right ms-2"></i>
-                                        {% else %}
-                                            {% if next_index is not None %}
-                                            Siguiente ejercicio<i class="fas fa-arrow-right ms-2"></i>
+                                        {% if is_trainer_routine %}
+                                            {% if current_set < exercise.sets %}
+                                            Siguiente serie<i class="fas fa-arrow-right ms-2"></i>
                                             {% else %}
-                                            Finalizar entrenamiento<i class="fas fa-check ms-2"></i>
+                                                {% if next_index is not None %}
+                                                Siguiente ejercicio<i class="fas fa-arrow-right ms-2"></i>
+                                                {% else %}
+                                                Finalizar entrenamiento<i class="fas fa-check ms-2"></i>
+                                                {% endif %}
+                                            {% endif %}
+                                        {% else %}
+                                            {% if current_set < exercise.sets %}
+                                            Siguiente serie<i class="fas fa-arrow-right ms-2"></i>
+                                            {% else %}
+                                                {% if next_index is not None %}
+                                                Siguiente ejercicio<i class="fas fa-arrow-right ms-2"></i>
+                                                {% else %}
+                                                Finalizar entrenamiento<i class="fas fa-check ms-2"></i>
+                                                {% endif %}
                                             {% endif %}
                                         {% endif %}
                                     </button>
@@ -211,13 +240,22 @@
                 </div>
                 <div class="card-body">
                     <div class="list-group list-group-flush">
-                        {% for exercise in all_exercises %}
-                        <div class="list-group-item {% if exercise == current_exercise %}active{% endif %}">
+                        {% for ex in all_exercises %}
+                        <div class="list-group-item {% if forloop.counter0 == current_exercise_index %}active{% endif %}">
                             <div class="d-flex w-100 justify-content-between">
-                                <h6 class="mb-1">{{ exercise.exercise.name }}</h6>
-                                <small>{{ exercise.sets }} series</small>
+                                {% if is_trainer_routine %}
+                                <h6 class="mb-1">{{ ex.exercise.name }}</h6>
+                                <small>{{ ex.sets }} series</small>
+                                {% else %}
+                                <h6 class="mb-1">{{ ex.exercise.name }}</h6>
+                                <small>{{ ex.sets }} series</small>
+                                {% endif %}
                             </div>
-                            <small class="d-block">{{ exercise.reps }} reps {% if exercise.weight %}- {{ exercise.weight }}kg{% endif %}</small>
+                            {% if is_trainer_routine %}
+                            <small class="d-block">{{ ex.reps }} reps {% if ex.weight %}- {{ ex.weight }}{% endif %}</small>
+                            {% else %}
+                            <small class="d-block">{{ ex.reps }} reps {% if ex.weight %}- {{ ex.weight }}{% endif %}</small>
+                            {% endif %}
                         </div>
                         {% endfor %}
                     </div>
@@ -235,7 +273,11 @@
         const timerDisplay = document.getElementById('timer');
         const startButton = document.getElementById('startTimer');
         const resetButton = document.getElementById('resetTimer');
-        const initialTime = {{ current_exercise.rest_time|default:60 }};
+        {% if is_trainer_routine %}
+        const initialTime = {{ exercise.rest_time|default:60 }};
+        {% else %}
+        const initialTime = {{ exercise.rest_time|default:60 }};
+        {% endif %}
         let timeLeft = initialTime;
         let timerId = null;
         let isRunning = false;

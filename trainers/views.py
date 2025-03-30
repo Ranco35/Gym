@@ -182,7 +182,7 @@ def start_live_session(request, student_id):
         
         if not routine_type or not routine_id:
             messages.error(request, 'Debes seleccionar una rutina para iniciar la sesión')
-            return redirect('trainers:select_session_routine', student_id=student_id)
+            return redirect('trainers:select_session_routine', student_id=student_id, session_id=0)
         
         # Crear sesión según el tipo de rutina seleccionada
         if routine_type == 'trainer':
@@ -192,7 +192,7 @@ def start_live_session(request, student_id):
             # Verificar que la rutina tenga al menos un día con ejercicios
             if not training.days.exists():
                 messages.error(request, 'La rutina seleccionada no tiene días configurados')
-                return redirect('trainers:select_session_routine', student_id=student_id)
+                return redirect('trainers:select_session_routine', student_id=student_id, session_id=0)
                 
             session = LiveTrainingSession.objects.create(
                 training=training,
@@ -203,21 +203,28 @@ def start_live_session(request, student_id):
             
         elif routine_type == 'weekly':
             # Para rutinas semanales, redirigir a la selección de día específico
-            return redirect('trainers:select_routine_day', 
-                           routine_id=routine_id, 
-                           session_id=0, 
-                           student_id=student_id)
+            try:
+                routine_id = int(routine_id)
+                # Verificar que la rutina existe
+                WeeklyRoutine.objects.get(id=routine_id, user=trainer_student.student)
+                return redirect('trainers:select_routine_day', 
+                               routine_id=routine_id, 
+                               session_id=0, 
+                               student_id=student_id)
+            except (ValueError, WeeklyRoutine.DoesNotExist):
+                messages.error(request, f"La rutina asignada con ID {routine_id} no existe.")
+                return redirect('trainers:select_session_routine', student_id=student_id, session_id=0)
         else:
             messages.error(request, 'Tipo de rutina no válido')
-            return redirect('trainers:select_session_routine', student_id=student_id)
+            return redirect('trainers:select_session_routine', student_id=student_id, session_id=0)
     
     # Si es una solicitud GET, redirigir a la página de selección de rutina
-    return redirect('trainers:select_session_routine', student_id=student_id)
+    return redirect('trainers:select_session_routine', student_id=student_id, session_id=0)
 
 @login_required
 @trainer_required
-def select_session_routine(request, student_id):
-    """Seleccionar rutina para iniciar una sesión en vivo."""
+def select_session_routine(request, student_id, session_id):
+    """Permite seleccionar una rutina para la sesión de entrenamiento."""
     # Verificar la relación entrenador-estudiante
     trainer_student = get_object_or_404(
         TrainerStudent,
@@ -226,22 +233,42 @@ def select_session_routine(request, student_id):
         active=True
     )
     
-    # Obtener las rutinas asignadas por el entrenador
-    trainer_trainings = TrainerTraining.objects.filter(
-        user=trainer_student.student
-    ).order_by('-date')[:10]
+    # Obtener las rutinas del estudiante (rutinas semanales)
+    student_weekly_routines = WeeklyRoutine.objects.filter(user=trainer_student.student)
     
-    # Obtener las rutinas semanales del estudiante
-    weekly_routines = WeeklyRoutine.objects.filter(
-        user=trainer_student.student
-    ).order_by('-created_at')
+    # Obtener las rutinas asignadas (TrainerTraining)
+    student_trainer_routines = TrainerTraining.objects.filter(user=trainer_student.student)
+    
+    # Obtener todas las rutinas semanales disponibles en el sistema
+    all_weekly_routines = WeeklyRoutine.objects.all().select_related('user')
+    
+    # Si hay una ID de rutina proporcionada
+    routine_id = request.GET.get('routine_id')
+    routine_type = request.GET.get('type', 'weekly')  # Por defecto, asumimos rutina semanal
+    
+    if routine_id:
+        if routine_type == 'training':
+            # Si es una rutina de entrenador, redirigimos a una vista específica
+            # que use esa rutina directamente para la sesión
+            return redirect('trainers:use_training_routine', 
+                          training_id=routine_id, 
+                          session_id=session_id,
+                          student_id=student_id)
+        else:
+            # Si es una rutina semanal, continuamos con el flujo normal
+            return redirect('trainers:select_routine_day', 
+                          routine_id=routine_id, 
+                          session_id=session_id,
+                          student_id=student_id)
     
     context = {
         'trainer_student': trainer_student,
-        'trainer_trainings': trainer_trainings,
-        'weekly_routines': weekly_routines
+        'student_id': student_id,
+        'session_id': session_id,
+        'student_weekly_routines': student_weekly_routines,
+        'student_trainer_routines': student_trainer_routines,
+        'all_weekly_routines': all_weekly_routines,
     }
-    
     return render(request, 'trainers/select_session_routine.html', context)
 
 @login_required
@@ -890,8 +917,24 @@ def select_routine_day(request, routine_id, session_id, student_id):
         active=True
     )
     
-    # Obtener la rutina semanal
-    routine = get_object_or_404(WeeklyRoutine, id=routine_id, user=trainer_student.student)
+    # Verificar si la rutina existe
+    try:
+        routine_id = int(routine_id)
+        # Intentar obtener la rutina por ID
+        try:
+            routine = WeeklyRoutine.objects.get(id=routine_id)
+        except WeeklyRoutine.DoesNotExist:
+            # Si no existe, intentar buscar por nombre si la rutina se llama "Fer Marzo 2025"
+            try:
+                routine = WeeklyRoutine.objects.get(name__icontains="Fer Marzo")
+                messages.info(request, f"Rutina con ID {routine_id} no encontrada. Usando rutina '{routine.name}' (ID: {routine.id}).")
+            except WeeklyRoutine.DoesNotExist:
+                # Si tampoco hay ninguna rutina con ese nombre, mostrar mensaje de error
+                messages.error(request, f"La rutina con ID {routine_id} no existe y no se encontró una rutina con nombre similar a 'Fer Marzo 2025'.")
+                return redirect('trainers:select_session_routine', student_id=student_id, session_id=session_id)
+    except ValueError:
+        messages.error(request, f"ID de rutina inválido: {routine_id}")
+        return redirect('trainers:select_session_routine', student_id=student_id, session_id=session_id)
     
     # Si se envía el formulario con un día seleccionado
     if request.method == 'POST':
@@ -899,7 +942,7 @@ def select_routine_day(request, routine_id, session_id, student_id):
         
         if not day_id:
             messages.error(request, 'Debes seleccionar un día de entrenamiento')
-            return redirect('trainers:select_routine_day', routine_id=routine_id, session_id=session_id, student_id=student_id)
+            return redirect('trainers:select_routine_day', routine_id=routine.id, session_id=session_id, student_id=student_id)
         
         # Obtener el día de la rutina
         routine_day = get_object_or_404(routine.days.all(), id=day_id)
@@ -1068,3 +1111,46 @@ def student_live_session(request, session_id):
         'current_set': current_set
     }
     return render(request, 'trainers/student_live_session.html', context)
+
+@login_required
+@trainer_required
+def use_training_routine(request, training_id, session_id, student_id):
+    """Usa directamente una rutina de entrenador para una sesión en vivo."""
+    # Verificar la relación entrenador-estudiante
+    trainer_student = get_object_or_404(
+        TrainerStudent,
+        trainer=request.user,
+        student_id=student_id,
+        active=True
+    )
+    
+    # Verificar si la rutina existe
+    try:
+        training_id = int(training_id)
+        # Buscar la rutina de entrenador
+        try:
+            training = TrainerTraining.objects.get(id=training_id)
+        except TrainerTraining.DoesNotExist:
+            # Si no existe con ese ID exacto, intentar buscar por nombre
+            try:
+                training = TrainerTraining.objects.filter(name__icontains="Fer Marzo").first()
+                if training:
+                    messages.info(request, f"Rutina con ID {training_id} no encontrada. Usando rutina '{training.name}' (ID: {training.id}).")
+                else:
+                    messages.error(request, f"No se encontró ninguna rutina con ID {training_id} o con nombre similar a 'Fer Marzo'.")
+                    return redirect('trainers:select_session_routine', student_id=student_id, session_id=session_id)
+            except Exception as e:
+                messages.error(request, f"Error al buscar rutina: {e}")
+                return redirect('trainers:select_session_routine', student_id=student_id, session_id=session_id)
+    except ValueError:
+        messages.error(request, f"ID de rutina inválido: {training_id}")
+        return redirect('trainers:select_session_routine', student_id=student_id, session_id=session_id)
+    
+    # Crear la sesión con el entrenamiento existente
+    session = LiveTrainingSession.objects.create(
+        training=training,
+        trainer_student=trainer_student
+    )
+    
+    messages.success(request, f'Sesión iniciada para la rutina {training.name}')
+    return redirect('trainers:live_session', session_id=session.id)

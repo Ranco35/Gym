@@ -29,65 +29,75 @@
         <div class="col-md-12">
             <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="assigned-tab" data-bs-toggle="tab" data-bs-target="#assigned-pane" type="button" role="tab" aria-controls="assigned-pane" aria-selected="true">
+                    <button class="nav-link active" id="trainer-tab" data-bs-toggle="tab" data-bs-target="#trainer-pane" type="button" role="tab" aria-controls="trainer-pane" aria-selected="true">
                         Rutinas Asignadas
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="weekly-tab" data-bs-toggle="tab" data-bs-target="#weekly-pane" type="button" role="tab" aria-controls="weekly-pane" aria-selected="false">
-                        Rutinas Creadas por el Alumno
+                        Rutinas Semanales
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="all-tab" data-bs-toggle="tab" data-bs-target="#all-pane" type="button" role="tab" aria-controls="all-pane" aria-selected="false">
+                        Todas las Rutinas
                     </button>
                 </li>
             </ul>
 
             <div class="tab-content" id="myTabContent">
                 <!-- Rutinas Asignadas -->
-                <div class="tab-pane fade show active" id="assigned-pane" role="tabpanel" aria-labelledby="assigned-tab">
+                <div class="tab-pane fade show active" id="trainer-pane" role="tabpanel" aria-labelledby="trainer-tab">
                     <div class="card">
                         <div class="card-header bg-light">
-                            <h5 class="mb-0">Rutinas Asignadas por el Entrenador</h5>
+                            <h5 class="mb-0">Rutinas Asignadas</h5>
                         </div>
                         <div class="card-body">
-                            {% if trainer_trainings %}
-                                <div class="list-group">
-                                    {% for training in trainer_trainings %}
-                                        <div class="list-group-item list-group-item-action">
-                                            <div class="d-flex w-100 justify-content-between">
-                                                <h5 class="mb-1">{{ training.name }}</h5>
-                                                <small>{{ training.date|date:"d/m/Y" }}</small>
-                                            </div>
-                                            <p class="mb-1">{{ training.description|truncatechars:100 }}</p>
-                                            <form method="post" action="{% url 'trainers:start_session' trainer_student.student.id %}" class="mt-2">
-                                                {% csrf_token %}
-                                                <input type="hidden" name="routine_type" value="trainer">
-                                                <input type="hidden" name="routine_id" value="{{ training.id }}">
-                                                <button type="submit" class="btn btn-primary btn-sm">
-                                                    <i class="fas fa-play me-1"></i> Iniciar Sesión con Esta Rutina
-                                                </button>
-                                            </form>
-                                        </div>
-                                    {% endfor %}
-                                </div>
+                            {% if student_trainer_routines %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Nombre</th>
+                                            <th>Fecha</th>
+                                            <th>Descripción</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for routine in student_trainer_routines %}
+                                        <tr>
+                                            <td><strong>{{ routine.name }}</strong></td>
+                                            <td>{{ routine.date }}</td>
+                                            <td>{{ routine.description|truncatechars:50|default:"Sin descripción" }}</td>
+                                            <td>
+                                                <a href="{% url 'trainers:use_training_routine' routine.id session_id student_id %}" class="btn btn-sm btn-success">
+                                                    <i class="fas fa-check-circle me-1"></i>Seleccionar
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
                             {% else %}
-                                <div class="text-center py-4">
-                                    <p class="mb-0">No hay rutinas asignadas disponibles.</p>
-                                    <a href="{% url 'trainers:create_training' trainer_student.student.id %}" class="btn btn-outline-primary mt-3">
-                                        <i class="fas fa-plus-circle me-1"></i> Crear Nueva Rutina
-                                    </a>
-                                </div>
+                            <div class="text-center py-4">
+                                <i class="fas fa-dumbbell fa-3x text-muted mb-3"></i>
+                                <p class="mb-0">El estudiante no tiene rutinas asignadas.</p>
+                            </div>
                             {% endif %}
                         </div>
                     </div>
                 </div>
 
-                <!-- Rutinas Creadas por el Alumno -->
+                <!-- Rutinas Semanales del Estudiante -->
                 <div class="tab-pane fade" id="weekly-pane" role="tabpanel" aria-labelledby="weekly-tab">
                     <div class="card">
                         <div class="card-header bg-light">
-                            <h5 class="mb-0">Rutinas Creadas por el Alumno</h5>
+                            <h5 class="mb-0">Rutinas Semanales del Estudiante</h5>
                         </div>
                         <div class="card-body">
-                            {% if weekly_routines %}
+                            {% if student_weekly_routines %}
                             <div class="table-responsive">
                                 <table class="table table-hover">
                                     <thead>
@@ -99,13 +109,13 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {% for routine in weekly_routines %}
+                                        {% for routine in student_weekly_routines %}
                                         <tr>
                                             <td><strong>{{ routine.name }}</strong></td>
                                             <td>{{ routine.get_days_display }}</td>
-                                            <td>{{ routine.description|truncatechars:50 }}</td>
+                                            <td>{{ routine.description|truncatechars:50|default:"Sin descripción" }}</td>
                                             <td>
-                                                <a href="{% url 'trainers:select_routine_day' routine.id '0' trainer_student.student.id %}" class="btn btn-sm btn-success">
+                                                <a href="{% url 'trainers:select_routine_day' routine.id session_id student_id %}" class="btn btn-sm btn-success">
                                                     <i class="fas fa-check-circle me-1"></i>Seleccionar
                                                 </a>
                                             </td>
@@ -117,7 +127,53 @@
                             {% else %}
                             <div class="text-center py-4">
                                 <i class="fas fa-calendar-week fa-3x text-muted mb-3"></i>
-                                <p class="mb-0">El estudiante no tiene rutinas creadas.</p>
+                                <p class="mb-0">El estudiante no tiene rutinas semanales creadas.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Todas las Rutinas -->
+                <div class="tab-pane fade" id="all-pane" role="tabpanel" aria-labelledby="all-tab">
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">Todas las Rutinas Semanales Disponibles</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if all_weekly_routines %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Nombre</th>
+                                            <th>Creador</th>
+                                            <th>Días</th>
+                                            <th>Descripción</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for routine in all_weekly_routines %}
+                                        <tr>
+                                            <td><strong>{{ routine.name }}</strong></td>
+                                            <td>{{ routine.user.get_full_name|default:routine.user.username }}</td>
+                                            <td>{{ routine.get_days_display }}</td>
+                                            <td>{{ routine.description|truncatechars:50|default:"Sin descripción" }}</td>
+                                            <td>
+                                                <a href="{% url 'trainers:select_routine_day' routine.id session_id student_id %}" class="btn btn-sm btn-success">
+                                                    <i class="fas fa-check-circle me-1"></i>Seleccionar
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-calendar-week fa-3x text-muted mb-3"></i>
+                                <p class="mb-0">No hay rutinas semanales disponibles en el sistema.</p>
                             </div>
                             {% endif %}
                         </div>
