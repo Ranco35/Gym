@@ -11,6 +11,10 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 import json
 from rest_framework import generics, permissions
+from django.core.exceptions import ValidationError
+from PIL import Image
+from io import BytesIO
+from django.core.files.base import ContentFile
 
 from .models import Training, Set, UserProfile, Exercise
 from .serializers import TrainingSerializer
@@ -1029,7 +1033,54 @@ def profile_edit(request):
         
         # Manejar la foto del perfil
         if request.FILES.get('photo'):
-            profile.photo = request.FILES['photo']
+            try:
+                photo_file = request.FILES['photo']
+                
+                # Validar tamaño máximo (5MB)
+                if photo_file.size > 5 * 1024 * 1024:  # 5MB en bytes
+                    raise ValidationError("La imagen es demasiado grande. El tamaño máximo es de 5MB.")
+                
+                # Validar que sea una imagen
+                valid_extensions = ['jpg', 'jpeg', 'png', 'gif']
+                file_ext = photo_file.name.split('.')[-1].lower()
+                if file_ext not in valid_extensions:
+                    raise ValidationError("Formato de archivo no soportado. Usa JPG, PNG o GIF.")
+                
+                # Redimensionar si es necesario
+                from PIL import Image
+                from io import BytesIO
+                from django.core.files.base import ContentFile
+                
+                # Abrir la imagen
+                img = Image.open(photo_file)
+                
+                # Convertir a RGB si es RGBA (para PNG con transparencia)
+                if img.mode == 'RGBA':
+                    img = img.convert('RGB')
+                
+                # Redimensionar si la imagen es muy grande
+                MAX_SIZE = (800, 800)
+                if img.width > MAX_SIZE[0] or img.height > MAX_SIZE[1]:
+                    img.thumbnail(MAX_SIZE, Image.LANCZOS)
+                
+                # Guardar la imagen redimensionada
+                output = BytesIO()
+                img.save(output, format='JPEG', quality=85)
+                output.seek(0)
+                
+                # Reemplazar el archivo original con la versión redimensionada
+                profile.photo.save(
+                    f"{file_ext}_profile.jpg",
+                    ContentFile(output.read()),
+                    save=False
+                )
+                
+            except ValidationError as e:
+                messages.error(request, str(e))
+            except Exception as e:
+                messages.error(request, f"Error al procesar la imagen: {str(e)}")
+            else:
+                messages.success(request, "Imagen de perfil actualizada correctamente.")
         
         profile.save()
         messages.success(request, '¡Perfil actualizado exitosamente!')
