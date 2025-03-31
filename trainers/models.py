@@ -180,7 +180,8 @@ class LiveTrainingSession(models.Model):
     started_at = models.DateTimeField(auto_now_add=True)
     ended_at = models.DateTimeField(null=True, blank=True)
     trainer_notes = models.TextField(blank=True)
-    student_notes = models.TextField(blank=True)
+    student_notes = models.TextField(blank=True, null=True)
+    timer_started_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"Sesión en vivo: {self.trainer_student} - {self.started_at}"
@@ -188,6 +189,15 @@ class LiveTrainingSession(models.Model):
     def end_session(self):
         self.status = 'completed'
         self.ended_at = timezone.now()
+        self.save()
+
+    def start_timer(self):
+        if not self.timer_started_at:
+            self.timer_started_at = timezone.now()
+            self.save()
+    
+    def reset_timer(self):
+        self.timer_started_at = None
         self.save()
 
 class LiveSet(models.Model):

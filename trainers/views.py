@@ -1124,7 +1124,8 @@ def student_live_session(request, session_id):
         'current_set_index': current_set_index,
         'all_sets': all_sets,
         'is_student': True,
-        'current_set': current_set
+        'current_set': current_set,
+        'session_start_time': session.started_at.isoformat()
     }
     return render(request, 'trainers/student_live_session.html', context)
 

@@ -980,45 +980,32 @@ def training_stats(request):
 @login_required
 def dashboard(request):
     # Obtener estadísticas generales
-    total_exercises = Exercise.objects.count()
-    total_trainings = Training.objects.filter(user=request.user).count()
-    completed_trainings = Training.objects.filter(user=request.user, completed=True).count()
-    
-    # Obtener entrenamientos pendientes
-    pending_trainings = Training.objects.filter(
-        user=request.user,
-        notes__contains="PENDIENTE",
-        completed=False
-    ).select_related('exercise')
-    
-    # Calcular porcentaje de progreso
-    progress_percentage = (completed_trainings / total_trainings * 100) if total_trainings > 0 else 0
+    total_exercises = Training.objects.filter(user=request.user).count()
+    total_routines = Routine.objects.filter(user=request.user).count()
     
     # Obtener sesiones en vivo activas
-    active_sessions = []
+    active_sessions = LiveTrainingSession.objects.filter(
+        trainer_student__student=request.user,
+        status='active',
+        ended_at__isnull=True
+    ).select_related('trainer_student__trainer', 'training')
     
-    # Si el usuario es entrenador, mostrar las sesiones con sus estudiantes
-    if hasattr(request.user, 'trainerprofile'):
-        active_sessions = LiveTrainingSession.objects.filter(
-            trainer_student__trainer=request.user,
-            status='active',
-            ended_at__isnull=True
-        ).select_related('trainer_student__student', 'training')
-    else:
-        # Si es estudiante, mostrar las sesiones con sus entrenadores
-        active_sessions = LiveTrainingSession.objects.filter(
-            trainer_student__student=request.user,
-            status='active',
-            ended_at__isnull=True
-        ).select_related('trainer_student__trainer', 'training')
+    # Calcular progreso general
+    completed_trainings = Training.objects.filter(
+        user=request.user,
+        completed=True
+    ).count()
+    
+    total_trainings = Training.objects.filter(user=request.user).count()
+    progress_percentage = (completed_trainings / total_trainings * 100) if total_trainings > 0 else 0
     
     context = {
         'total_exercises': total_exercises,
-        'total_trainings': total_trainings,
-        'completed_trainings': completed_trainings,
-        'progress_percentage': round(progress_percentage, 1),
+        'total_routines': total_routines,
         'active_sessions': active_sessions,
-        'pending_trainings': pending_trainings
+        'progress_percentage': round(progress_percentage, 1),
+        'completed_trainings': completed_trainings,
+        'total_trainings': total_trainings,
     }
     
     return render(request, 'trainings/dashboard.html', context)

@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Dashboard - GymTracker{% endblock %}
 
@@ -6,159 +7,116 @@
 <div class="container py-4">
     <h1 class="mb-4">Dashboard</h1>
 
-    <!-- Notificaciones de Sesiones en Vivo -->
+    <!-- Sesiones en Vivo Activas - Mostrado de manera prominente -->
     {% if active_sessions %}
-    <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+    <div class="alert alert-primary mb-4">
         <div class="d-flex align-items-center">
             <div class="me-3">
                 <i class="fas fa-video fa-2x"></i>
             </div>
             <div>
-                <h5 class="alert-heading mb-1">¡Tienes sesiones de entrenamiento en vivo activas!</h5>
-                <p class="mb-0">Tu entrenador ha iniciado una sesión en vivo y está esperando que te unas.</p>
-            </div>
-        </div>
-        <hr>
-        <div class="d-flex flex-wrap gap-2">
-            {% for session in active_sessions %}
-            <div class="card border-success mb-2" style="min-width: 250px;">
-                <div class="card-body p-3">
-                    <h6 class="card-title">{{ session.training.name }}</h6>
-                    <p class="small text-muted mb-2">
-                        <i class="fas fa-user me-1"></i> 
-                        {% if user.is_trainer %}
-                            Estudiante: {{ session.trainer_student.student.get_full_name }}
-                        {% else %}
-                            Entrenador: {{ session.trainer_student.trainer.get_full_name }}
-                        {% endif %}
-                    </p>
-                    <p class="small text-muted mb-2">
-                        <i class="fas fa-clock me-1"></i> Iniciado: {{ session.started_at|timesince }} atrás
-                    </p>
-                    {% if user.is_trainer %}
-                    <a href="{% url 'trainers:live_session' session.id %}" class="btn btn-sm btn-success mt-1 w-100">
-                        <i class="fas fa-play-circle me-1"></i> Unirse a la sesión
-                    </a>
-                    {% else %}
-                    <a href="{% url 'trainers:student_live_session' session.id %}" class="btn btn-sm btn-success mt-1 w-100">
-                        <i class="fas fa-play-circle me-1"></i> Unirse a la sesión
-                    </a>
-                    {% endif %}
+                <h4 class="alert-heading mb-2">¡Tienes una sesión en vivo activa!</h4>
+                {% for session in active_sessions %}
+                <div class="card mb-2 border-0 bg-light">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ session.training.name }}</h5>
+                        <p class="card-text">
+                            <strong>Entrenador:</strong> {{ session.trainer_student.trainer.get_full_name }}
+                            <br>
+                            <strong>Iniciada:</strong> {{ session.started_at|date:"d/m/Y H:i" }}
+                        </p>
+                        <a href="{% url 'trainers:student_live_session' session.id %}" 
+                           class="btn btn-primary">
+                            <i class="fas fa-play me-2"></i>Continuar Sesión
+                        </a>
+                    </div>
                 </div>
+                {% endfor %}
             </div>
-            {% endfor %}
         </div>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
     {% endif %}
 
-    <!-- Estadísticas Generales -->
+    <!-- Estadísticas -->
     <div class="row mb-4">
         <div class="col-md-4">
             <div class="card bg-primary text-white">
                 <div class="card-body">
-                    <h5 class="card-title">Total Ejercicios</h5>
-                    <p class="display-4">{{ total_exercises|default:"27" }}</p>
-                    <p class="card-text">Ejercicios registrados</p>
+                    <h2 class="display-4">{{ total_exercises }}</h2>
+                    <p>Ejercicios registrados</p>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
             <div class="card bg-success text-white">
                 <div class="card-body">
-                    <h5 class="card-title">Entrenamientos</h5>
-                    <p class="display-4">{{ total_trainings|default:"0" }}</p>
-                    <p class="card-text">Rutinas creadas</p>
+                    <h2 class="display-4">{{ total_routines }}</h2>
+                    <p>Rutinas creadas</p>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
             <div class="card bg-info text-white">
                 <div class="card-body">
-                    <h5 class="card-title">Progreso</h5>
-                    <p class="display-4">{{ progress_percentage|default:"0" }}%</p>
-                    <p class="card-text">{{ completed_trainings|default:"0" }} de {{ total_trainings|default:"0" }} completados</p>
+                    <h2 class="display-4">{{ progress_percentage }}%</h2>
+                    <p>{{ completed_trainings }} de {{ total_trainings }} completados</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Calendario de Rutinas y Sesiones Programadas -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">Mis Próximas Actividades</h5>
-                </div>
-                <div class="card-body">
-                    <div class="alert alert-info">
-                        <div class="d-flex">
-                            <div class="flex-shrink-0 me-3">
-                                <i class="fas fa-info-circle fa-2x"></i>
-                            </div>
-                            <div>
-                                <h5 class="alert-heading">Información sobre sesiones con entrenador</h5>
-                                <p class="mb-0">Las sesiones de entrenamiento se pueden realizar en dos modalidades:</p>
-                                <ul class="mb-0 mt-2">
-                                    <li><strong>Entrenamiento Individual:</strong> Sigues tu rutina por tu cuenta, sin supervisión del entrenador.</li>
-                                    <li><strong>Sesión en Vivo:</strong> Trabajas en tiempo real con tu entrenador, quien te guía durante el ejercicio.</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Aquí iría un calendario o lista de próximos entrenamientos -->
-                    <p class="text-muted text-center py-3">Próximamente: calendario de actividades programadas</p>
-                </div>
+    <!-- Información sobre sesiones -->
+    <div class="alert alert-info mb-4">
+        <div class="d-flex">
+            <div class="me-3">
+                <i class="fas fa-info-circle fa-2x"></i>
+            </div>
+            <div>
+                <h4 class="alert-heading">Información sobre sesiones con entrenador</h4>
+                <p>Las sesiones de entrenamiento se pueden realizar en dos modalidades:</p>
+                <ul>
+                    <li><strong>Entrenamiento Individual:</strong> Sigues tu rutina por tu cuenta, sin supervisión del entrenador.</li>
+                    <li><strong>Sesión en Vivo:</strong> Trabajas en tiempo real con tu entrenador, quien te guía durante el ejercicio.</li>
+                </ul>
             </div>
         </div>
     </div>
 
     <!-- Acciones Rápidas -->
-    <h2 class="h4 mb-4">Acciones Rápidas</h2>
+    <h3 class="mb-3">Acciones Rápidas</h3>
     <div class="row">
-        <div class="col-md-4 mb-4">
+        <div class="col-md-4 mb-3">
             <div class="card h-100">
                 <div class="card-body text-center">
-                    <div class="mb-3">
-                        <i class="fas fa-dumbbell fa-3x text-success"></i>
-                    </div>
-                    <h3 class="h5">Rutinas Semanales</h3>
-                    <p class="text-muted">Gestiona tus rutinas de entrenamiento y planes personalizados.</p>
-                    <div class="text-center mt-3">
-                        <a href="{% url 'workouts:workout-list' %}" class="btn btn-success">
-                            <i class="fas fa-calendar-alt me-2"></i>Ver Mis Rutinas
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4 mb-4">
-            <div class="card h-100">
-                <div class="card-body text-center">
-                    <div class="mb-3">
-                        <i class="fas fa-running fa-3x text-primary"></i>
-                    </div>
-                    <h3 class="h5">Ejercicios</h3>
-                    <p class="text-muted">Explora y gestiona tu catálogo de ejercicios.</p>
-                    <a href="{% url 'trainings:exercise_list' %}" class="btn btn-primary">
-                        <i class="fas fa-search me-2"></i>Ver ejercicios
+                    <i class="fas fa-dumbbell fa-3x text-success mb-3"></i>
+                    <h5 class="card-title">Ejercicios</h5>
+                    <p class="card-text">Explora y gestiona tu catálogo de ejercicios</p>
+                    <a href="{% url 'exercises:exercise-list' %}" class="btn btn-outline-success">
+                        <i class="fas fa-list me-2"></i>Ver Ejercicios
                     </a>
                 </div>
             </div>
         </div>
-
-        <div class="col-md-4 mb-4">
+        <div class="col-md-4 mb-3">
             <div class="card h-100">
                 <div class="card-body text-center">
-                    <div class="mb-3">
-                        <i class="fas fa-chart-line fa-3x text-info"></i>
-                    </div>
-                    <h3 class="h5">Mis Entrenamientos</h3>
-                    <p class="text-muted">Registra y haz seguimiento de tus entrenamientos diarios.</p>
-                    <a href="{% url 'trainings:training-list-create' %}" class="btn btn-info text-white">
-                        <i class="fas fa-clipboard-list me-2"></i>Ver entrenamientos
+                    <i class="fas fa-running fa-3x text-primary mb-3"></i>
+                    <h5 class="card-title">Entrenamientos</h5>
+                    <p class="card-text">Revisa y registra tus entrenamientos</p>
+                    <a href="{% url 'trainings:training-list-create' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-plus me-2"></i>Ver Entrenamientos
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-chart-line fa-3x text-info mb-3"></i>
+                    <h5 class="card-title">Estadísticas</h5>
+                    <p class="card-text">Analiza tu progreso y rendimiento</p>
+                    <a href="{% url 'stats:dashboard' %}" class="btn btn-outline-info">
+                        <i class="fas fa-chart-bar me-2"></i>Ver Estadísticas
                     </a>
                 </div>
             </div>

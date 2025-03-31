@@ -1,0 +1,216 @@
+{% load static %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="display-4 text-primary">{{ session.training.name }}</h1>
+        <div class="h2 bg-dark text-white px-4 py-2 rounded-3" id="session-timer">00:00:00</div>
+    </div>
+
+    <div class="progress mb-4" style="height: 25px;">
+        <div class="progress-bar bg-success" role="progressbar" style="width: {{ progress_percentage }}%">
+            Completado: {{ completed_sets|length }}/{{ total_sets }}
+        </div>
+    </div>
+
+    <div class="card mb-4 border-primary">
+        <div class="card-body">
+            <div class="text-center">
+                <h2 class="display-3 text-white mb-3 bg-primary py-3 rounded-3 shadow">{{ current_set.exercise }}</h2>
+                <div class="badge bg-success p-3 mb-4 shadow" style="font-size: 1.8rem;">
+                    Serie {{ current_set_index }} de {{ current_set.sets_count }}
+                </div>
+            </div>
+            
+            <form id="exerciseForm" class="mb-4">
+                {% csrf_token %}
+                <input type="hidden" name="session_id" value="{{ session.id }}">
+                <input type="hidden" name="set_id" value="{{ current_set.id }}">
+                
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <div class="card h-100 border-0 bg-light">
+                            <div class="card-body">
+                                <label for="weight" class="form-label">Peso (kg)</label>
+                                <input type="number" 
+                                       class="form-control form-control-lg text-center" 
+                                       id="weight" 
+                                       name="weight" 
+                                       value="{{ current_set.last_used_weight|default:current_set.weight }}"
+                                       step="0.5">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card h-100 border-0 bg-light">
+                            <div class="card-body">
+                                <label for="reps" class="form-label">Repeticiones</label>
+                                <input type="number" 
+                                       class="form-control form-control-lg text-center" 
+                                       id="reps" 
+                                       name="reps" 
+                                       value="{{ current_set.last_used_reps|default:current_set.reps }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card h-100 border-0 bg-light">
+                            <div class="card-body">
+                                <label for="form_rating" class="form-label">Calificación Forma</label>
+                                <select class="form-select form-select-lg text-center" id="form_rating" name="form_rating">
+                                    <option value="5">Excelente</option>
+                                    <option value="4">Buena</option>
+                                    <option value="3" selected>Normal</option>
+                                    <option value="2">Regular</option>
+                                    <option value="1">Mala</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-success btn-lg px-5">
+                        <i class="fas fa-save"></i> Guardar Serie
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h3>Progreso del ejercicio</h3>
+            <div class="progress" style="height: 30px;">
+                <div class="progress-bar bg-info" role="progressbar" 
+                     style="width: {{ set_progress_percentage }}%">
+                    {{ completed_set_count }}/{{ current_set.sets_count }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h3>Descanso</h3>
+            <div class="text-center">
+                <div class="display-1 mb-3" id="rest-timer">60s</div>
+                <div class="btn-group">
+                    <button class="btn btn-primary btn-lg" onclick="startTimer(60)">
+                        <i class="fas fa-play"></i> 60s
+                    </button>
+                    <button class="btn btn-info btn-lg" onclick="startTimer(90)">
+                        <i class="fas fa-play"></i> 90s
+                    </button>
+                    <button class="btn btn-warning btn-lg" onclick="startTimer(120)">
+                        <i class="fas fa-play"></i> 120s
+                    </button>
+                    <button class="btn btn-danger btn-lg" onclick="resetTimer()">
+                        <i class="fas fa-stop"></i> Reiniciar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+let timerInterval;
+let timeLeft = 60;
+const timerDisplay = document.getElementById('rest-timer');
+
+function startTimer(seconds) {
+    clearInterval(timerInterval);
+    timeLeft = seconds;
+    updateDisplay();
+    
+    timerInterval = setInterval(() => {
+        timeLeft--;
+        updateDisplay();
+        
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            playBeep();
+        }
+    }, 1000);
+}
+
+function resetTimer() {
+    clearInterval(timerInterval);
+    timeLeft = 60;
+    updateDisplay();
+}
+
+function updateDisplay() {
+    timerDisplay.textContent = `${timeLeft}s`;
+    if (timeLeft <= 10) {
+        timerDisplay.classList.add('text-danger');
+    } else {
+        timerDisplay.classList.remove('text-danger');
+    }
+}
+
+function playBeep() {
+    try {
+        const beep = new Audio("data:audio/wav;base64,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qJrx4KOQjahZxWbcZgztj2c49nKmkId44S71j0c8eV9yDK6uPRzx5X18eDvjvQ6yKo9ZSS6l//8elePK/Lf//IInrOF/FvDoADYAGBMGb7FtErm5MXMlmPAJQVgWta7Zx2go+8xJ0UiCb8LHHdftWyLJE0QIAIsI+UbXu67dZMjmgDGCGl1H+vpF4NSDckSIkk7Vd+sxEhBQMRU8j/12UIRhzSaUdQ+rQU5kGeFxm+hb1oh6pWWmv3uvmReDl0UnvtapVaIzo1jZbf/pD6ElLqSX+rUmOQNpJFa/r+sa4e/pBlAABoAAAAA3CUgShLdGIxsY7AUABPRrgCABdDuQ5GC7DqPQCgbbJUAoRSUj+NIEig0YfyWUho1VBBBA//uQZB4ABZx5zfMakeAAAAmwAAAAF5F3P0w9GtAAACfAAAAAwLhMDmAYWMgVEG1U0FIGCBgXBXAtfMH10000EEEEEECUBYln03TTTdNBDZopopYvrTTdNa325mImNg3TTPV9q3pmY0xoO6bv3r00y+IDGid/9aaaZTGMuj9mpu9Mpio1dXrr5HERTZSmqU36A3CumzN/9Robv/Xx4v9ijkSRSNLQhAWumap82WRSBUqXStV/YcS+XVLnSS+WLDroqArFkMEsAS+eWmrUzrO0oEmE40RlMZ5+ODIkAyKAGUwZ3mVKmcamcJnMW26MRPgUw6j+LkhyHGVGYjSUUKNpuJUQoOIAyDvEyG8S5yfK6dhZc0Tx1KI/gviKL6qvvFs1+bWtaz58uUNnryq6kt5RzOCkPWlVqVX2a/EEBUdU1KrXLf40GoiiFXK///qpoiDXrOgqDR38JB0bw7SoL+ZB9o1RCkQjQ2CBYZKd/+VJxZRRZlqSkKiws0WFxUyCwsKiMy7hUVFhIaCrNQsKkTIsLivwKKigsj8XYlwt/WKi2N4d//uQRCSAAjURNIHpMZBGYiaQPSYyAAABLAAAAAAAACWAAAAApUF/Mg+0aohSIRobBAsMlO//Kk4soosy1JSFRYWaLC4qZBYWFRGZdwqKiwkNBVmoWFSJkWFxX4FFRQWR+LsS4W/rFRb/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////VEFHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAU291bmRib3kuZGUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMjAwNGh0dHA6Ly93d3cuc291bmRib3kuZGUAAAAAAAAAACU=");
+        beep.volume = 0.3;
+        beep.play();
+    } catch (error) {
+        console.log("Error reproduciendo el beep:", error);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const sessionStartTime = new Date('{{ session.started_at|date:"c" }}').getTime();
+    const sessionTimerElement = document.getElementById('session-timer');
+
+    function updateSessionTimer() {
+        const now = new Date().getTime();
+        const elapsedTime = now - sessionStartTime;
+        
+        const hours = Math.floor(elapsedTime / (1000 * 60 * 60));
+        const minutes = Math.floor((elapsedTime % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((elapsedTime % (1000 * 60)) / 1000);
+        
+        const formattedTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        sessionTimerElement.textContent = formattedTime;
+    }
+
+    setInterval(updateSessionTimer, 1000);
+    updateSessionTimer();
+
+    // Manejar el envío del formulario
+    document.getElementById('exerciseForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        
+        fetch('{% url "trainers:save_live_set" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Si es la última serie, ir al siguiente ejercicio
+                if (data.all_completed) {
+                    window.location.href = `?set=${parseInt('{{ current_set_index }}') + 1}`;
+                } else {
+                    // Recargar la página para mostrar la siguiente serie
+                    window.location.reload();
+                }
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al guardar el ejercicio');
+        });
+    });
+});
+</script>
+{% endblock %} 

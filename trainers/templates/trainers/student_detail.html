@@ -16,7 +16,7 @@
                 Volver a la Lista
             </a>
             {% if trainer_student.active %}
-                <a href="{% url 'trainers:select_session_routine' trainer_student.student.id %}" class="btn btn-success">
+                <a href="{% url 'trainers:select_session_routine' trainer_student.student.id 0 %}" class="btn btn-success">
                     <i class="fas fa-play-circle me-1"></i> Iniciar Sesión
                 </a>
             {% endif %}

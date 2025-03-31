@@ -10,7 +10,7 @@
             <li class="breadcrumb-item"><a href="{% url 'trainers:dashboard' %}">Dashboard</a></li>
             <li class="breadcrumb-item"><a href="{% url 'trainers:student_list' %}">Estudiantes</a></li>
             <li class="breadcrumb-item"><a href="{% url 'trainers:student_detail' trainer_student.student.id %}">{{ trainer_student.student.get_full_name|default:trainer_student.student.username }}</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'trainers:select_session_routine' trainer_student.student.id %}">Seleccionar Rutina</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'trainers:select_session_routine' trainer_student.student.id 0 %}">Seleccionar Rutina</a></li>
             <li class="breadcrumb-item active">Seleccionar Día</li>
         </ol>
     </nav>
@@ -73,14 +73,14 @@
                     {% else %}
                     <div class="text-center py-4">
                         <p class="mb-0">Esta rutina no tiene días configurados.</p>
-                        <a href="{% url 'trainers:select_session_routine' trainer_student.student.id %}" class="btn btn-primary mt-3">
+                        <a href="{% url 'trainers:select_session_routine' trainer_student.student.id 0 %}" class="btn btn-primary mt-3">
                             <i class="fas fa-arrow-left me-1"></i> Volver a selección de rutinas
                         </a>
                     </div>
                     {% endif %}
                 </div>
                 <div class="card-footer">
-                    <a href="{% url 'trainers:select_session_routine' trainer_student.student.id %}" class="btn btn-outline-secondary">
+                    <a href="{% url 'trainers:select_session_routine' trainer_student.student.id 0 %}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-1"></i> Cancelar y volver
                     </a>
                 </div>

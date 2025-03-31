@@ -27,4 +27,17 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'storages',
-] 
+    'channels',
+    'trainers',
+    'gym_tracker',
+    'stats',
+]
+
+# Channels configuration
+ASGI_APPLICATION = 'gymworl.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+    }
+} 
