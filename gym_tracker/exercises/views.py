@@ -2,7 +2,7 @@ from rest_framework import generics
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
-from .models import Exercise, ExerciseCategory
+from .models import Exercise, ExerciseCategory, Equipment
 from .serializers import ExerciseSerializer
 from django.contrib.auth.decorators import login_required, user_passes_test
 import pandas as pd
@@ -62,23 +62,16 @@ class ExerciseDetailView(generics.RetrieveAPIView):
 def exercise_list(request):
     """Vista para mostrar todos los ejercicios disponibles."""
     # Obtener todos los ejercicios ordenados por nombre
-    exercises = Exercise.objects.all().select_related('category', 'creator').order_by('name')
+    exercises = Exercise.objects.all().select_related('category', 'creator', 'equipment').order_by('name')
     
-    # Obtener categorías para el filtrado
+    # Obtener categorías y equipamiento para el filtrado
     categories = ExerciseCategory.objects.all().order_by('name')
-    
-    # Contadores para cada nivel de dificultad
-    difficulty_counts = {
-        'Principiante': exercises.filter(difficulty='Principiante').count(),
-        'Intermedio': exercises.filter(difficulty='Intermedio').count(),
-        'Avanzado': exercises.filter(difficulty='Avanzado').count(),
-    }
+    equipment_list = Equipment.objects.all().order_by('name')
     
     context = {
         'exercises': exercises,
         'categories': categories,
-        'difficulty_counts': difficulty_counts,
-        'total_count': exercises.count()
+        'equipment_list': equipment_list,
     }
     
     return render(request, 'exercises/exercise_list.html', context)
@@ -315,6 +308,17 @@ def export_exercises(request):
     response['Content-Disposition'] = f'attachment; filename=ejercicios_exportados_{timestamp}.xlsx'
     
     return response
+
+@login_required
+def exercise_delete(request, pk):
+    exercise = get_object_or_404(Exercise, pk=pk)
+    if request.method == 'POST':
+        exercise.delete()
+        messages.success(request, 'Ejercicio eliminado correctamente.')
+        return redirect('exercises:exercise-list')
+    return render(request, 'exercises/exercise_confirm_delete.html', {
+        'exercise': exercise
+    })
 
 # Verificación de permisos
 def is_admin_or_superuser(user):

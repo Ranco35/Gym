@@ -36,28 +36,31 @@ class ExerciseCategoryForm(forms.ModelForm):
 class ExerciseForm(forms.ModelForm):
     class Meta:
         model = Exercise
-        fields = [
-            'name', 'description', 'category', 'difficulty',
-            'primary_muscles', 'secondary_muscles', 'equipment',
-            'instructions', 'tips', 'image', 'youtube_link'
-        ]
+        fields = ['name', 'description', 'category', 'equipment', 'difficulty', 'image']
         widgets = {
             'description': forms.Textarea(attrs={'rows': 4}),
-            'instructions': forms.Textarea(attrs={'rows': 4}),
-            'tips': forms.Textarea(attrs={'rows': 3}),
-            'youtube_link': forms.URLInput(attrs={'placeholder': 'https://www.youtube.com/watch?v=...'}),
         }
 
     def clean_image(self):
         image = self.cleaned_data.get('image')
-        if image:
-            # Verificar el tamaño del archivo (máximo 5MB)
-            if image.size > 5 * 1024 * 1024:
-                raise ValidationError('El tamaño máximo permitido es 5MB')
+        if not image:
+            return image
             
-            # Verificar el formato
-            allowed_formats = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
-            if image.content_type not in allowed_formats:
-                raise ValidationError('Solo se permiten archivos JPG, PNG, GIF o WEBP')
-        
+        # Si es una instancia existente, retornarla sin validación
+        if hasattr(image, 'instance'):
+            return image
+            
+        # Para nuevas imágenes
+        if image:
+            # Verificar el tamaño (max 5MB)
+            if image.size > 5 * 1024 * 1024:
+                raise forms.ValidationError('La imagen no debe exceder 5MB.')
+                
+            # Verificar la extensión
+            valid_extensions = ['.jpg', '.jpeg', '.png', '.gif']
+            import os
+            ext = os.path.splitext(image.name)[1].lower()
+            if ext not in valid_extensions:
+                raise forms.ValidationError('Por favor sube una imagen válida. Los formatos permitidos son: ' + ', '.join(valid_extensions))
+                
         return image 

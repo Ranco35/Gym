@@ -12,12 +12,16 @@
     </div>
 
     <div class="card mb-4 border-primary">
+        <div class="card-header bg-primary text-white">
+            <h2 class="h4 mb-0"><i class="fas fa-dumbbell me-2"></i>Ejercicio Actual</h2>
+        </div>
         <div class="card-body">
-            <div class="text-center">
+            <div class="text-center mb-4">
                 <h2 class="display-3 text-white mb-3 bg-primary py-3 rounded-3 shadow">{{ current_set.exercise }}</h2>
-                <div class="badge bg-success p-3 mb-4 shadow" style="font-size: 1.8rem;">
+                <div class="badge bg-success p-3 mb-2 shadow" style="font-size: 1.8rem;">
                     Serie {{ current_set_index }} de {{ current_set.sets_count }}
                 </div>
+                <p class="text-muted">Registra los detalles de tu serie actual</p>
             </div>
             
             <form id="exerciseForm" class="mb-4">
@@ -25,51 +29,71 @@
                 <input type="hidden" name="session_id" value="{{ session.id }}">
                 <input type="hidden" name="set_id" value="{{ current_set.id }}">
                 
-                <div class="row text-center">
+                <div class="row g-4">
                     <div class="col-md-4">
-                        <div class="card h-100 border-0 bg-light">
+                        <div class="card h-100 border-primary">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0"><i class="fas fa-weight-hanging me-2"></i>Peso</h5>
+                            </div>
                             <div class="card-body">
-                                <label for="weight" class="form-label">Peso (kg)</label>
-                                <input type="number" 
-                                       class="form-control form-control-lg text-center" 
-                                       id="weight" 
-                                       name="weight" 
-                                       value="{{ current_set.last_used_weight|default:current_set.weight }}"
-                                       step="0.5">
+                                <label for="weight" class="form-label">Peso utilizado (kg)</label>
+                                <div class="input-group input-group-lg">
+                                    <input type="number" 
+                                           class="form-control form-control-lg text-center" 
+                                           id="weight" 
+                                           name="weight" 
+                                           value="{{ current_set.last_used_weight|default:current_set.weight }}"
+                                           step="0.5"
+                                           min="0">
+                                    <span class="input-group-text">kg</span>
+                                </div>
+                                <small class="text-muted">Último peso: {{ current_set.last_used_weight|default:current_set.weight }} kg</small>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="card h-100 border-0 bg-light">
+                        <div class="card h-100 border-primary">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0"><i class="fas fa-redo me-2"></i>Repeticiones</h5>
+                            </div>
                             <div class="card-body">
-                                <label for="reps" class="form-label">Repeticiones</label>
-                                <input type="number" 
-                                       class="form-control form-control-lg text-center" 
-                                       id="reps" 
-                                       name="reps" 
-                                       value="{{ current_set.last_used_reps|default:current_set.reps }}">
+                                <label for="reps" class="form-label">Número de repeticiones</label>
+                                <div class="input-group input-group-lg">
+                                    <input type="number" 
+                                           class="form-control form-control-lg text-center" 
+                                           id="reps" 
+                                           name="reps" 
+                                           value="{{ current_set.last_used_reps|default:current_set.reps }}"
+                                           min="1">
+                                    <span class="input-group-text">reps</span>
+                                </div>
+                                <small class="text-muted">Últimas reps: {{ current_set.last_used_reps|default:current_set.reps }}</small>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="card h-100 border-0 bg-light">
+                        <div class="card h-100 border-primary">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0"><i class="fas fa-star me-2"></i>Forma</h5>
+                            </div>
                             <div class="card-body">
-                                <label for="form_rating" class="form-label">Calificación Forma</label>
-                                <select class="form-select form-select-lg text-center" id="form_rating" name="form_rating">
-                                    <option value="5">Excelente</option>
-                                    <option value="4">Buena</option>
-                                    <option value="3" selected>Normal</option>
-                                    <option value="2">Regular</option>
-                                    <option value="1">Mala</option>
+                                <label for="form_rating" class="form-label">¿Cómo fue tu forma?</label>
+                                <select class="form-select form-select-lg" id="form_rating" name="form_rating">
+                                    <option value="5">⭐⭐⭐⭐⭐ Excelente</option>
+                                    <option value="4">⭐⭐⭐⭐ Buena</option>
+                                    <option value="3" selected>⭐⭐⭐ Normal</option>
+                                    <option value="2">⭐⭐ Regular</option>
+                                    <option value="1">⭐ Necesita mejorar</option>
                                 </select>
+                                <small class="text-muted">Califica la calidad de tus repeticiones</small>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="text-center mt-4">
-                    <button type="submit" class="btn btn-success btn-lg px-5">
-                        <i class="fas fa-save"></i> Guardar Serie
+                    <button type="submit" class="btn btn-success btn-lg px-5 py-3">
+                        <i class="fas fa-save me-2"></i> Guardar Serie y Continuar
                     </button>
                 </div>
             </form>
@@ -77,20 +101,24 @@
     </div>
 
     <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h3 class="h5 mb-0"><i class="fas fa-chart-line me-2"></i>Progreso del ejercicio</h3>
+        </div>
         <div class="card-body">
-            <h3>Progreso del ejercicio</h3>
             <div class="progress" style="height: 30px;">
                 <div class="progress-bar bg-info" role="progressbar" 
                      style="width: {{ set_progress_percentage }}%">
-                    {{ completed_set_count }}/{{ current_set.sets_count }}
+                    {{ completed_set_count }}/{{ current_set.sets_count }} series
                 </div>
             </div>
         </div>
     </div>
 
     <div class="card mb-4">
+        <div class="card-header bg-warning">
+            <h3 class="h5 mb-0"><i class="fas fa-stopwatch me-2"></i>Temporizador de Descanso</h3>
+        </div>
         <div class="card-body">
-            <h3>Descanso</h3>
             <div class="text-center">
                 <div class="display-1 mb-3" id="rest-timer">60s</div>
                 <div class="btn-group">

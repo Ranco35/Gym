@@ -8,6 +8,7 @@ from .views import (
     import_exercises,
     export_exercises,
     exercise_list,
+    exercise_delete,
     # Nuevas vistas para categorías
     CategoryListView,
     CategoryCreateView,
@@ -29,6 +30,7 @@ urlpatterns = [
     path('create/', exercise_create, name='exercise-create'),
     path('<int:pk>/', ExerciseDetailView.as_view(), name='exercise-detail'),
     path('<int:pk>/edit/', exercise_edit, name='exercise-edit'),
+    path('<int:pk>/delete/', exercise_delete, name='exercise-delete'),
     path('export-template/', export_exercises_template, name='export-template'),
     path('export/', export_exercises, name='export-exercises'),
     path('import/', import_exercises, name='import-exercises'),

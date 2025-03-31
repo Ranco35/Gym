@@ -6,6 +6,29 @@ from PIL import Image
 from io import BytesIO
 from django.core.files import File
 
+class Equipment(models.Model):
+    """
+    Modelo para gestionar el equipamiento de ejercicios.
+    """
+    name = models.CharField(max_length=100, unique=True, verbose_name='Nombre')
+    description = models.TextField(blank=True, null=True, verbose_name='Descripción')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Equipamiento"
+        verbose_name_plural = "Equipamientos"
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+    @classmethod
+    def get_default_pk(cls):
+        """Retorna la PK de un equipamiento por defecto o None si no existe ninguno."""
+        equipment, created = cls.objects.get_or_create(name="Sin equipamiento")
+        return equipment.pk
+
 class ExerciseCategory(models.Model):
     """
     Modelo para gestionar las categorías de ejercicios de forma dinámica.
@@ -53,7 +76,13 @@ class Exercise(models.Model):
     # Nuevos campos
     primary_muscles = models.CharField(max_length=255, blank=True, null=True, verbose_name='Músculos principales')
     secondary_muscles = models.CharField(max_length=255, blank=True, null=True, verbose_name='Músculos secundarios')
-    equipment = models.CharField(max_length=255, blank=True, null=True, verbose_name='Equipamiento')
+    equipment = models.ForeignKey(
+        Equipment,
+        on_delete=models.SET_DEFAULT,
+        default=Equipment.get_default_pk,
+        related_name='exercises',
+        verbose_name='Equipamiento'
+    )
     instructions = models.TextField(blank=True, null=True, verbose_name='Instrucciones')
     tips = models.TextField(blank=True, null=True, verbose_name='Consejos')
     
