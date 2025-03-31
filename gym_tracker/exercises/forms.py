@@ -36,9 +36,48 @@ class ExerciseCategoryForm(forms.ModelForm):
 class ExerciseForm(forms.ModelForm):
     class Meta:
         model = Exercise
-        fields = ['name', 'description', 'category', 'equipment', 'difficulty', 'image']
+        fields = [
+            'name', 
+            'description',
+            'primary_muscles',
+            'secondary_muscles', 
+            'instructions', 
+            'tips', 
+            'category', 
+            'equipment', 
+            'difficulty', 
+            'youtube_link',
+            'image'
+        ]
         widgets = {
-            'description': forms.Textarea(attrs={'rows': 4}),
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'primary_muscles': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ejemplo: Pectorales, Deltoides anterior'
+            }),
+            'secondary_muscles': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ejemplo: Tríceps, Deltoides medio'
+            }),
+            'instructions': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Describe paso a paso cómo realizar el ejercicio correctamente'
+            }),
+            'tips': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Consejos adicionales para mejorar la ejecución del ejercicio'
+            }),
+            'category': forms.Select(attrs={'class': 'form-select'}),
+            'equipment': forms.Select(attrs={'class': 'form-select'}),
+            'difficulty': forms.Select(attrs={'class': 'form-select'}),
+            'youtube_link': forms.URLInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'https://www.youtube.com/watch?v=...'
+            }),
+            'image': forms.FileInput(attrs={'class': 'form-control'})
         }
 
     def clean_image(self):

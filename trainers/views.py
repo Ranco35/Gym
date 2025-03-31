@@ -22,25 +22,29 @@ def trainer_dashboard(request):
         active=True
     ).select_related('student', 'student__profile')
     
-    # Obtener sesiones en vivo activas
+    # Obtener sesiones en vivo activas (incluyendo las iniciadas por estudiantes)
     active_sessions = LiveTrainingSession.objects.filter(
-        trainer_student__trainer=request.user,
-        status='active',
+        Q(trainer_student__trainer=request.user) | Q(training__created_by=request.user),
         ended_at__isnull=True
-    ).select_related('trainer_student__student', 'training')
+    ).select_related(
+        'trainer_student__student', 
+        'training'
+    ).order_by('-started_at')
     
     # Estadísticas básicas
     total_students = students.count()
     total_sessions = LiveTrainingSession.objects.filter(
         trainer_student__trainer=request.user
     ).count()
+    active_sessions_count = active_sessions.count()
     
     context = {
         'title': 'Dashboard de Entrenador',
         'students': students,
         'active_sessions': active_sessions,
         'total_students': total_students,
-        'total_sessions': total_sessions
+        'total_sessions': total_sessions,
+        'active_sessions_count': active_sessions_count
     }
     return render(request, 'trainers/dashboard.html', context)
 

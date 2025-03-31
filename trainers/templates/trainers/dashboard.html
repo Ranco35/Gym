@@ -3,31 +3,58 @@
 {% block title %}Dashboard de Entrenador{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <h1 class="display-4">Dashboard</h1>
-
-    <!-- Sesiones en Vivo Activas -->
-    {% if active_sessions %}
-    <div class="alert alert-info mb-4">
-        <div class="d-flex align-items-center">
-            <div class="me-3">
-                <i class="fas fa-video fa-2x"></i>
+<div class="container mt-4">
+    <h1>Dashboard</h1>
+    
+    <!-- Estadísticas -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Estudiantes</h5>
+                    <h2>{{ total_students }} <i class="fas fa-users float-end"></i></h2>
+                </div>
             </div>
-            <div>
-                <h4 class="alert-heading mb-2">¡Tienes sesiones activas!</h4>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Sesiones Totales</h5>
+                    <h2>{{ total_sessions }} <i class="fas fa-clipboard-list float-end"></i></h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <h5 class="card-title">Sesiones Activas</h5>
+                    <h2>{{ active_sessions_count }} <i class="fas fa-play-circle float-end"></i></h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sesiones Activas -->
+    {% if active_sessions %}
+    <div class="card mb-4">
+        <div class="card-header bg-warning text-dark">
+            <h4><i class="fas fa-play-circle"></i> Sesiones Activas</h4>
+        </div>
+        <div class="card-body">
+            <div class="row">
                 {% for session in active_sessions %}
-                <div class="card mb-2 border-0 bg-light">
-                    <div class="card-body">
-                        <h5 class="card-title">{{ session.training.name }}</h5>
-                        <p class="card-text">
-                            <strong>Estudiante:</strong> {{ session.trainer_student.student.get_full_name }}
-                            <br>
-                            <strong>Iniciada:</strong> {{ session.started_at|date:"d/m/Y H:i" }}
-                        </p>
-                        <a href="{% url 'trainers:live_session' session.id %}" 
-                           class="btn btn-primary">
-                            <i class="fas fa-play me-2"></i>Continuar Sesión
-                        </a>
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ session.training.name }}</h5>
+                            <p class="card-text">
+                                <strong>Estudiante:</strong> {{ session.trainer_student.student.get_full_name }}<br>
+                                <strong>Inicio:</strong> {{ session.started_at|date:"d/m/Y H:i" }}
+                            </p>
+                            <a href="{% url 'trainers:live_session' session.id %}" class="btn btn-primary">
+                                Continuar Sesión
+                            </a>
+                        </div>
                     </div>
                 </div>
                 {% endfor %}
@@ -36,96 +63,50 @@
     </div>
     {% endif %}
 
-    <!-- Estadísticas -->
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="stats-card total p-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="mb-0">Total Estudiantes</h6>
-                        <h2 class="mb-0">{{ total_students }}</h2>
-                    </div>
-                    <i class="fas fa-users fa-2x"></i>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="stats-card principiante p-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="mb-0">Sesiones Totales</h6>
-                        <h2 class="mb-0">{{ total_sessions }}</h2>
-                    </div>
-                    <i class="fas fa-clipboard-list fa-2x"></i>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="stats-card intermedio p-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="mb-0">Sesiones Activas</h6>
-                        <h2 class="mb-0">{{ active_sessions|length }}</h2>
-                    </div>
-                    <i class="fas fa-play-circle fa-2x"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Información sobre sesiones -->
-    <div class="alert alert-info mb-4">
-        <div class="d-flex">
-            <div class="me-3">
-                <i class="fas fa-info-circle fa-2x"></i>
-            </div>
-            <div>
-                <h4 class="alert-heading">Información sobre sesiones con entrenador</h4>
-                <p>Las sesiones de entrenamiento se pueden realizar en dos modalidades:</p>
-                <ul class="mb-0 mt-2">
-                    <li><strong>Entrenamiento Individual:</strong> El estudiante sigue su rutina por su cuenta.</li>
-                    <li><strong>Sesión en Vivo:</strong> Trabajas en tiempo real con el estudiante, guiándolo durante el ejercicio.</li>
-                </ul>
-            </div>
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h4><i class="fas fa-info-circle"></i> Información sobre sesiones con entrenador</h4>
+        </div>
+        <div class="card-body">
+            <p>Las sesiones de entrenamiento se pueden realizar en dos modalidades:</p>
+            <ul>
+                <li><strong>Entrenamiento Individual:</strong> El estudiante sigue su rutina por su cuenta.</li>
+                <li><strong>Sesión en Vivo:</strong> Trabajas en tiempo real con el estudiante, guiándolo durante el ejercicio.</li>
+            </ul>
         </div>
     </div>
 
     <!-- Acciones Rápidas -->
-    <h3 class="mb-3">Acciones Rápidas</h3>
-    <div class="row">
-        <div class="col-md-4 mb-3">
+    <h2>Acciones Rápidas</h2>
+    <div class="row mb-4">
+        <div class="col-md-4">
             <div class="card h-100">
                 <div class="card-body text-center">
                     <i class="fas fa-dumbbell fa-3x text-success mb-3"></i>
                     <h5 class="card-title">Ejercicios</h5>
                     <p class="card-text">Gestiona el catálogo de ejercicios</p>
-                    <a href="{% url 'exercises:exercise-list' %}" class="btn btn-outline-success">
-                        <i class="fas fa-list me-2"></i>Ver Ejercicios
-                    </a>
+                    <a href="{% url 'exercises:exercise-list' %}" class="btn btn-success">Ir a Ejercicios</a>
                 </div>
             </div>
         </div>
-        <div class="col-md-4 mb-3">
+        <div class="col-md-4">
             <div class="card h-100">
                 <div class="card-body text-center">
                     <i class="fas fa-users fa-3x text-primary mb-3"></i>
                     <h5 class="card-title">Estudiantes</h5>
                     <p class="card-text">Administra tus estudiantes</p>
-                    <a href="{% url 'trainers:student_list' %}" class="btn btn-outline-primary">
-                        <i class="fas fa-user-friends me-2"></i>Ver Estudiantes
-                    </a>
+                    <a href="{% url 'trainers:student_list' %}" class="btn btn-primary">Ir a Estudiantes</a>
                 </div>
             </div>
         </div>
-        <div class="col-md-4 mb-3">
+        <div class="col-md-4">
             <div class="card h-100">
                 <div class="card-body text-center">
                     <i class="fas fa-chart-line fa-3x text-info mb-3"></i>
                     <h5 class="card-title">Estadísticas</h5>
                     <p class="card-text">Analiza el progreso</p>
-                    <a href="{% url 'trainers:session_list' %}" class="btn btn-outline-info">
-                        <i class="fas fa-chart-bar me-2"></i>Ver Sesiones
-                    </a>
+                    <a href="#" class="btn btn-info">Ver Estadísticas</a>
                 </div>
             </div>
         </div>

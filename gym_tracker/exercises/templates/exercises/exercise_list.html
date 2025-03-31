@@ -62,13 +62,61 @@
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="display-4">Ejercicios</h1>
-        <div>
-            <button id="myExercisesBtn" class="btn btn-outline-primary">
-                <i class="fas fa-user me-2"></i>Mis Ejercicios
-            </button>
-            <a href="{% url 'exercises:exercise-create' %}" class="btn btn-primary">
-                <i class="fas fa-plus me-2"></i>Nuevo Ejercicio
-            </a>
+        <div class="btn-toolbar">
+            <div class="btn-group me-2">
+                <button id="myExercisesBtn" class="btn btn-outline-primary">
+                    <i class="fas fa-user me-2"></i>Mis Ejercicios
+                </button>
+            </div>
+            
+            <div class="btn-group me-2">
+                {% if perms.exercises.add_exercise or user.is_trainer or user.is_staff %}
+                <a href="{% url 'exercises:exercise-create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Nuevo Ejercicio
+                </a>
+                {% endif %}
+            </div>
+            
+            {% if user.is_authenticated %}
+            <div class="btn-group">
+                <div class="dropdown">
+                    <button class="btn btn-secondary dropdown-toggle" type="button" id="adminActions" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-cog me-2"></i>Admin
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminActions">
+                        <!-- Opción para todos los usuarios autenticados -->
+                        <li>
+                            <a class="dropdown-item" href="{% url 'exercises:export-exercises' %}">
+                                <i class="fas fa-download me-2"></i>Exportar Mis Ejercicios
+                            </a>
+                        </li>
+                        
+                        {% if user.is_trainer or user.is_staff or user.is_superuser %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item" href="{% url 'exercises:import-exercises' %}">
+                                <i class="fas fa-upload me-2"></i>Importar Ejercicios
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% if user.is_superuser or user.is_staff %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item" href="{% url 'exercises:export-template' %}">
+                                <i class="fas fa-file-excel me-2"></i>Descargar Plantilla
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{% url 'exercises:export-exercises' %}">
+                                <i class="fas fa-cloud-download-alt me-2"></i>Exportar Todos
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 

@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2>{% if form.instance.pk %}Editar{% else %}Nuevo{% endif %} Ejercicio</h2>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="id_name" class="form-label">Nombre *</label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.name.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_description" class="form-label">Descripción *</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.description.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_instructions" class="form-label">Cómo hacer *</label>
+                            {{ form.instructions }}
+                            <div class="form-text">Describe paso a paso cómo realizar el ejercicio</div>
+                            {% if form.instructions.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.instructions.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_tips" class="form-label">Tips y recomendaciones</label>
+                            {{ form.tips }}
+                            <div class="form-text">Consejos adicionales para realizar el ejercicio correctamente</div>
+                            {% if form.tips.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.tips.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_category" class="form-label">Categoría *</label>
+                            {{ form.category }}
+                            {% if form.category.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.category.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_equipment" class="form-label">Equipamiento *</label>
+                            {{ form.equipment }}
+                            {% if form.equipment.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.equipment.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_difficulty" class="form-label">Dificultad *</label>
+                            {{ form.difficulty }}
+                            {% if form.difficulty.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.difficulty.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_youtube_link" class="form-label">Enlace de YouTube</label>
+                            {{ form.youtube_link }}
+                            <div class="form-text">Ingresa el enlace del video demostrativo del ejercicio en YouTube</div>
+                            {% if form.youtube_link.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.youtube_link.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_image" class="form-label">Imagen del ejercicio (JPG, PNG o GIF)</label>
+                            {{ form.image }}
+                            {% if form.image.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.image.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                {% if form.instance.pk %}Actualizar{% else %}Crear{% endif %}
+                            </button>
+                            <a href="{% url 'exercises:exercise-list' %}" class="btn btn-secondary">
+                                Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
