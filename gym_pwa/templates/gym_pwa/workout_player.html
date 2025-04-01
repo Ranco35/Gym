@@ -4,95 +4,117 @@
 {% block title %}{{ workout.name }} - GymWorl{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 <style>
-    /* Estilos específicos para el reproductor de ejercicios */
+    /* Estilos mejorados para el reproductor de ejercicios - Optimizado para compatibilidad */
     .workout-player {
         height: 100%;
         display: flex;
         flex-direction: column;
+        padding: 16px;
+        max-width: 100%;
+        margin: 0 auto;
+        overflow-x: hidden;
     }
     
     .exercise-card {
         background-color: #fff;
         border-radius: 12px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        padding: 20px;
-        margin-bottom: 20px;
+        padding: 16px;
+        margin-bottom: 24px;
+        width: 100%;
     }
     
     .exercise-header {
         display: flex;
         align-items: center;
-        margin-bottom: 15px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
     }
     
     .exercise-image {
-        width: 70px;
-        height: 70px;
+        width: 64px;
+        height: 64px;
         border-radius: 8px;
-        background-color: #f0f0f0;
-        margin-right: 15px;
+        background-color: #f4f4f4;
+        margin-right: 12px;
         object-fit: cover;
     }
     
     .exercise-title {
-        font-size: 1.4rem;
-        font-weight: 600;
+        font-size: 1.5rem;
+        font-weight: 700;
         margin: 0;
         color: #333;
+        line-height: 1.2;
+        width: calc(100% - 80px);
+        word-wrap: break-word;
     }
     
     .exercise-target {
         font-size: 0.9rem;
-        color: #777;
+        color: #666;
         margin-top: 4px;
+        font-weight: 500;
+        width: 100%;
     }
     
     .exercise-stats {
-        display: flex;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
         margin-bottom: 20px;
+        width: 100%;
     }
     
     .stat-box {
-        flex: 1;
-        text-align: center;
-        background-color: #f8f9fa;
+        background-color: #f5f7fa;
         border-radius: 8px;
         padding: 12px 8px;
-        margin: 0 4px;
+        text-align: center;
+        border: 1px solid #e9ecef;
     }
     
     .stat-value {
-        font-size: 1.5rem;
-        font-weight: 600;
+        font-size: 1.8rem;
+        font-weight: 700;
         color: #007bff;
         margin: 0;
     }
     
     .stat-label {
         font-size: 0.8rem;
+        font-weight: 500;
         color: #6c757d;
-        margin: 0;
+        margin: 2px 0 0;
     }
     
     .exercise-notes {
         background-color: #f8f9fa;
         border-left: 4px solid #007bff;
-        padding: 10px 15px;
+        padding: 12px;
         font-size: 0.9rem;
         margin-bottom: 20px;
+        line-height: 1.4;
+        border-radius: 4px;
     }
     
     .timer-container {
         text-align: center;
         margin-bottom: 20px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 16px;
+        border: 1px solid #e9ecef;
     }
     
     .timer-display {
-        font-size: 3.5rem;
+        font-size: 3rem;
         font-weight: 700;
         color: #333;
-        margin-bottom: 10px;
+        margin-bottom: 12px;
+        font-family: monospace;
     }
     
     .timer-buttons {
@@ -105,19 +127,16 @@
         width: 100%;
         border: none;
         border-radius: 8px;
-        padding: 16px;
+        padding: 14px;
         font-size: 1.1rem;
         font-weight: 600;
         cursor: pointer;
-        transition: background-color 0.2s;
-    }
-    
-    .complete-button {
         background-color: #28a745;
         color: white;
+        margin-bottom: 20px;
     }
     
-    .complete-button:hover {
+    .action-button:hover {
         background-color: #218838;
     }
     
@@ -128,8 +147,8 @@
         right: 0;
         display: flex;
         justify-content: space-between;
-        padding: 10px 20px;
-        background-color: rgba(255, 255, 255, 0.95);
+        padding: 12px 16px;
+        background-color: #fff;
         box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
         z-index: 10;
     }
@@ -137,38 +156,54 @@
     .nav-button {
         background-color: #f8f9fa;
         border: 1px solid #dee2e6;
-        border-radius: 8px;
-        padding: 10px 15px;
+        border-radius: 6px;
+        padding: 8px 12px;
         font-size: 0.9rem;
         cursor: pointer;
+    }
+    
+    .nav-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
     }
     
     .progress-container {
         display: flex;
         align-items: center;
+        padding: 6px 10px;
+        background-color: #f8f9fa;
+        border-radius: 6px;
     }
     
     .progress-text {
         font-size: 0.9rem;
-        font-weight: 500;
+        font-weight: 600;
     }
     
     .sets-list {
         margin-bottom: 90px;
     }
     
+    .sets-header {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 12px;
+        color: #333;
+    }
+    
     .set-item {
         background-color: #f8f9fa;
-        border-radius: 8px;
+        border-radius: 6px;
         padding: 12px;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
         display: flex;
         justify-content: space-between;
         align-items: center;
+        border: 1px solid #e9ecef;
     }
     
     .set-item.completed {
-        background-color: #d4edda;
+        background-color: #e6f7ee;
         border-left: 4px solid #28a745;
     }
     
@@ -180,25 +215,29 @@
     .set-number {
         font-weight: 600;
         margin-right: 10px;
-        color: #495057;
+        color: #343a40;
     }
     
     .set-details {
-        color: #6c757d;
+        color: #495057;
         font-size: 0.9rem;
     }
     
     .set-status {
         font-size: 0.8rem;
         font-weight: 500;
+        padding: 4px 8px;
+        border-radius: 4px;
     }
     
     .set-status.completed {
-        color: #28a745;
+        color: #fff;
+        background-color: #28a745;
     }
     
     .set-status.pending {
-        color: #6c757d;
+        color: #fff;
+        background-color: #6c757d;
     }
 </style>
 {% endblock %}
@@ -208,11 +247,9 @@
     <!-- Información del ejercicio actual -->
     <div class="exercise-card">
         <div class="exercise-header">
-            <img id="exercise-image" src="" alt="Imagen del ejercicio" class="exercise-image">
-            <div>
-                <h1 id="exercise-title" class="exercise-title">Cargando ejercicio...</h1>
-                <p id="exercise-target" class="exercise-target">Músculos objetivo</p>
-            </div>
+            <img id="exercise-image" src="{% static 'gym_pwa/icons/default-exercise.png' %}" alt="Imagen del ejercicio" class="exercise-image">
+            <h1 id="exercise-title" class="exercise-title">Cargando ejercicio...</h1>
+            <p id="exercise-target" class="exercise-target">Músculos objetivo</p>
         </div>
         
         <div class="exercise-stats">
@@ -240,21 +277,21 @@
         <div id="timer-display" class="timer-display">01:00</div>
         <div class="timer-buttons">
             <button id="btn-start-timer" class="nav-button">
-                <i class="pwa-icon pwa-icon-play"></i> Iniciar
+                Iniciar
             </button>
             <button id="btn-reset-timer" class="nav-button">
-                <i class="pwa-icon pwa-icon-refresh"></i> Reiniciar
+                Reiniciar
             </button>
         </div>
     </div>
     
     <!-- Botones de acción -->
-    <button id="btn-complete-set" class="action-button complete-button">
+    <button id="btn-complete-set" class="action-button">
         Completar Serie
     </button>
     
     <!-- Series completadas -->
-    <h3>Series</h3>
+    <h3 class="sets-header">Series</h3>
     <div id="sets-list" class="sets-list">
         <!-- Las series se cargarán dinámicamente con JavaScript -->
     </div>
@@ -262,13 +299,13 @@
     <!-- Controles de navegación -->
     <div class="navigation-controls">
         <button id="btn-prev" class="nav-button">
-            <i class="pwa-icon pwa-icon-chevron-left"></i> Anterior
+            Anterior
         </button>
         <div class="progress-container">
             <span id="progress-text" class="progress-text">0/0</span>
         </div>
         <button id="btn-next" class="nav-button">
-            Siguiente <i class="pwa-icon pwa-icon-chevron-right"></i>
+            Siguiente
         </button>
     </div>
 </div>
@@ -276,7 +313,7 @@
 
 {% block scripts %}
 <script>
-// Datos del entrenamiento (esto vendrá del servidor o IndexedDB en el caso real)
+// Datos del entrenamiento
 const workoutData = {{ workout_data|safe|default:"{}" }};
 
 // Estado de la aplicación
@@ -304,16 +341,22 @@ const progressText = document.getElementById('progress-text');
 
 // Inicialización
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Inicializando reproductor de ejercicios');
+    console.log('Datos recibidos:', workoutData);
+    
     initializeWorkout();
     setupEventListeners();
+    loadCompletedSets();
 });
 
 // Inicializar el entrenamiento
 function initializeWorkout() {
     if (workoutData && workoutData.exercises && workoutData.exercises.length > 0) {
+        console.log('Cargando primer ejercicio');
         updateUI();
         updateProgress();
     } else {
+        console.error('No se recibieron datos de ejercicios');
         showError('No se pudieron cargar los datos del entrenamiento');
     }
 }
@@ -322,13 +365,18 @@ function initializeWorkout() {
 function updateUI() {
     const exercise = workoutData.exercises[currentExerciseIndex];
     
-    if (!exercise) return;
+    if (!exercise) {
+        console.error('No se encontró el ejercicio en el índice:', currentExerciseIndex);
+        return;
+    }
     
-    exerciseTitle.textContent = exercise.name;
-    exerciseTarget.textContent = exercise.target_muscles;
-    exerciseWeight.textContent = exercise.weight;
-    exerciseReps.textContent = exercise.reps;
-    exerciseSets.textContent = exercise.sets_count;
+    console.log('Actualizando UI con ejercicio:', exercise);
+    
+    exerciseTitle.textContent = exercise.name || 'Sin nombre';
+    exerciseTarget.textContent = exercise.target_muscles || 'No especificado';
+    exerciseWeight.textContent = exercise.weight || 'N/A';
+    exerciseReps.textContent = exercise.reps || '0';
+    exerciseSets.textContent = exercise.sets_count || '0';
     exerciseNotes.textContent = exercise.notes || 'Sin instrucciones específicas';
     
     if (exercise.image_url) {
@@ -336,6 +384,7 @@ function updateUI() {
     } else {
         exerciseImage.src = '/static/gym_pwa/icons/default-exercise.png';
     }
+    exerciseImage.alt = exercise.name || 'Ejercicio';
     
     // Actualizar la lista de series
     renderSets();
@@ -348,21 +397,27 @@ function renderSets() {
     
     if (!exercise) return;
     
+    const setsCount = parseInt(exercise.sets_count) || 0;
+    console.log(`Renderizando ${setsCount} series para el ejercicio actual`);
+    
     // Determinar cuántas series completadas hay para este ejercicio
     const completedForCurrentExercise = completedSets.filter(
         set => set.exercise_id === exercise.id
     );
     
-    for (let i = 1; i <= exercise.sets_count; i++) {
+    for (let i = 1; i <= setsCount; i++) {
         const isCompleted = completedForCurrentExercise.some(set => set.set_number === i);
         
         const setItem = document.createElement('div');
         setItem.className = `set-item ${isCompleted ? 'completed' : ''}`;
         
+        const weightDisplay = exercise.weight ? `${exercise.weight}kg` : 'N/A';
+        const repsDisplay = exercise.reps ? `${exercise.reps} reps` : 'N/A';
+        
         setItem.innerHTML = `
             <div class="set-info">
                 <span class="set-number">Serie ${i}</span>
-                <span class="set-details">${exercise.weight}kg × ${exercise.reps} reps</span>
+                <span class="set-details">${weightDisplay} × ${repsDisplay}</span>
             </div>
             <div class="set-status ${isCompleted ? 'completed' : 'pending'}">
                 ${isCompleted ? 'Completado' : 'Pendiente'}
@@ -377,19 +432,24 @@ function renderSets() {
 function completeSet() {
     const exercise = workoutData.exercises[currentExerciseIndex];
     
-    if (!exercise) return;
+    if (!exercise) {
+        console.error('No hay ejercicio activo');
+        return;
+    }
     
     // Determinar qué número de serie completar
     const completedForCurrentExercise = completedSets.filter(
         set => set.exercise_id === exercise.id
     );
     
-    if (completedForCurrentExercise.length >= exercise.sets_count) {
+    const setsCount = parseInt(exercise.sets_count) || 0;
+    if (completedForCurrentExercise.length >= setsCount) {
         alert('¡Ya has completado todas las series de este ejercicio!');
         return;
     }
     
     const setNumber = completedForCurrentExercise.length + 1;
+    console.log(`Completando serie ${setNumber} de ${setsCount}`);
     
     // Guardar la serie completada
     const completedSet = {
@@ -397,8 +457,7 @@ function completeSet() {
         set_number: setNumber,
         weight: exercise.weight,
         reps: exercise.reps,
-        completed_at: new Date().toISOString(),
-        synced: false // Para sincronizar con el servidor más tarde
+        completed_at: new Date().toISOString()
     };
     
     completedSets.push(completedSet);
@@ -408,7 +467,6 @@ function completeSet() {
     
     // Actualizar UI
     renderSets();
-    updateProgress();
     
     // Iniciar el temporizador automáticamente
     startTimer();
@@ -416,9 +474,12 @@ function completeSet() {
 
 // Guardar series completadas en localStorage
 function saveCompletedSets() {
+    if (!workoutData || !workoutData.id) return;
+    
     const workoutId = workoutData.id;
     try {
         localStorage.setItem(`completedSets_${workoutId}`, JSON.stringify(completedSets));
+        console.log('Series guardadas en localStorage');
     } catch (error) {
         console.error('Error al guardar en localStorage:', error);
     }
@@ -426,11 +487,15 @@ function saveCompletedSets() {
 
 // Cargar series completadas desde localStorage
 function loadCompletedSets() {
+    if (!workoutData || !workoutData.id) return;
+    
     const workoutId = workoutData.id;
     try {
         const savedSets = localStorage.getItem(`completedSets_${workoutId}`);
         if (savedSets) {
             completedSets = JSON.parse(savedSets);
+            console.log('Series cargadas desde localStorage:', completedSets.length);
+            renderSets();
         }
     } catch (error) {
         console.error('Error al cargar desde localStorage:', error);
@@ -439,7 +504,9 @@ function loadCompletedSets() {
 
 // Actualizar indicador de progreso
 function updateProgress() {
-    const totalExercises = workoutData.exercises ? workoutData.exercises.length : 0;
+    if (!workoutData || !workoutData.exercises) return;
+    
+    const totalExercises = workoutData.exercises.length;
     progressText.textContent = `${currentExerciseIndex + 1}/${totalExercises}`;
     
     // Actualizar estado de los botones de navegación
@@ -465,48 +532,30 @@ function goToNextExercise() {
     }
 }
 
-// Iniciar/Pausar temporizador
-function toggleTimer() {
-    if (timerInterval) {
-        // Está corriendo, pausarlo
-        clearInterval(timerInterval);
-        timerInterval = null;
-        btnStartTimer.innerHTML = '<i class="pwa-icon pwa-icon-play"></i> Iniciar';
-    } else {
-        // No está corriendo, iniciarlo
-        btnStartTimer.innerHTML = '<i class="pwa-icon pwa-icon-pause"></i> Pausar';
-        
-        timerInterval = setInterval(() => {
-            if (timeLeft > 0) {
-                timeLeft--;
-                updateTimerDisplay();
-            } else {
-                clearInterval(timerInterval);
-                timerInterval = null;
-                // Notificar al usuario que el descanso ha terminado
-                if ('vibrate' in navigator) {
-                    navigator.vibrate([200, 100, 200]);
-                }
-                
-                if ('Notification' in window && Notification.permission === 'granted') {
-                    new Notification('¡Descanso finalizado!', {
-                        body: 'Es hora de tu siguiente serie',
-                        icon: '/static/gym_pwa/icons/icon-192x192.png'
-                    });
-                }
-                
-                btnStartTimer.innerHTML = '<i class="pwa-icon pwa-icon-play"></i> Iniciar';
-            }
-        }, 1000);
-    }
-}
-
 // Iniciar temporizador
 function startTimer() {
-    // Reiniciar primero
-    resetTimer();
-    // Luego iniciar
-    toggleTimer();
+    // Detener el temporizador si ya está corriendo
+    if (timerInterval) {
+        clearInterval(timerInterval);
+    }
+    
+    // Reiniciar a 60 segundos
+    timeLeft = 60;
+    updateTimerDisplay();
+    
+    // Iniciar la cuenta regresiva
+    btnStartTimer.textContent = 'Pausar';
+    timerInterval = setInterval(function() {
+        if (timeLeft > 0) {
+            timeLeft--;
+            updateTimerDisplay();
+        } else {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            btnStartTimer.textContent = 'Iniciar';
+            alert('¡Tiempo de descanso terminado!');
+        }
+    }, 1000);
 }
 
 // Reiniciar temporizador
@@ -516,9 +565,9 @@ function resetTimer() {
         timerInterval = null;
     }
     
-    timeLeft = 60; // Valor por defecto
+    timeLeft = 60;
     updateTimerDisplay();
-    btnStartTimer.innerHTML = '<i class="pwa-icon pwa-icon-play"></i> Iniciar';
+    btnStartTimer.textContent = 'Iniciar';
 }
 
 // Actualizar la visualización del temporizador
@@ -532,66 +581,22 @@ function updateTimerDisplay() {
 function showError(message) {
     exerciseTitle.textContent = 'Error';
     exerciseNotes.textContent = message;
-    // Deshabilitar botones de acción
     btnCompleteSet.disabled = true;
+    console.error('Error mostrado en UI:', message);
 }
 
 // Configurar event listeners
 function setupEventListeners() {
-    btnStartTimer.addEventListener('click', toggleTimer);
-    btnResetTimer.addEventListener('click', resetTimer);
+    console.log('Configurando event listeners');
+    
     btnCompleteSet.addEventListener('click', completeSet);
+    btnStartTimer.addEventListener('click', startTimer);
+    btnResetTimer.addEventListener('click', resetTimer);
     btnPrev.addEventListener('click', goToPrevExercise);
     btnNext.addEventListener('click', goToNextExercise);
-    
-    // Verificar si la aplicación está online/offline
-    window.addEventListener('online', updateOnlineStatus);
-    window.addEventListener('offline', updateOnlineStatus);
-    
-    // Solicitar permiso para notificaciones
-    if ('Notification' in window && Notification.permission !== 'granted') {
-        Notification.requestPermission();
-    }
-    
-    // Cargar los datos guardados
-    loadCompletedSets();
-}
-
-// Actualizar indicador de estado de conexión
-function updateOnlineStatus() {
-    const connectionStatus = document.getElementById('connection-status');
-    if (navigator.onLine) {
-        connectionStatus.classList.add('online');
-        connectionStatus.classList.remove('offline');
-        // Intentar sincronizar datos pendientes
-        syncPendingData();
-    } else {
-        connectionStatus.classList.add('offline');
-        connectionStatus.classList.remove('online');
-    }
-}
-
-// Sincronizar datos pendientes con el servidor
-function syncPendingData() {
-    // Implementar la lógica de sincronización
-    const pendingSets = completedSets.filter(set => !set.synced);
-    
-    if (pendingSets.length === 0) {
-        return; // No hay datos para sincronizar
-    }
-    
-    // En una implementación real, aquí enviaríamos los datos al servidor
-    console.log('Sincronizando datos pendientes:', pendingSets);
-    
-    // Simulación: marcar como sincronizados
-    completedSets = completedSets.map(set => ({...set, synced: true}));
-    saveCompletedSets();
 }
 
 // Inicializar el temporizador cuando carga la página
 updateTimerDisplay();
-
-// Actualizar el estado de conexión inicialmente
-updateOnlineStatus();
 </script>
 {% endblock %} 

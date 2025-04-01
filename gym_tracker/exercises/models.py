@@ -8,6 +8,7 @@ from django.core.files import File
 from django.utils.text import slugify
 from django.urls import reverse
 from gym_pwa.utils import convert_to_webp
+import re
 
 class Equipment(models.Model):
     """
@@ -102,7 +103,17 @@ class Exercise(models.Model):
     def save(self, *args, **kwargs):
         # Generar slug si no existe
         if not self.slug:
-            self.slug = slugify(self.name)
+            # Crear slug y limpiarlo de caracteres especiales
+            base_slug = slugify(self.name)
+            # Reemplazar cualquier caracter no alfanumérico o guión por un guión
+            self.slug = re.sub(r'[^a-zA-Z0-9_-]', '-', base_slug)
+            
+            # Asegurar que el slug sea único
+            counter = 1
+            original_slug = self.slug
+            while Exercise.objects.filter(slug=self.slug).exclude(pk=self.pk).exists():
+                self.slug = f"{original_slug}-{counter}"
+                counter += 1
             
         # Convertir imagen a WebP si existe y no es ya WebP
         if self.image and not self.image.name.endswith('.webp'):

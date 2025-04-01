@@ -10,6 +10,7 @@ from django.contrib import messages
 from gym_pwa.utils import convert_all_images_to_webp
 from django.contrib.auth.models import User
 import os
+from django.db import models
 
 @login_required
 def pwa_home(request):
@@ -26,9 +27,9 @@ def pwa_home(request):
     # Obtener rutinas semanales
     user_routines = WeeklyRoutine.objects.filter(user=request.user).order_by('-created_at')[:5]
     
-    # Obtener rutinas de entrenador
+    # Obtener rutinas de entrenador (tanto creadas como asignadas)
     trainer_routines = TrainerTraining.objects.filter(
-        created_by=request.user
+        models.Q(created_by=request.user) | models.Q(user=request.user)
     ).select_related('created_by').order_by('-created_at')[:5]
     
     context = {
@@ -51,9 +52,9 @@ def pwa_workouts(request):
     user_trainings = Training.objects.filter(user=request.user).order_by('-created_at')
     
     # Obtener rutinas asignadas por entrenadores
-    # TrainerTraining no tiene students, así que solo obtenemos aquellas donde el usuario es el creador o estudiante
+    # Ahora incluimos rutinas donde el usuario es el destinatario
     trainer_routines = TrainerTraining.objects.filter(
-        created_by=request.user
+        models.Q(created_by=request.user) | models.Q(user=request.user)
     ).select_related('created_by').order_by('-created_at')
     
     # Calcular días activos de entrenamiento (días distintos)
@@ -92,10 +93,10 @@ def pwa_workout_player(request, workout_id):
         workout_name = workout.exercise.name  # Usar el nombre del ejercicio para entrenamientos personales
     except Training.DoesNotExist:
         try:
-            # Luego verificar si es una rutina de entrenador
+            # Luego verificar si es una rutina de entrenador (creada por el usuario o asignada al usuario)
             workout = TrainerTraining.objects.get(
-                id=workout_id,
-                created_by=request.user
+                models.Q(created_by=request.user) | models.Q(user=request.user),
+                id=workout_id
             )
             workout_type = 'trainer'
             workout_name = workout.name  # TrainerTraining sí tiene atributo name
@@ -130,19 +131,19 @@ def pwa_workout_player(request, workout_id):
     elif workout_type == 'trainer':
         # Para rutinas de entrenador
         for day in workout.days.all():
-            sets = day.sets.all().select_related('exercise').order_by('order')
+            sets = day.sets.all().order_by('order')
             
             for set_obj in sets:
                 exercise_data = {
                     'id': set_obj.id,
-                    'exercise_id': set_obj.exercise.id,
-                    'name': set_obj.exercise.name,
+                    'exercise_id': set_obj.id,  # En TrainerSet, el campo exercise es un CharField
+                    'name': set_obj.exercise,   # En TrainerSet, exercise es el nombre del ejercicio
                     'weight': set_obj.weight,
                     'reps': set_obj.reps,
                     'sets_count': set_obj.sets_count,
                     'notes': set_obj.notes,
-                    'target_muscles': set_obj.exercise.muscles_worked,
-                    'image_url': set_obj.exercise.image.url if set_obj.exercise.image else None
+                    'target_muscles': '',  # No hay campo muscles_worked en TrainerSet
+                    'image_url': None      # No hay campo image en TrainerSet
                 }
                 workout_data['exercises'].append(exercise_data)
     
@@ -174,8 +175,8 @@ def pwa_workout_player(request, workout_id):
                     'reps': routine_exercise.reps,
                     'sets_count': routine_exercise.sets,
                     'notes': routine_exercise.notes,
-                    'target_muscles': routine_exercise.exercise.muscles_worked,
-                    'image_url': routine_exercise.exercise.image.url if routine_exercise.exercise.image else None,
+                    'target_muscles': routine_exercise.exercise.primary_muscles if hasattr(routine_exercise.exercise, 'primary_muscles') else '',
+                    'image_url': routine_exercise.exercise.image.url if hasattr(routine_exercise.exercise, 'image') and routine_exercise.exercise.image else None,
                     'day': {
                         'id': day.id,
                         'name': day.day_of_week
@@ -282,7 +283,7 @@ def pwa_routine_start(request, routine_id):
         # Si ya tenemos un día seleccionado, ir directamente a la selección de modo
         if day_id:
             try:
-                day = RoutineDay.objects.get(id=day_id, weekly_routine=routine)
+                day = RoutineDay.objects.get(id=day_id, routine=routine)
                 context = {
                     'routine': routine,
                     'day': day,
@@ -325,10 +326,10 @@ def pwa_select_routine(request):
     # Obtener rutinas propias del usuario
     user_routines = WeeklyRoutine.objects.filter(user=request.user).order_by('-created_at')
     
-    # Obtener rutinas asignadas por entrenadores (por ahora solo las creadas por el usuario)
-    # En un sistema real, se obtendrían las rutinas donde el usuario es estudiante
+    # Obtener rutinas asignadas por entrenadores
+    # Ahora incluimos rutinas donde el usuario es el destinatario (student)
     assigned_routines = TrainerTraining.objects.filter(
-        created_by=request.user
+        models.Q(created_by=request.user) | models.Q(user=request.user)
     ).select_related('created_by').order_by('-created_at')
     
     context = {

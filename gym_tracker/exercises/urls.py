@@ -41,7 +41,7 @@ urlpatterns = [
     path('<int:pk>/delete/', exercise_delete, name='exercise-delete'),
     path('<slug:slug>/delete/', exercise_delete, name='exercise-delete-slug'),
     path('<int:pk>/', ExerciseDetailView.as_view(), name='exercise-detail'),
-    path('<slug:slug>/', ExerciseDetailView.as_view(), name='exercise-detail-slug'),
+    path('<str:slug>/', ExerciseDetailView.as_view(), name='exercise-detail-slug'),
     
     # URLs para gestión de categorías
     path('categories/', CategoryListView.as_view(), name='category-list'),
