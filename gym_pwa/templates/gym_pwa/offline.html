@@ -1,0 +1,84 @@
+{% extends 'gym_pwa/base.html' %}
+{% load static %}
+
+{% block title %}Sin conexión - GymWorl{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="offline-container text-center">
+        <div class="offline-icon mb-4">
+            <i class="fas fa-wifi-slash" style="font-size: 4rem; color: #dc3545;"></i>
+        </div>
+        
+        <h1 class="display-4 mb-3">Sin conexión</h1>
+        
+        <p class="lead mb-4">
+            No hay conexión a internet en este momento. 
+            Algunos contenidos están disponibles en modo offline.
+        </p>
+        
+        <div class="offline-actions mb-5">
+            <button class="btn btn-primary btn-lg" onclick="window.location.reload()">
+                <i class="fas fa-sync-alt mr-2"></i> Intentar reconectar
+            </button>
+        </div>
+        
+        <div class="offline-features">
+            <h4 class="mb-3">Funciones disponibles sin conexión:</h4>
+            
+            <div class="row">
+                <div class="col-6">
+                    <div class="offline-feature-card">
+                        <div class="offline-feature-icon">
+                            <i class="fas fa-dumbbell"></i>
+                        </div>
+                        <h5>Últimos entrenamientos</h5>
+                    </div>
+                </div>
+                
+                <div class="col-6">
+                    <div class="offline-feature-card">
+                        <div class="offline-feature-icon">
+                            <i class="fas fa-history"></i>
+                        </div>
+                        <h5>Datos guardados</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .offline-container {
+        padding: 3rem 1rem;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    .offline-icon {
+        font-size: 4rem;
+        color: #6c757d;
+    }
+    
+    .offline-features {
+        margin-top: 2rem;
+    }
+    
+    .offline-feature-card {
+        background-color: white;
+        border-radius: 10px;
+        padding: 1.5rem 1rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        height: 100%;
+    }
+    
+    .offline-feature-icon {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        color: #007bff;
+    }
+</style>
+{% endblock %} 

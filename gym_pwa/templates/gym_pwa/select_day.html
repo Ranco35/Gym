@@ -1,0 +1,90 @@
+{% extends 'gym_pwa/base.html' %}
+{% load static %}
+
+{% block title %}Seleccionar Día - {{ routine.name }} - GymWorl{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1 class="display-4">Seleccionar Día</h1>
+        <button class="btn btn-light btn-close-icon" onclick="window.history.back()">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    
+    <div class="routine-info mb-4 text-center">
+        <h2>{{ routine.name }}</h2>
+        <p class="workout-date">Fecha: {{ training_date }}</p>
+    </div>
+    
+    <div class="days-list">
+        {% for day in routine_days %}
+            <div class="day-card">
+                <div class="day-card-body">
+                    <h3 class="day-title">{{ day.day_of_week }}</h3>
+                    {% if day.focus %}
+                        <p class="day-focus">Enfoque: {{ day.focus }}</p>
+                    {% endif %}
+                    <p class="day-exercises-count">
+                        {{ day.exercises.count }} ejercicios
+                    </p>
+                </div>
+                <div class="day-card-actions">
+                    <a href="/pwa/routine/{{ routine.id }}/start/?date={{ training_date }}&day={{ day.id }}" class="btn btn-primary btn-block">
+                        Seleccionar este día
+                    </a>
+                </div>
+            </div>
+        {% empty %}
+            <div class="empty-state">
+                <p>Esta rutina no tiene días configurados.</p>
+                <a href="/pwa/select-routine/" class="btn btn-primary">Volver a rutinas</a>
+            </div>
+        {% endfor %}
+    </div>
+    
+    <div class="actions-container mt-4">
+        <a href="/pwa/select-routine/?date={{ training_date }}" class="btn btn-secondary btn-lg btn-block">Volver</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .day-card {
+        background-color: white;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 15px;
+    }
+    
+    .day-card-body {
+        padding: 15px;
+    }
+    
+    .day-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+    
+    .day-focus {
+        font-size: 0.9rem;
+        color: #495057;
+        margin-bottom: 8px;
+    }
+    
+    .day-exercises-count {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-bottom: 0;
+    }
+    
+    .day-card-actions {
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-top: 1px solid #eee;
+    }
+</style>
+{% endblock %} 

@@ -5,6 +5,9 @@ from django.core.exceptions import ValidationError
 from PIL import Image
 from io import BytesIO
 from django.core.files import File
+from django.utils.text import slugify
+from django.urls import reverse
+from gym_pwa.utils import convert_to_webp
 
 class Equipment(models.Model):
     """
@@ -56,111 +59,104 @@ class Exercise(models.Model):
     """
     Modelo para almacenar la información de los ejercicios.
     """
-    DIFFICULTY_CHOICES = [
-        ('Principiante', 'Principiante'),
-        ('Intermedio', 'Intermedio'),
-        ('Avanzado', 'Avanzado'),
+    MUSCLE_GROUPS = [
+        ('chest', 'Pecho'),
+        ('back', 'Espalda'),
+        ('shoulders', 'Hombros'),
+        ('arms', 'Brazos'),
+        ('legs', 'Piernas'),
+        ('core', 'Core'),
+        ('full_body', 'Cuerpo completo'),
+        ('cardio', 'Cardio'),
     ]
     
-    name = models.CharField(max_length=255, verbose_name='Nombre')
-    description = models.TextField(verbose_name='Descripción')
-    category = models.ForeignKey(
-        ExerciseCategory, 
-        on_delete=models.SET_DEFAULT, 
-        default=ExerciseCategory.get_default_pk,
-        related_name='exercises',
-        verbose_name='Categoría'
-    )
-    difficulty = models.CharField(max_length=20, choices=DIFFICULTY_CHOICES, verbose_name='Dificultad')
+    DIFFICULTY_LEVELS = [
+        ('beginner', 'Principiante'),
+        ('intermediate', 'Intermedio'),
+        ('advanced', 'Avanzado'),
+    ]
     
-    # Nuevos campos
-    primary_muscles = models.CharField(max_length=255, blank=True, null=True, verbose_name='Músculos principales')
-    secondary_muscles = models.CharField(max_length=255, blank=True, null=True, verbose_name='Músculos secundarios')
-    equipment = models.ForeignKey(
-        Equipment,
-        on_delete=models.SET_DEFAULT,
-        default=Equipment.get_default_pk,
-        related_name='exercises',
-        verbose_name='Equipamiento'
-    )
-    instructions = models.TextField(blank=True, null=True, verbose_name='Instrucciones')
+    name = models.CharField(max_length=100, verbose_name='Nombre')
+    slug = models.SlugField(unique=True, max_length=100, blank=True)
+    description = models.TextField(blank=True, null=True, verbose_name='Descripción')
+    muscle_group = models.CharField(max_length=20, choices=MUSCLE_GROUPS, verbose_name='Grupo muscular')
+    primary_muscles = models.CharField(max_length=100, blank=True, verbose_name='Músculos principales')
+    secondary_muscles = models.CharField(max_length=100, blank=True, verbose_name='Músculos secundarios')
+    difficulty = models.CharField(max_length=20, choices=DIFFICULTY_LEVELS, default='intermediate', verbose_name='Dificultad')
+    equipment = models.CharField(max_length=100, blank=True, verbose_name='Equipamiento')
     tips = models.TextField(blank=True, null=True, verbose_name='Consejos')
     
-    # Campo para la imagen del ejercicio
-    image = models.ImageField(
-        upload_to='exercises',
-        storage=GymStorage(),
-        null=True,
-        blank=True,
-        verbose_name='Imagen del ejercicio (JPG, PNG o GIF)'
-    )
-
-    # Campo para el video de YouTube
-    youtube_link = models.URLField(
-        max_length=255,
-        blank=True,
-        null=True,
-        verbose_name='Link de YouTube',
-        help_text='Ingresa la URL del video de YouTube que muestra cómo realizar el ejercicio'
-    )
+    image = models.ImageField(upload_to='exercises/', blank=True, null=True, verbose_name='Imagen')
+    video_url = models.URLField(blank=True, null=True, verbose_name='URL del video')
     
-    creator = models.ForeignKey(
+    created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
-        on_delete=models.SET_NULL, 
         null=True, 
         blank=True,
-        related_name='created_exercises'
+        on_delete=models.SET_NULL,
+        verbose_name='Creado por'
     )
-    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Fecha de creación')
     updated_at = models.DateTimeField(auto_now=True, null=True)
 
+    def save(self, *args, **kwargs):
+        # Generar slug si no existe
+        if not self.slug:
+            self.slug = slugify(self.name)
+            
+        # Convertir imagen a WebP si existe y no es ya WebP
+        if self.image and not self.image.name.endswith('.webp'):
+            self.image = convert_to_webp(self.image)
+            
+        super(Exercise, self).save(*args, **kwargs)
+    
+    def get_absolute_url(self):
+        return reverse('exercise_detail', args=[self.slug])
+    
     def __str__(self):
         return self.name
-
+    
     def clean(self):
         # Validar el link de YouTube
-        if self.youtube_link and 'youtube.com' not in self.youtube_link and 'youtu.be' not in self.youtube_link:
+        if self.video_url and 'youtube.com' not in self.video_url and 'youtu.be' not in self.video_url:
             raise ValidationError({
-                'youtube_link': 'El enlace debe ser de YouTube (youtube.com o youtu.be)'
+                'video_url': 'El enlace debe ser de YouTube (youtube.com o youtu.be)'
             })
-
-    def save(self, *args, **kwargs):
-        # Comprimir imagen si se ha subido una nueva
-        if self.image and hasattr(self.image, 'file'):
-            # Abrir la imagen usando PIL
-            img = Image.open(self.image)
-            
-            # Convertir a RGB si es necesario
-            if img.mode != 'RGB' and img.format != 'GIF':
-                img = img.convert('RGB')
-            
-            # No procesar GIFs
-            if img.format != 'GIF':
-                # Redimensionar si es muy grande (manteniendo proporción)
-                max_size = (800, 800)
-                if img.width > max_size[0] or img.height > max_size[1]:
-                    img.thumbnail(max_size, Image.Resampling.LANCZOS)
-                
-                # Guardar con compresión
-                output = BytesIO()
-                img.save(output, format='WEBP', quality=85, optimize=True)
-                output.seek(0)
-                
-                # Reemplazar el archivo original
-                self.image = File(output, name=self.image.name.split('/')[-1].rsplit('.', 1)[0] + '.webp')
-            
-        super().save(*args, **kwargs)
 
     def get_youtube_embed_url(self):
         """Convierte la URL de YouTube en una URL de embed"""
-        if not self.youtube_link:
+        if not self.video_url:
             return None
             
-        if 'youtube.com/watch?v=' in self.youtube_link:
-            video_id = self.youtube_link.split('watch?v=')[1].split('&')[0]
-        elif 'youtu.be/' in self.youtube_link:
-            video_id = self.youtube_link.split('youtu.be/')[1]
+        if 'youtube.com/watch?v=' in self.video_url:
+            video_id = self.video_url.split('watch?v=')[1].split('&')[0]
+        elif 'youtu.be/' in self.video_url:
+            video_id = self.video_url.split('youtu.be/')[1]
         else:
             return None
             
         return f'https://www.youtube.com/embed/{video_id}'
+
+    class Meta:
+        verbose_name = 'Ejercicio'
+        verbose_name_plural = 'Ejercicios'
+        ordering = ['name']
+
+class ExerciseImage(models.Model):
+    """Modelo para imágenes adicionales de ejercicios."""
+    exercise = models.ForeignKey(Exercise, related_name='images', on_delete=models.CASCADE, verbose_name='Ejercicio')
+    image = models.ImageField(upload_to='exercises/gallery/', verbose_name='Imagen')
+    caption = models.CharField(max_length=200, blank=True, verbose_name='Leyenda')
+    order = models.PositiveSmallIntegerField(default=0, verbose_name='Orden')
+    
+    def save(self, *args, **kwargs):
+        # Convertir imagen a WebP si no es ya WebP
+        if self.image and not self.image.name.endswith('.webp'):
+            self.image = convert_to_webp(self.image)
+            
+        super(ExerciseImage, self).save(*args, **kwargs)
+    
+    class Meta:
+        verbose_name = 'Imagen de ejercicio'
+        verbose_name_plural = 'Imágenes de ejercicios'
+        ordering = ['order']

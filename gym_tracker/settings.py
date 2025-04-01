@@ -51,6 +51,8 @@ INSTALLED_APPS = [
     'gym_tracker.trainings',
     'gym_tracker.stats',  # Nueva aplicación de estadísticas
     'trainers.apps.TrainersConfig',  # Usar la configuración completa de la app
+    'gym_pwa.apps.GymPwaConfig',  # Aplicación PWA
+    'pwa',  # Soporte para PWA
 ]
 
 # Middleware - Deshabilitamos CSRF temporalmente en desarrollo
@@ -295,5 +297,27 @@ MEDIA_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.nyc3.digitaloceanspaces.com/medi
 
 # Para archivos estáticos (si tienes un backend personalizado para estáticos)
 AWS_STATIC_LOCATION = 'static'
-STATIC_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.nyc3.digitaloceanspaces.com/{AWS_STATIC_LOCATION}/"
-STATICFILES_STORAGE = 'tu_proyecto.storage_backend.StaticStorage'
+STATIC_URL = '/static/'
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+
+# Configuración de PWA
+PWA_APP_NAME = 'GymWorl'
+PWA_APP_DESCRIPTION = "Tu entrenador personal"
+PWA_APP_THEME_COLOR = '#007bff'
+PWA_APP_BACKGROUND_COLOR = '#ffffff'
+PWA_APP_DISPLAY = 'standalone'
+PWA_APP_SCOPE = '/'
+PWA_APP_ORIENTATION = 'portrait'
+PWA_APP_START_URL = '/pwa/'
+PWA_APP_STATUS_BAR_COLOR = 'default'
+PWA_APP_ICONS = [
+    {
+        'src': '/static/gym_pwa/icons/icon-128x128.png',
+        'sizes': '128x128'
+    },
+    {
+        'src': '/static/gym_pwa/icons/icon-512x512.png',
+        'sizes': '512x512'
+    }
+]
+PWA_SERVICE_WORKER_PATH = os.path.join(BASE_DIR, 'gym_pwa/static/gym_pwa/js', 'serviceworker.js')

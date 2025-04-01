@@ -1,0 +1,194 @@
+{% extends 'gym_pwa/base.html' %}
+{% load static %}
+
+{% block title %}GymWorl - Mi Entrenador Personal{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="welcome-section mb-4">
+        <h1>Bienvenido, {{ user_name }}</h1>
+        <p>¡Listo para entrenar!</p>
+    </div>
+
+    <!-- Tarjetas de estadísticas -->
+    <div class="stats-cards-container mb-4">
+        <div class="row">
+            <div class="col-6">
+                <div class="stats-card stats-card-blue">
+                    <div class="stats-card-content">
+                        <div class="stats-card-info">
+                            <h3>Entrenamientos</h3>
+                            <h2>{{ completed_trainings_count }}</h2>
+                        </div>
+                        <div class="stats-card-icon">
+                            <i class="pwa-icon pwa-icon-dumbbell"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="stats-card stats-card-green">
+                    <div class="stats-card-content">
+                        <div class="stats-card-info">
+                            <h3>Rutinas</h3>
+                            <h2>{{ user_routines|length }}</h2>
+                        </div>
+                        <div class="stats-card-icon">
+                            <i class="pwa-icon pwa-icon-calendar"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mis rutinas semanales -->
+    <div class="home-section mb-4">
+        <div class="section-header d-flex justify-content-between align-items-center mb-3">
+            <h2>Mis Rutinas</h2>
+            <a href="/pwa/workouts/" class="btn btn-sm btn-outline-primary">Ver todas</a>
+        </div>
+
+        {% if user_routines %}
+            <div class="routine-list">
+                {% for routine in user_routines %}
+                    <div class="routine-card">
+                        <div class="routine-card-body">
+                            <h3 class="routine-card-title">{{ routine.name }}</h3>
+                            <div class="routine-days-badges">
+                                {% for day in routine.days.all %}
+                                    <span class="badge badge-secondary">{{ day.day_of_week }}</span>
+                                {% endfor %}
+                            </div>
+                            <p class="created-at">Creado: {{ routine.created_at|date:"d/m/Y" }}</p>
+                        </div>
+                        <div class="routine-card-actions">
+                            <a href="#" class="btn btn-primary btn-block btn-start-workout" 
+                               data-routine-id="{{ routine.id }}" 
+                               data-routine-name="{{ routine.name }}">
+                                Iniciar Rutina
+                            </a>
+                            <a href="/pwa/routine/{{ routine.id }}/" class="btn btn-outline-secondary btn-block mt-2">
+                                Ver Detalles
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>No tienes rutinas creadas aún.</p>
+                <a href="/workouts/create/" class="btn btn-primary">Crear Rutina</a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Rutinas de entrenador -->
+    {% if trainer_routines %}
+        <div class="home-section mb-4">
+            <div class="section-header d-flex justify-content-between align-items-center mb-3">
+                <h2>De Mi Entrenador</h2>
+                <a href="/pwa/workouts/" class="btn btn-sm btn-outline-primary">Ver todas</a>
+            </div>
+
+            <div class="routine-list">
+                {% for routine in trainer_routines %}
+                    <div class="routine-card">
+                        <div class="routine-card-body">
+                            <h3 class="routine-card-title">{{ routine.name }}</h3>
+                            <p class="trainer-name">
+                                <i class="pwa-icon pwa-icon-user"></i> {{ routine.created_by.get_full_name }}
+                            </p>
+                        </div>
+                        <div class="routine-card-actions">
+                            <a href="/pwa/workout/{{ routine.id }}/?type=trainer" class="btn btn-primary btn-block">
+                                Iniciar Rutina
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Último entrenamiento -->
+    {% if recent_trainings %}
+        <div class="home-section mb-4">
+            <div class="section-header mb-3">
+                <h2>Último Entrenamiento</h2>
+            </div>
+
+            <div class="last-workout-card">
+                {% with last_training=recent_trainings.0 %}
+                    <div class="last-workout-info">
+                        <h3>{{ last_training.exercise.name }}</h3>
+                        <p class="workout-meta">
+                            {{ last_training.created_at|date:"d/m/Y" }} • 
+                            {{ last_training.total_sets }} series • 
+                            {{ last_training.reps }} repeticiones
+                        </p>
+                    </div>
+                    <div class="last-workout-actions">
+                        <a href="/pwa/workout/{{ last_training.id }}/?type=personal" class="btn btn-primary">
+                            Repetir
+                        </a>
+                    </div>
+                {% endwith %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Modal para iniciar entrenamiento -->
+<div class="modal fade" id="startWorkoutModal" tabindex="-1" role="dialog" aria-labelledby="startWorkoutModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="startWorkoutModalLabel">Seleccionar Fecha</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="startWorkoutForm" action="/pwa/select-routine/" method="get">
+                    <div class="form-group">
+                        <label for="workout_date">Fecha del entrenamiento:</label>
+                        <input type="date" class="form-control" id="workout_date" name="date" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="submit" form="startWorkoutForm" class="btn btn-primary">Continuar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar la fecha actual en el selector de fecha
+        const dateInput = document.getElementById('workout_date');
+        if (dateInput) {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            dateInput.value = `${year}-${month}-${day}`;
+        }
+
+        // Configurar los botones para abrir el modal
+        const startButtons = document.querySelectorAll('.btn-start-workout');
+        startButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Mostrar modal para seleccionar fecha
+                $('#startWorkoutModal').modal('show');
+            });
+        });
+    });
+</script>
+{% endblock %} 

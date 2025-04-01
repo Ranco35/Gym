@@ -1,0 +1,141 @@
+{% extends 'gym_pwa/base.html' %}
+{% load static %}
+
+{% block title %}Iniciar Entrenamiento - GymWorl{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1 class="display-4">Iniciar Entrenamiento</h1>
+        <button class="btn btn-light btn-close-icon" onclick="window.history.back()">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
+    <div class="workout-info mb-4">
+        <h2>{{ routine.name }}</h2>
+        <p class="lead">
+            <span class="badge badge-primary">{{ day.day_of_week }}</span>
+            <span class="badge badge-secondary">{{ day.focus }}</span>
+        </p>
+        <p class="workout-date">Fecha del entrenamiento: {{ training_date }}</p>
+    </div>
+    
+    <div class="text-center alert alert-info mb-4">
+        <i class="fas fa-info-circle"></i> Selecciona cómo quieres ejecutar tu entrenamiento:
+    </div>
+
+    <div class="workout-modes-container">
+        <a href="/pwa/workout/{{ day.id }}/?type=weekly&date={{ training_date }}&mode=bulk" class="workout-mode-card">
+            <div class="mode-card-inner">
+                <div class="mode-icon">
+                    <img src="{% static 'gym_pwa/img/bulk-mode.png' %}" alt="Modo completo">
+                </div>
+                <div class="mode-details">
+                    <h3>Registrar todos los ejercicios de una vez</h3>
+                    <p>Registra todos los ejercicios sin modificar</p>
+                </div>
+            </div>
+        </a>
+
+        <a href="/pwa/workout/{{ day.id }}/?type=weekly&date={{ training_date }}&mode=step" class="workout-mode-card">
+            <div class="mode-card-inner">
+                <div class="mode-icon">
+                    <img src="{% static 'gym_pwa/img/step-mode.png' %}" alt="Modo paso a paso">
+                </div>
+                <div class="mode-details">
+                    <h3>Ejecutar entrenamiento paso a paso</h3>
+                    <p>Modificar series, reps y peso durante el entrenamiento</p>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div class="actions-container mt-4">
+        <a href="{% url 'gym_pwa:home' %}" class="btn btn-secondary btn-lg btn-block">Cancelar</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .page-header {
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+
+    .btn-close-icon {
+        position: absolute;
+        top: 0;
+        left: 0;
+        padding: 0.5rem;
+        font-size: 1.5rem;
+    }
+
+    .workout-info {
+        text-align: center;
+    }
+
+    .workout-date {
+        font-size: 1.1rem;
+        font-weight: 500;
+    }
+
+    .workout-modes-container {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        margin-bottom: 2rem;
+    }
+
+    .workout-mode-card {
+        display: block;
+        text-decoration: none;
+        color: inherit;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        background-color: white;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .workout-mode-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+
+    .mode-card-inner {
+        display: flex;
+        align-items: center;
+        padding: 1.5rem;
+    }
+
+    .mode-icon {
+        width: 70px;
+        height: 70px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1.5rem;
+        border-radius: 50%;
+        background-color: #f8f9fa;
+    }
+
+    .mode-icon img {
+        width: 45px;
+        height: 45px;
+        object-fit: contain;
+    }
+
+    .mode-details h3 {
+        font-size: 1.25rem;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+    }
+
+    .mode-details p {
+        color: #6c757d;
+        margin-bottom: 0;
+    }
+</style>
+{% endblock %} 

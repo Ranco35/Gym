@@ -21,19 +21,27 @@ app_name = 'exercises'
 # URLs para la API REST
 api_patterns = [
     path('', ExerciseListView.as_view(), name='api-exercise-list'),
+    path('export/', export_exercises, name='api-export-exercises'),
+    path('export/template/', export_exercises_template, name='api-export-template'),
+    path('import/', import_exercises, name='api-import-exercises'),
     path('<int:pk>/', ExerciseDetailView.as_view(), name='api-exercise-detail'),
+    path('<slug:slug>/', ExerciseDetailView.as_view(), name='api-exercise-detail-slug'),
 ]
 
 # URLs para la interfaz web
 urlpatterns = [
     path('', exercise_list, name='exercise-list'),
     path('create/', exercise_create, name='exercise-create'),
-    path('<int:pk>/', ExerciseDetailView.as_view(), name='exercise-detail'),
-    path('<int:pk>/edit/', exercise_edit, name='exercise-edit'),
-    path('<int:pk>/delete/', exercise_delete, name='exercise-delete'),
     path('export-template/', export_exercises_template, name='export-template'),
     path('export/', export_exercises, name='export-exercises'),
+    path('export-json/', export_exercises, name='export-exercises-json'),
     path('import/', import_exercises, name='import-exercises'),
+    path('<int:pk>/edit/', exercise_edit, name='exercise-edit'),
+    path('<slug:slug>/edit/', exercise_edit, name='exercise-edit-slug'),
+    path('<int:pk>/delete/', exercise_delete, name='exercise-delete'),
+    path('<slug:slug>/delete/', exercise_delete, name='exercise-delete-slug'),
+    path('<int:pk>/', ExerciseDetailView.as_view(), name='exercise-detail'),
+    path('<slug:slug>/', ExerciseDetailView.as_view(), name='exercise-detail-slug'),
     
     # URLs para gestión de categorías
     path('categories/', CategoryListView.as_view(), name='category-list'),

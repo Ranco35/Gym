@@ -61,62 +61,31 @@
 {% block content %}
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="display-4">Ejercicios</h1>
-        <div class="btn-toolbar">
-            <div class="btn-group me-2">
-                <button id="myExercisesBtn" class="btn btn-outline-primary">
-                    <i class="fas fa-user me-2"></i>Mis Ejercicios
+        <h1 class="h3 mb-0">Ejercicios</h1>
+        <div class="d-flex gap-2">
+            <div class="dropdown">
+                <button class="btn btn-primary dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-file-export me-1"></i> Exportar
                 </button>
+                <ul class="dropdown-menu" aria-labelledby="exportDropdown">
+                    <li>
+                        <a class="dropdown-item" href="{% url 'exercises:export-exercises' %}">
+                            <i class="fas fa-file me-2"></i> Exportar en Excel
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{% url 'exercises:export-exercises-json' %}">
+                            <i class="fas fa-code me-2"></i> Exportar en JSON
+                        </a>
+                    </li>
+                </ul>
             </div>
-            
-            <div class="btn-group me-2">
-                {% if perms.exercises.add_exercise or user.is_trainer or user.is_staff %}
-                <a href="{% url 'exercises:exercise-create' %}" class="btn btn-primary">
-                    <i class="fas fa-plus me-2"></i>Nuevo Ejercicio
-                </a>
-                {% endif %}
-            </div>
-            
-            {% if user.is_authenticated %}
-            <div class="btn-group">
-                <div class="dropdown">
-                    <button class="btn btn-secondary dropdown-toggle" type="button" id="adminActions" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-cog me-2"></i>Admin
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminActions">
-                        <!-- Opción para todos los usuarios autenticados -->
-                        <li>
-                            <a class="dropdown-item" href="{% url 'exercises:export-exercises' %}">
-                                <i class="fas fa-download me-2"></i>Exportar Mis Ejercicios
-                            </a>
-                        </li>
-                        
-                        {% if user.is_trainer or user.is_staff or user.is_superuser %}
-                        <li><hr class="dropdown-divider"></li>
-                        <li>
-                            <a class="dropdown-item" href="{% url 'exercises:import-exercises' %}">
-                                <i class="fas fa-upload me-2"></i>Importar Ejercicios
-                            </a>
-                        </li>
-                        {% endif %}
-                        
-                        {% if user.is_superuser or user.is_staff %}
-                        <li><hr class="dropdown-divider"></li>
-                        <li>
-                            <a class="dropdown-item" href="{% url 'exercises:export-template' %}">
-                                <i class="fas fa-file-excel me-2"></i>Descargar Plantilla
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item" href="{% url 'exercises:export-exercises' %}">
-                                <i class="fas fa-cloud-download-alt me-2"></i>Exportar Todos
-                            </a>
-                        </li>
-                        {% endif %}
-                    </ul>
-                </div>
-            </div>
-            {% endif %}
+            <a href="{% url 'exercises:import-exercises' %}" class="btn btn-success">
+                <i class="fas fa-file-import me-1"></i> Importar
+            </a>
+            <a href="{% url 'exercises:exercise-create' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i> Nuevo
+            </a>
         </div>
     </div>
 
@@ -215,57 +184,65 @@
         </div>
     </div>
 
-    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-        {% for exercise in exercises %}
-        <div class="col exercise-item" 
-             data-category="{{ exercise.category.id }}"
-             data-difficulty="{{ exercise.difficulty }}"
-             data-equipment="{{ exercise.equipment.id }}"
-             data-creator="{{ exercise.creator.id }}">
-            <div class="card h-100 exercise-card {{ exercise.difficulty|lower }}">
+    <div class="row" id="exercise-container">
+        {% for item in exercises_with_permissions %}
+        {% with exercise=item.exercise can_edit=item.can_edit %}
+        <div class="col-md-4 mb-4 exercise-item" 
+             data-difficulty="{{ exercise.get_difficulty_display }}"
+             data-category="{{ exercise.category.id|default:"" }}"
+             data-muscle="{{ exercise.muscle_group }}"
+             data-equipment="{{ exercise.equipment.id|default:"" }}"
+             data-creator="{% if exercise.created_by == user %}me{% endif %}">
+            <div class="card exercise-card h-100 {{ exercise.get_difficulty_display|lower }}">
                 {% if exercise.image %}
-                <img src="{{ exercise.image.url }}" class="card-img-top" alt="{{ exercise.name }}"
-                     style="height: 200px; object-fit: cover;">
+                    <img src="{{ exercise.image.url }}" class="card-img-top" alt="{{ exercise.name }}" style="height: 200px; object-fit: cover;">
                 {% else %}
-                <div class="card-img-top bg-light d-flex align-items-center justify-content-center" 
-                     style="height: 200px;">
-                    <i class="fas fa-dumbbell fa-3x text-muted"></i>
-                </div>
+                    <div class="bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                        <i class="fas fa-dumbbell fa-3x text-muted"></i>
+                    </div>
                 {% endif %}
-
                 <div class="card-body">
                     <h5 class="card-title">{{ exercise.name }}</h5>
-                    <p class="card-text">{{ exercise.description|truncatewords:30 }}</p>
-                    
-                    <div class="mb-3">
-                        <span class="badge bg-primary">{{ exercise.category.name }}</span>
-                        <span class="badge difficulty-badge-{{ exercise.difficulty|lower }}">{{ exercise.difficulty }}</span>
-                        <span class="badge bg-secondary">
-                            <i class="fas fa-dumbbell me-1"></i>{{ exercise.equipment.name }}
-                        </span>
+                    <p class="card-text">{{ exercise.description|truncatechars:100 }}</p>
+                    <div class="d-flex mb-2">
+                        <span class="badge difficulty-badge-{{ exercise.get_difficulty_display|lower }} me-2">{{ exercise.get_difficulty_display }}</span>
+                        <span class="badge bg-info">{{ exercise.get_muscle_group_display }}</span>
                     </div>
-
-                    <div class="btn-group w-100">
-                        <a href="{% url 'exercises:exercise-detail' exercise.id %}" 
-                           class="btn btn-sm btn-outline-primary">
+                    <div class="d-flex mb-2">
+                        {% if exercise.primary_muscles %}
+                        <span class="badge bg-secondary me-2" title="Músculos primarios">{{ exercise.primary_muscles }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="card-text small text-muted mb-2">
+                        {% if exercise.created_by %}
+                        <span><i class="fas fa-user me-1"></i> {{ exercise.created_by.get_full_name|default:exercise.created_by.username }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'exercises:exercise-detail-slug' exercise.slug %}" class="btn btn-sm btn-primary">
                             <i class="fas fa-eye me-1"></i>Ver
                         </a>
-                        <a href="{% url 'exercises:exercise-edit' exercise.id %}" 
-                           class="btn btn-sm btn-outline-warning">
-                            <i class="fas fa-edit me-1"></i>Editar
-                        </a>
-                        <a href="{% url 'exercises:exercise-delete' exercise.id %}" 
-                           class="btn btn-sm btn-outline-danger">
-                            <i class="fas fa-trash me-1"></i>Eliminar
-                        </a>
+                        {% if can_edit %}
+                        <div class="btn-group">
+                            <a href="{% url 'exercises:exercise-edit-slug' exercise.slug %}" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-edit me-1"></i>Editar
+                            </a>
+                            <a href="{% url 'exercises:exercise-delete-slug' exercise.slug %}" class="btn btn-sm btn-outline-danger">
+                                <i class="fas fa-trash me-1"></i>Eliminar
+                            </a>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
         </div>
+        {% endwith %}
         {% empty %}
         <div class="col-12">
             <div class="alert alert-info">
-                <i class="fas fa-info-circle me-2"></i>No hay ejercicios disponibles.
+                No se encontraron ejercicios.
             </div>
         </div>
         {% endfor %}
@@ -274,21 +251,22 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/api.js' %}"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('searchInput');
-    const categoryFilter = document.getElementById('categoryFilter');
+document.addEventListener('DOMContentLoaded', function() {    
+    // Filtros
     const difficultyFilter = document.getElementById('difficultyFilter');
+    const categoryFilter = document.getElementById('categoryFilter');
     const equipmentFilter = document.getElementById('equipmentFilter');
-    const myExercisesBtn = document.getElementById('myExercisesBtn');
+    const searchInput = document.getElementById('searchInput');
     const exercises = document.querySelectorAll('.exercise-item');
-
+    
+    // Función para filtrar ejercicios
     function filterExercises() {
         const searchTerm = searchInput.value.toLowerCase();
         const selectedCategory = categoryFilter.value;
         const selectedDifficulty = difficultyFilter.value;
         const selectedEquipment = equipmentFilter.value;
-        const showOnlyMine = myExercisesBtn.classList.contains('active');
 
         exercises.forEach(exercise => {
             const title = exercise.querySelector('.card-title').textContent.toLowerCase();
@@ -296,15 +274,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const category = exercise.dataset.category;
             const difficulty = exercise.dataset.difficulty;
             const equipment = exercise.dataset.equipment;
-            const creatorId = exercise.dataset.creator;
 
             const matchesSearch = title.includes(searchTerm) || description.includes(searchTerm);
             const matchesCategory = !selectedCategory || category === selectedCategory;
             const matchesDifficulty = !selectedDifficulty || difficulty === selectedDifficulty;
             const matchesEquipment = !selectedEquipment || equipment === selectedEquipment;
-            const matchesCreator = !showOnlyMine || creatorId === '{{ request.user.id }}';
 
-            if (matchesSearch && matchesCategory && matchesDifficulty && matchesEquipment && matchesCreator) {
+            if (matchesSearch && matchesCategory && matchesDifficulty && matchesEquipment) {
                 exercise.style.display = '';
             } else {
                 exercise.style.display = 'none';
@@ -316,16 +292,6 @@ document.addEventListener('DOMContentLoaded', function() {
     categoryFilter.addEventListener('change', filterExercises);
     difficultyFilter.addEventListener('change', filterExercises);
     equipmentFilter.addEventListener('change', filterExercises);
-
-    myExercisesBtn.addEventListener('click', function() {
-        this.classList.toggle('active');
-        if (this.classList.contains('active')) {
-            this.classList.replace('btn-outline-primary', 'btn-primary');
-        } else {
-            this.classList.replace('btn-primary', 'btn-outline-primary');
-        }
-        filterExercises();
-    });
 });
 </script>
 {% endblock %} 

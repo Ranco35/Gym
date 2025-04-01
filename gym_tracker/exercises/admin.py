@@ -19,20 +19,24 @@ class ExerciseCategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Exercise)
 class ExerciseAdmin(admin.ModelAdmin):
-    list_display = ('name', 'category', 'difficulty', 'creator', 'created_at')
-    search_fields = ('name', 'description', 'category__name')
-    list_filter = ('difficulty', 'category', 'creator')
+    list_display = ('name', 'muscle_group', 'difficulty', 'created_by', 'created_at')
+    search_fields = ('name', 'description', 'primary_muscles')
+    list_filter = ('difficulty', 'muscle_group', 'created_by')
     readonly_fields = ('created_at', 'updated_at')
     fieldsets = (
         (None, {
-            'fields': ('name', 'description', 'category', 'difficulty')
+            'fields': ('name', 'slug', 'description', 'muscle_group', 'difficulty')
         }),
         ('Detalles del Ejercicio', {
-            'fields': ('primary_muscles', 'secondary_muscles', 'equipment', 'instructions', 'tips'),
+            'fields': ('primary_muscles', 'secondary_muscles', 'equipment', 'tips'),
+            'classes': ('collapse',)
+        }),
+        ('Multimedia', {
+            'fields': ('image', 'video_url'),
             'classes': ('collapse',)
         }),
         ('Información de Auditoría', {
-            'fields': ('creator', 'created_at', 'updated_at'),
+            'fields': ('created_by', 'created_at', 'updated_at'),
             'classes': ('collapse',)
         }),
     )

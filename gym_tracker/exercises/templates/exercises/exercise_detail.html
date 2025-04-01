@@ -13,10 +13,16 @@
                         <i class="fas fa-arrow-left me-1"></i> Volver
                     </a>
                     {% if can_edit %}
-                    <a href="{% url 'exercises:exercise-edit' exercise.id %}" 
-                       class="btn btn-success">
-                        <i class="fas fa-edit me-1"></i> Editar
-                    </a>
+                    <div class="mb-4">
+                        <div class="btn-group">
+                            <a href="{% url 'exercises:exercise-edit-slug' exercise.slug %}" class="btn btn-outline-primary">
+                                <i class="fas fa-edit me-2"></i>Editar Ejercicio
+                            </a>
+                            <a href="{% url 'exercises:exercise-delete-slug' exercise.slug %}" class="btn btn-outline-danger">
+                                <i class="fas fa-trash-alt me-2"></i>Eliminar Ejercicio
+                            </a>
+                        </div>
+                    </div>
                     {% endif %}
                 </div>
             </div>

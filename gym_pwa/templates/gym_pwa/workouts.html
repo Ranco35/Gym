@@ -1,0 +1,334 @@
+{% extends 'gym_pwa/base.html' %}
+{% load static %}
+
+{% block title %}Mis Rutinas - GymWorl{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Mis Rutinas</h1>
+        <a href="#" class="btn btn-primary btn-add-routine">
+            <i class="fas fa-plus"></i> Nueva Rutina
+        </a>
+    </div>
+    
+    <!-- Tarjetas de estadísticas -->
+    <div class="stats-cards-container mb-4">
+        <div class="row">
+            <div class="col-4">
+                <div class="stats-card stats-card-blue">
+                    <div class="stats-card-content">
+                        <div class="stats-card-info">
+                            <h3>Rutinas Personales</h3>
+                            <h2>{{ user_trainings.count }}</h2>
+                        </div>
+                        <div class="stats-card-icon">
+                            <i class="pwa-icon pwa-icon-dumbbell"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="stats-card stats-card-green">
+                    <div class="stats-card-content">
+                        <div class="stats-card-info">
+                            <h3>Rutinas Asignadas</h3>
+                            <h2>{{ trainer_routines.count }}</h2>
+                        </div>
+                        <div class="stats-card-icon">
+                            <i class="pwa-icon pwa-icon-user"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="stats-card stats-card-cyan">
+                    <div class="stats-card-content">
+                        <div class="stats-card-info">
+                            <h3>Días Activos</h3>
+                            <h2>{{ active_days|default:"0" }}</h2>
+                        </div>
+                        <div class="stats-card-icon">
+                            <i class="pwa-icon pwa-icon-calendar"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pestañas para filtrar rutinas -->
+    <div class="routine-tabs mb-4">
+        <ul class="nav nav-tabs" id="routineTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <a class="nav-link active" id="weekly-tab" data-toggle="tab" href="#weekly" role="tab">
+                    <i class="pwa-icon pwa-icon-calendar"></i> Rutinas Semanales
+                    <span class="badge badge-primary">{{ user_routines.count }}</span>
+                </a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" id="personal-tab" data-toggle="tab" href="#personal" role="tab">
+                    <i class="pwa-icon pwa-icon-dumbbell"></i> Entrenamientos
+                    <span class="badge badge-primary">{{ user_trainings.count }}</span>
+                </a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" id="trainer-tab" data-toggle="tab" href="#trainer" role="tab">
+                    <i class="pwa-icon pwa-icon-user"></i> De Entrenador
+                    <span class="badge badge-primary">{{ trainer_routines.count }}</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+    
+    <!-- Contenido de las pestañas -->
+    <div class="tab-content" id="routineTabsContent">
+        <!-- Rutinas semanales -->
+        <div class="tab-pane fade show active" id="weekly" role="tabpanel">
+            {% if user_routines %}
+                {% for routine in user_routines %}
+                    <div class="weekly-routine-container mb-4">
+                        <div class="month-header">
+                            <div>
+                                <h4 class="mb-0">{{ routine.name }}</h4>
+                                <small class="created-at">Creado: {{ routine.created_at|date:"d/m/Y" }}</small>
+                            </div>
+                            <span class="days-badge">{{ routine.days.count }} días</span>
+                        </div>
+
+                        <div class="day-list mt-3">
+                            <!-- Días de rutina -->
+                            {% with routine_days=routine.days.all %}
+                                <p class="routine-days-description mb-3">
+                                    Rutina para los días: {% for day in routine_days %}{{ day.day_of_week }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                                </p>
+
+                                <!-- Tarjetas por día -->
+                                <div class="accordion" id="accordionWeekly{{ routine.id }}">
+                                    {% for day in routine_days %}
+                                        <div class="card routine-accordion-card mb-2">
+                                            <div class="card-header day-header" id="headingDay{{ day.id }}">
+                                                <div class="d-flex justify-content-between align-items-center" data-toggle="collapse" data-target="#collapseDay{{ day.id }}">
+                                                    <div class="day-title">
+                                                        <h5 class="mb-0">{{ day.day_of_week }}</h5>
+                                                        {% if day.focus %}
+                                                            <div class="day-focus">{{ day.focus }}</div>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="d-flex align-items-center">
+                                                        <span class="badge badge-info mr-2">{{ day.exercises.count }} ejercicios</span>
+                                                        <div class="day-expand-icon">
+                                                            <i class="fas fa-chevron-down"></i>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div id="collapseDay{{ day.id }}" class="collapse" aria-labelledby="headingDay{{ day.id }}" data-parent="#accordionWeekly{{ routine.id }}">
+                                                <div class="card-body">
+                                                    <!-- Lista de ejercicios del día -->
+                                                    <div class="exercise-list">
+                                                        {% for exercise in day.exercises.all %}
+                                                            <div class="exercise-item">
+                                                                <div class="exercise-title">
+                                                                    {{ exercise.exercise.name }}
+                                                                </div>
+                                                                <div class="exercise-details">
+                                                                    <span class="badge badge-secondary">{{ exercise.sets }} series</span>
+                                                                    <span class="badge badge-secondary">{{ exercise.reps }} repeticiones</span>
+                                                                    {% if exercise.weight %}
+                                                                        <span class="badge badge-secondary">{{ exercise.weight }}</span>
+                                                                    {% endif %}
+                                                                </div>
+                                                            </div>
+                                                        {% endfor %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endwith %}
+                        </div>
+
+                        <div class="weekly-routine-actions mt-3 d-flex">
+                            <a href="/pwa/workout/{{ routine.id }}/?type=weekly" class="btn btn-primary">
+                                <i class="fas fa-play"></i> Comenzar
+                            </a>
+                            
+                            <a href="/pwa/routine/{{ routine.id }}/" class="btn btn-outline-secondary ml-2">
+                                <i class="fas fa-eye"></i> Ver
+                            </a>
+                            
+                            <a href="/workouts/{{ routine.id }}/edit/" class="btn btn-outline-secondary ml-2">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="alert alert-info">
+                    No tienes rutinas semanales creadas aún.
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Rutinas personales -->
+        <div class="tab-pane fade" id="personal" role="tabpanel">
+            {% if user_trainings %}
+                <!-- Vista de calendario mensual -->
+                <div class="month-header mb-3">
+                    <h4>marzo 2025</h4>
+                    <span class="days-badge">5 días</span>
+                </div>
+                
+                <!-- Acordeón de rutinas por semanas -->
+                <div class="accordion" id="accordionRoutines">
+                    {% for training in user_trainings %}
+                        <div class="card routine-accordion-card mb-3">
+                            <div class="card-header" id="heading{{ training.id }}">
+                                <div class="d-flex justify-content-between align-items-center" data-toggle="collapse" data-target="#collapse{{ training.id }}">
+                                    <div>
+                                        <h5 class="mb-0">{{ training.exercise.name }}</h5>
+                                        <div class="routine-days">
+                                            Rutina para los días: {{ training.day_of_week }}
+                                        </div>
+                                    </div>
+                                    <div class="routine-expand-icon">
+                                        <i class="fas fa-chevron-down"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="collapse{{ training.id }}" class="collapse" aria-labelledby="heading{{ training.id }}" data-parent="#accordionRoutines">
+                                <div class="card-body">
+                                    <div class="routine-details">
+                                        <!-- Detalles del ejercicio -->
+                                        <div class="exercise-details mb-3">
+                                            <div class="exercise-row">
+                                                <div class="exercise-label">Ejercicio:</div>
+                                                <div class="exercise-value">{{ training.exercise.name }}</div>
+                                            </div>
+                                            <div class="exercise-row">
+                                                <div class="exercise-label">Series:</div>
+                                                <div class="exercise-value">{{ training.total_sets }}</div>
+                                            </div>
+                                            <div class="exercise-row">
+                                                <div class="exercise-label">Repeticiones:</div>
+                                                <div class="exercise-value">{{ training.reps }}</div>
+                                            </div>
+                                            {% if training.weight %}
+                                            <div class="exercise-row">
+                                                <div class="exercise-label">Peso:</div>
+                                                <div class="exercise-value">{{ training.weight }} kg</div>
+                                            </div>
+                                            {% endif %}
+                                            <div class="exercise-row">
+                                                <div class="exercise-label">Descanso:</div>
+                                                <div class="exercise-value">{{ training.rest_time }} seg</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="exercise-progress">
+                                            <div class="progress-bar" style="width: 25%"></div>
+                                            <div class="progress-text">1/4 completado</div>
+                                        </div>
+                                        
+                                        <div class="routine-actions mt-3">
+                                            <a href="/pwa/workout/{{ training.id }}/?type=personal" class="btn btn-primary btn-block">
+                                                Comenzar Entrenamiento
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    No tienes entrenamientos personales creados aún.
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Rutinas de entrenador -->
+        <div class="tab-pane fade" id="trainer" role="tabpanel">
+            {% if trainer_routines %}
+                <div class="accordion" id="accordionTrainer">
+                    {% for routine in trainer_routines %}
+                        <div class="card routine-accordion-card mb-3">
+                            <div class="card-header" id="headingTrainer{{ routine.id }}">
+                                <div class="d-flex justify-content-between align-items-center" data-toggle="collapse" data-target="#collapseTrainer{{ routine.id }}">
+                                    <div>
+                                        <h5 class="mb-0">{{ routine.name }}</h5>
+                                        <div class="trainer-info">
+                                            <i class="pwa-icon pwa-icon-user"></i> {{ routine.created_by.get_full_name }}
+                                        </div>
+                                    </div>
+                                    <div class="routine-expand-icon">
+                                        <i class="fas fa-chevron-down"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="collapseTrainer{{ routine.id }}" class="collapse" aria-labelledby="headingTrainer{{ routine.id }}" data-parent="#accordionTrainer">
+                                <div class="card-body">
+                                    {% if routine.description %}
+                                        <p>{{ routine.description }}</p>
+                                    {% endif %}
+                                    
+                                    {% if routine.days.count > 0 %}
+                                        <div class="routine-days-list mb-3">
+                                            <h6>Días de entrenamiento:</h6>
+                                            <ul>
+                                                {% for day in routine.days.all %}
+                                                    <li>{{ day.get_day_display }} - {{ day.exercises_count }} ejercicios</li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <div class="routine-actions">
+                                        <a href="/pwa/workout/{{ routine.id }}/?type=trainer" class="btn btn-primary btn-block">
+                                            Comenzar Entrenamiento
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    No tienes rutinas asignadas por un entrenador.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Manejo de colapso de acordeón
+        const accordionHeaders = document.querySelectorAll('.routine-accordion-card .card-header, .day-header');
+        accordionHeaders.forEach(header => {
+            header.addEventListener('click', function() {
+                const icon = this.querySelector('.routine-expand-icon i, .day-expand-icon i');
+                if (icon) {
+                    icon.classList.toggle('fa-chevron-down');
+                    icon.classList.toggle('fa-chevron-up');
+                }
+            });
+        });
+
+        // Activar la primera pestaña
+        const firstTab = document.querySelector('#routineTabs .nav-link');
+        if (firstTab) {
+            firstTab.click();
+        }
+    });
+</script>
+{% endblock %} 

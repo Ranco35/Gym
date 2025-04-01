@@ -1095,7 +1095,7 @@ def exercise_list(request):
     """
     Redirecciona a la vista principal de ejercicios.
     """
-    return redirect('exercises:exercise-list')
+    return redirect('/exercises/')
 
 @login_required
 def routine_list(request):

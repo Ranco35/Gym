@@ -1,0 +1,100 @@
+{
+    "name": "GymWorl",
+    "short_name": "GymWorl",
+    "description": "Plataforma de entrenamiento personalizado",
+    "start_url": "/pwa/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#007bff",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "/static/gym_pwa/icons/icon-72x72.png",
+            "sizes": "72x72",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/static/gym_pwa/icons/icon-96x96.png",
+            "sizes": "96x96",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/static/gym_pwa/icons/icon-128x128.png",
+            "sizes": "128x128",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/static/gym_pwa/icons/icon-144x144.png",
+            "sizes": "144x144",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/static/gym_pwa/icons/icon-152x152.png",
+            "sizes": "152x152",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/static/gym_pwa/icons/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/static/gym_pwa/icons/icon-384x384.png",
+            "sizes": "384x384",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/static/gym_pwa/icons/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/static/gym_pwa/icons/maskable-icon.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Iniciar Entrenamiento",
+            "short_name": "Entrenar",
+            "description": "Comenzar una rutina de entrenamiento",
+            "url": "/pwa/workouts/",
+            "icons": [{ "src": "/static/gym_pwa/icons/shortcut-workout.png", "sizes": "192x192" }]
+        },
+        {
+            "name": "Mis Estadísticas",
+            "short_name": "Estadísticas",
+            "description": "Ver mis estadísticas y progreso",
+            "url": "/pwa/stats/",
+            "icons": [{ "src": "/static/gym_pwa/icons/shortcut-stats.png", "sizes": "192x192" }]
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "/static/gym_pwa/screenshots/workout.png",
+            "sizes": "1280x720",
+            "type": "image/png",
+            "platform": "wide",
+            "label": "Pantalla de entrenamiento"
+        },
+        {
+            "src": "/static/gym_pwa/screenshots/mobile.png",
+            "sizes": "750x1334",
+            "type": "image/png",
+            "platform": "narrow",
+            "label": "Vista móvil"
+        }
+    ],
+    "categories": ["fitness", "health", "sports"],
+    "prefer_related_applications": false
+} 

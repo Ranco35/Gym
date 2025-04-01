@@ -1,0 +1,72 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#007bff">
+    <title>{% block title %}GymWorl{% endblock %}</title>
+    
+    <!-- Favicon y íconos para PWA -->
+    <link rel="shortcut icon" href="{% static 'gym_pwa/img/icons/favicon.ico' %}">
+    <link rel="apple-touch-icon" href="{% static 'gym_pwa/img/icons/icon-192x192.png' %}">
+    
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="{% static 'gym_pwa/manifest.json' %}">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'gym_pwa/css/pwa-styles.css' %}">
+    {% block styles %}{% endblock %}
+</head>
+<body>
+    <div class="pwa-content-wrapper">
+        {% block content %}{% endblock %}
+    </div>
+    
+    {% if user.is_authenticated %}
+    <nav class="pwa-navbar">
+        <a href="{% url 'gym_pwa:home' %}" class="pwa-nav-item {% if request.path == '/pwa/' %}active{% endif %}">
+            <i class="pwa-icon pwa-icon-home"></i>
+            <span>Inicio</span>
+        </a>
+        <a href="{% url 'gym_pwa:workouts' %}" class="pwa-nav-item {% if '/pwa/workouts' in request.path %}active{% endif %}">
+            <i class="pwa-icon pwa-icon-dumbbell"></i>
+            <span>Rutinas</span>
+        </a>
+        <a href="{% url 'gym_pwa:exercises' %}" class="pwa-nav-item {% if '/pwa/exercises' in request.path %}active{% endif %}">
+            <i class="pwa-icon pwa-icon-running"></i>
+            <span>Ejercicios</span>
+        </a>
+        <a href="{% url 'gym_pwa:profile' %}" class="pwa-nav-item {% if '/pwa/profile' in request.path %}active{% endif %}">
+            <i class="pwa-icon pwa-icon-user"></i>
+            <span>Perfil</span>
+        </a>
+    </nav>
+    {% endif %}
+    
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="{% static 'gym_pwa/js/pwa-scripts.js' %}"></script>
+    
+    <!-- Registro del Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/pwa/sw.js')
+                    .then(function(registration) {
+                        console.log('Service Worker registrado con éxito:', registration.scope);
+                    })
+                    .catch(function(error) {
+                        console.log('Error al registrar el Service Worker:', error);
+                    });
+            });
+        }
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html> 

@@ -1,0 +1,126 @@
+{% extends 'gym_pwa/base.html' %}
+{% load static %}
+
+{% block title %}Mi Perfil - GymWorl{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="profile-header mb-4">
+        <h1 class="mb-2">Mi Perfil</h1>
+        <div class="user-info">
+            <div class="avatar-container">
+                {% if user.profile.photo %}
+                    <img src="{{ user.profile.photo.url }}" alt="Foto de perfil" class="user-avatar">
+                {% else %}
+                    <div class="default-avatar">
+                        {{ user.first_name|first }}{{ user.last_name|first }}
+                    </div>
+                {% endif %}
+            </div>
+            <div class="user-details">
+                <h2 class="user-name">{{ user.get_full_name }}</h2>
+                <p class="user-email">{{ user.email }}</p>
+                {% if user.profile.date_joined %}
+                    <p class="user-member-since">Miembro desde: {{ user.date_joined|date:"d/m/Y" }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario para actualizar la foto de perfil -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h3 class="card-title">Foto de perfil</h3>
+            <form method="post" action="{% url 'gym_pwa:update_profile_photo' %}" enctype="multipart/form-data" class="profile-photo-form">
+                {% csrf_token %}
+                <div class="form-group mb-3">
+                    <label for="id_photo">Selecciona una nueva foto:</label>
+                    <input type="file" name="photo" id="id_photo" class="form-control-file" accept="image/*">
+                    <small class="form-text text-muted">
+                        Formatos soportados: JPG, PNG, GIF, WebP. La imagen se convertirá automáticamente a WebP para un mejor rendimiento.
+                    </small>
+                </div>
+                <button type="submit" class="btn btn-primary">Actualizar foto</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h3 class="card-title">Estadísticas</h3>
+            <div class="stats-container">
+                <div class="stat-item">
+                    <span class="stat-value">{{ completed_workouts }}</span>
+                    <span class="stat-label">Entrenamientos completados</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if recent_workouts %}
+        <div class="card mb-4">
+            <div class="card-body">
+                <h3 class="card-title">Entrenamientos recientes</h3>
+                <div class="recent-workouts">
+                    {% for workout in recent_workouts %}
+                        <div class="recent-workout-item">
+                            <div class="workout-details">
+                                <h4 class="workout-name">{{ workout.name }}</h4>
+                                <p class="workout-date">{{ workout.created_at|date:"d/m/Y" }}</p>
+                            </div>
+                            <a href="/pwa/workout/{{ workout.id }}/?type=personal" class="btn btn-sm btn-primary">
+                                Repetir
+                            </a>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h3 class="card-title">Opciones</h3>
+            <div class="settings-list">
+                <a href="#" class="settings-item" id="clear-cache">
+                    <i class="pwa-icon pwa-icon-refresh"></i>
+                    <span>Limpiar caché</span>
+                </a>
+                <a href="/logout/" class="settings-item">
+                    <i class="pwa-icon pwa-icon-logout"></i>
+                    <span>Cerrar sesión</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const clearCacheButton = document.getElementById('clear-cache');
+        
+        if (clearCacheButton) {
+            clearCacheButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                if ('caches' in window) {
+                    caches.keys().then(function(cacheNames) {
+                        return Promise.all(
+                            cacheNames.map(function(cacheName) {
+                                return caches.delete(cacheName);
+                            })
+                        );
+                    }).then(function() {
+                        alert('Caché limpiada correctamente. Los datos se volverán a cargar.');
+                        window.location.reload(true);
+                    });
+                } else {
+                    alert('Tu navegador no soporta la limpieza de caché.');
+                }
+            });
+        }
+    });
+</script>
+{% endblock %} 

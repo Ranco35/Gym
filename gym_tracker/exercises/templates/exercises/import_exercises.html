@@ -4,32 +4,38 @@
 {% block title %}Importar Ejercicios{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3">Importar Ejercicios</h1>
-        <a href="{% url 'exercises:exercise-list' %}" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left me-2"></i>Volver
-        </a>
-    </div>
-
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow-sm">
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
                 <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Subir archivo Excel</h5>
+                    <h2 class="mb-0">Importar Ejercicios</h2>
                 </div>
                 <div class="card-body">
-                    <div class="mb-4">
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i>
-                            <div class="fw-bold">Instrucciones:</div>
-                            <ol class="mb-0 ps-4">
-                                <li>Descarga la <a href="{% url 'exercises:export-template' %}" class="fw-bold">plantilla Excel</a> con el formato requerido.</li>
-                                <li>Completa la información de los ejercicios en el archivo.</li>
-                                <li>Sube el archivo para importar los ejercicios a la base de datos.</li>
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-info-circle me-2"></i>Información
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p>Para importar ejercicios, sigue los siguientes pasos:</p>
+                            <ol>
+                                <li>Descarga la plantilla de ejercicios en el formato que prefieras:
+                                    <div class="d-flex gap-2 mt-2">
+                                        <a href="{% url 'exercises:export-template' %}?format=json" class="btn btn-primary">
+                                            <i class="fas fa-file-code me-1"></i> Plantilla JSON
+                                        </a>
+                                        <a href="{% url 'exercises:export-template' %}" class="btn btn-success">
+                                            <i class="fas fa-file-excel me-1"></i> Plantilla Excel
+                                        </a>
+                                    </div>
+                                </li>
+                                <li>Rellena la plantilla con la información de tus ejercicios.</li>
+                                <li>Asegúrate de que cada ejercicio tenga un <strong>slug único</strong>. El slug se usa como identificador para actualizar ejercicios existentes.</li>
+                                <li>Sube el archivo a través del formulario de abajo.</li>
                             </ol>
-                            <hr class="my-2">
-                            <p class="mb-0">También puedes <a href="{% url 'exercises:export-exercises' %}" class="fw-bold">descargar los ejercicios existentes</a> en formato Excel para modificarlos o usarlos como referencia.</p>
+                            <p class="mb-0"><strong>Nota:</strong> Si un ejercicio ya existe (mismo slug), se actualizará con la nueva información.</p>
                         </div>
                     </div>
 
@@ -44,24 +50,290 @@
                         </ul>
                     </div>
 
-                    <form method="post" enctype="multipart/form-data">
-                        {% csrf_token %}
-                        
-                        <div class="mb-4">
-                            <label for="excel_file" class="form-label">Archivo Excel</label>
-                            <input type="file" class="form-control" id="excel_file" name="excel_file" accept=".xlsx" required>
-                            <div class="form-text">Solo se aceptan archivos con extensión .xlsx</div>
+                    <form id="importForm" class="mb-4">
+                        <div class="form-group mb-3">
+                            <label for="exerciseFile" class="form-label">Archivo de ejercicios (JSON o Excel)</label>
+                            <div class="custom-file-upload" id="dropzone">
+                                <div class="drop-message text-center p-5 border border-dashed rounded">
+                                    <i class="fas fa-upload mb-3 fa-3x text-primary"></i>
+                                    <p class="mb-2">Arrastra y suelta tu archivo aquí</p>
+                                    <p class="small text-muted mb-3">o</p>
+                                    <button type="button" id="browseButton" class="btn btn-primary">Seleccionar archivo</button>
+                                    <input type="file" id="exerciseFile" name="exerciseFile" accept=".json,.xlsx,.xls" class="d-none">
+                                </div>
+                                <div id="file-info" class="mt-2 d-none">
+                                    <div class="alert alert-success">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <i class="fas fa-file-alt me-2"></i> <span id="selected-filename">No hay archivo seleccionado</span>
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" id="remove-file">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        
                         <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-upload me-2"></i>Importar Ejercicios
+                            <button type="submit" id="importButton" class="btn btn-primary" disabled>
+                                <i class="fas fa-file-import me-2"></i>Importar Ejercicios
                             </button>
                         </div>
                     </form>
+
+                    <div id="importResult" class="d-none">
+                        <div class="card mb-4">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0">Resultado de la importación</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <p><strong>Ejercicios importados:</strong> <span id="imported-count">0</span></p>
+                                    <p><strong>Ejercicios actualizados:</strong> <span id="updated-count">0</span></p>
+                                </div>
+                                <div id="errors-container" class="d-none">
+                                    <h6 class="text-danger">Errores:</h6>
+                                    <ul id="errors-list" class="small"></ul>
+                                </div>
+                                <div id="request-debug" class="d-none mt-4">
+                                    <h6 class="text-info">Información de depuración:</h6>
+                                    <div class="border p-3 bg-light">
+                                        <p><strong>URL:</strong> <span id="debug-url"></span></p>
+                                        <p><strong>Método:</strong> <span id="debug-method"></span></p>
+                                        <p><strong>Estado:</strong> <span id="debug-status"></span></p>
+                                        <div>
+                                            <strong>Datos enviados:</strong>
+                                            <pre id="debug-request" class="small bg-dark text-white p-2 mt-1" style="max-height: 200px; overflow: auto;"></pre>
+                                        </div>
+                                        <div>
+                                            <strong>Respuesta recibida:</strong>
+                                            <pre id="debug-response" class="small bg-dark text-white p-2 mt-1" style="max-height: 200px; overflow: auto;"></pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-grid">
+                            <button type="button" id="newImportButton" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Nueva Importación
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/api.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('exerciseFile');
+    const browseButton = document.getElementById('browseButton');
+    const importButton = document.getElementById('importButton');
+    const importForm = document.getElementById('importForm');
+    const importResult = document.getElementById('importResult');
+    const fileInfo = document.getElementById('file-info');
+    const selectedFilename = document.getElementById('selected-filename');
+    const removeFileButton = document.getElementById('remove-file');
+    const importedCount = document.getElementById('imported-count');
+    const updatedCount = document.getElementById('updated-count');
+    const errorsContainer = document.getElementById('errors-container');
+    const errorsList = document.getElementById('errors-list');
+    const newImportButton = document.getElementById('newImportButton');
+    
+    // Elementos de depuración
+    const requestDebug = document.getElementById('request-debug');
+    const debugUrl = document.getElementById('debug-url');
+    const debugMethod = document.getElementById('debug-method');
+    const debugStatus = document.getElementById('debug-status');
+    const debugRequest = document.getElementById('debug-request');
+    const debugResponse = document.getElementById('debug-response');
+    
+    let fileData = null;
+    
+    // Verificar si estamos en modo de desarrollo
+    const isDevelopment = window.location.hostname === 'localhost' || 
+                          window.location.hostname === '127.0.0.1' ||
+                          window.location.hostname.includes('192.168.');
+    
+    // Función para actualizar UI cuando se selecciona archivo
+    function updateFileSelection(file) {
+        if (file) {
+            selectedFilename.textContent = file.name;
+            fileInfo.classList.remove('d-none');
+            importButton.disabled = false;
+        } else {
+            fileInfo.classList.add('d-none');
+            importButton.disabled = true;
+        }
+    }
+    
+    // Evento para arrastrar sobre la zona
+    dropzone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.add('bg-light');
+    });
+    
+    // Evento para salir de la zona de arrastre
+    dropzone.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.remove('bg-light');
+    });
+    
+    // Evento de soltar archivo
+    dropzone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.remove('bg-light');
+        
+        if (e.dataTransfer.files.length) {
+            fileInput.files = e.dataTransfer.files;
+            updateFileSelection(fileInput.files[0]);
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    fileData = JSON.parse(e.target.result);
+                    console.log('Datos JSON cargados:', fileData);
+                } catch (error) {
+                    alert('El archivo no contiene JSON válido');
+                    fileData = null;
+                    fileInput.value = '';
+                    updateFileSelection(null);
+                }
+            };
+            reader.readAsText(fileInput.files[0]);
+        }
+    });
+    
+    // Botón para seleccionar archivo
+    browseButton.addEventListener('click', function() {
+        fileInput.click();
+    });
+    
+    // Evento de cambio de archivo
+    fileInput.addEventListener('change', function() {
+        if (fileInput.files.length) {
+            updateFileSelection(fileInput.files[0]);
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    fileData = JSON.parse(e.target.result);
+                    console.log('Datos JSON cargados:', fileData);
+                } catch (error) {
+                    alert('El archivo no contiene JSON válido');
+                    fileData = null;
+                    fileInput.value = '';
+                    updateFileSelection(null);
+                }
+            };
+            reader.readAsText(fileInput.files[0]);
+        }
+    });
+    
+    // Botón para remover archivo
+    removeFileButton.addEventListener('click', function() {
+        fileInput.value = '';
+        fileData = null;
+        updateFileSelection(null);
+    });
+    
+    // Enviar formulario
+    importForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        if (!fileData) {
+            alert('Por favor selecciona un archivo válido');
+            return;
+        }
+        
+        importButton.disabled = true;
+        importButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Importando...';
+        
+        try {
+            // Guardar datos para depuración
+            if (isDevelopment) {
+                debugUrl.textContent = '/exercises/import/';
+                debugMethod.textContent = 'POST';
+                debugRequest.textContent = JSON.stringify(fileData, null, 2);
+            }
+            
+            const result = await ExerciseAPI.import(fileData);
+            
+            // Mostrar resultados
+            importedCount.textContent = result.imported;
+            updatedCount.textContent = result.updated;
+            
+            // Mostrar errores si los hay
+            if (result.errors && result.errors.length > 0) {
+                errorsContainer.classList.remove('d-none');
+                errorsList.innerHTML = '';
+                
+                result.errors.forEach(error => {
+                    const li = document.createElement('li');
+                    li.textContent = `${error.data}: ${JSON.stringify(error.errors)}`;
+                    errorsList.appendChild(li);
+                });
+            } else {
+                errorsContainer.classList.add('d-none');
+            }
+            
+            // Actualizar información de depuración
+            if (isDevelopment) {
+                debugStatus.textContent = '200 OK';
+                debugResponse.textContent = JSON.stringify(result, null, 2);
+                requestDebug.classList.remove('d-none');
+            }
+            
+            // Mostrar resultados y ocultar formulario
+            importForm.classList.add('d-none');
+            importResult.classList.remove('d-none');
+            
+        } catch (error) {
+            // Actualizar información de depuración en caso de error
+            if (isDevelopment) {
+                debugStatus.textContent = error.message || 'Error desconocido';
+                debugResponse.textContent = error.stack || 'No hay detalles adicionales';
+                requestDebug.classList.remove('d-none');
+            }
+            
+            alert('Error al importar ejercicios: ' + error.message);
+            importButton.disabled = false;
+            importButton.innerHTML = '<i class="fas fa-file-import me-2"></i>Importar Ejercicios';
+        }
+    });
+    
+    // Botón para nueva importación
+    newImportButton.addEventListener('click', function() {
+        importForm.classList.remove('d-none');
+        importResult.classList.add('d-none');
+        fileInput.value = '';
+        fileData = null;
+        updateFileSelection(null);
+        importButton.disabled = false;
+        importButton.innerHTML = '<i class="fas fa-file-import me-2"></i>Importar Ejercicios';
+        
+        // Ocultar sección de depuración
+        if (isDevelopment) {
+            requestDebug.classList.add('d-none');
+        }
+    });
+});
+</script>
+<style>
+.border-dashed {
+    border-style: dashed !important;
+}
+.custom-file-upload {
+    cursor: pointer;
+}
+</style>
 {% endblock %} 

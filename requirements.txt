@@ -18,6 +18,7 @@ django-cors-headers==4.3.1
 django-debug-toolbar==4.3.0
 django-environ==0.11.2
 django-jazzmin==3.0.1
+django-pwa==2.0.1
 django-storages==1.14.5
 djangorestframework==3.14.0
 djangorestframework-simplejwt==5.3.1

@@ -1,0 +1,302 @@
+{% extends 'gym_pwa/base.html' %}
+{% load static %}
+
+{% block title %}{{ routine.name }} - GymWorl{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="routine-detail-header">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h1 class="mb-0">{{ routine.name }}</h1>
+            <div class="routine-detail-actions">
+                <a href="/pwa/workouts/" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+            </div>
+        </div>
+        <p class="routine-days-description">
+            Rutina para los días: 
+            {% for day in routine.days.all %}
+                {{ day.day_of_week }}{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+        </p>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-6">
+                    <h5>Información de la Rutina</h5>
+                    <div class="routine-info-item">
+                        <span class="info-label">Días de entrenamiento:</span>
+                        <div class="day-badges">
+                            {% for day in routine.days.all %}
+                                <span class="badge badge-secondary">{{ day.day_of_week }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="routine-info-item">
+                        <span class="info-label">Datos adicionales:</span>
+                        <div class="info-value">
+                            <div>Creada: {{ routine.created_at|date:"d/m/Y" }}</div>
+                            <div>Actualizada: {{ routine.updated_at|date:"d/m/Y" }}</div>
+                        </div>
+                    </div>
+
+                    <div class="routine-info-item">
+                        <span class="info-label">Ejercicios totales:</span>
+                        <div class="info-value">
+                            {% with total_exercises=routine.get_total_exercises %}
+                                {{ total_exercises }} ejercicios
+                            {% endwith %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-6 text-right">
+                    <div class="routine-action-buttons">
+                        <a href="#" class="btn btn-primary btn-block mb-2 btn-start-workout">
+                            <i class="fas fa-play"></i> Comenzar Rutina
+                        </a>
+                        <a href="/workouts/{{ routine.id }}/edit/" class="btn btn-outline-secondary btn-block">
+                            <i class="fas fa-edit"></i> Editar Rutina
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="routine-detail-tabs">
+        <ul class="nav nav-tabs" id="routineDetailTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <a class="nav-link active" id="exercises-tab" data-toggle="tab" href="#exercises" role="tab">
+                    Días y Ejercicios
+                </a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" id="progress-tab" data-toggle="tab" href="#progress" role="tab">
+                    Progreso
+                </a>
+            </li>
+        </ul>
+        
+        <div class="tab-content mt-3" id="routineDetailTabsContent">
+            <!-- Pestaña de ejercicios por día -->
+            <div class="tab-pane fade show active" id="exercises" role="tabpanel">
+                {% for day in routine.days.all %}
+                    <div class="day-section mb-3">
+                        <div class="day-header" data-toggle="collapse" data-target="#dayContent{{ day.id }}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="day-title">
+                                    <h3>{{ day.day_of_week }}</h3>
+                                    {% if day.focus %}
+                                        <span class="day-focus">{{ day.focus }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <span class="badge badge-info mr-2">{{ day.exercises.count }} ejercicios</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="collapse show" id="dayContent{{ day.id }}">
+                            <div class="exercise-table">
+                                <div class="exercise-table-header">
+                                    <div class="row">
+                                        <div class="col-5">Ejercicio</div>
+                                        <div class="col-2 text-center">Series</div>
+                                        <div class="col-2 text-center">Repeticiones</div>
+                                        <div class="col-2 text-center">Peso (kg)</div>
+                                        <div class="col-1 text-center">Descanso</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="exercise-table-body">
+                                    {% for exercise in day.exercises.all %}
+                                        <div class="exercise-row">
+                                            <div class="row align-items-center">
+                                                <div class="col-5">
+                                                    <div class="exercise-name">{{ exercise.exercise.name }}</div>
+                                                    {% if exercise.notes %}
+                                                        <div class="exercise-notes">{{ exercise.notes }}</div>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="col-2 text-center">{{ exercise.sets }}</div>
+                                                <div class="col-2 text-center">{{ exercise.reps }}</div>
+                                                <div class="col-2 text-center">
+                                                    {% if exercise.weight %}
+                                                        {{ exercise.weight }}
+                                                    {% else %}
+                                                        -
+                                                    {% endif %}
+                                                </div>
+                                                <div class="col-1 text-center">{{ exercise.rest_time }}s</div>
+                                            </div>
+                                        </div>
+                                    {% empty %}
+                                        <div class="exercise-row">
+                                            <div class="text-center py-3">No hay ejercicios configurados para este día</div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pestaña de progreso -->
+            <div class="tab-pane fade" id="progress" role="tabpanel">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Progreso de la rutina</h5>
+                        <p>Aquí se mostrará el progreso y estadísticas de esta rutina.</p>
+                        
+                        <div class="progress-stats">
+                            <div class="row">
+                                <div class="col-4">
+                                    <div class="stat-card">
+                                        <div class="stat-value">0</div>
+                                        <div class="stat-label">Sesiones completadas</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="stat-card">
+                                        <div class="stat-value">0%</div>
+                                        <div class="stat-label">Cumplimiento</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="stat-card">
+                                        <div class="stat-value">0</div>
+                                        <div class="stat-label">Ejercicios realizados</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="fixed-bottom-container">
+        <div class="fixed-bottom-actions">
+            <a href="#" class="btn btn-lg btn-primary btn-block btn-start-workout">
+                <i class="fas fa-play"></i> Comenzar Entrenamiento
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para iniciar entrenamiento -->
+<div class="modal fade" id="startWorkoutModal" tabindex="-1" role="dialog" aria-labelledby="startWorkoutModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="startWorkoutModalLabel">Iniciar Entrenamiento</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="startWorkoutForm" action="/pwa/workout/{{ routine.id }}/" method="get">
+                    <input type="hidden" name="type" value="weekly">
+                    
+                    <div class="form-group">
+                        <label for="workout_day">Elige el día a entrenar:</label>
+                        <select class="form-control" id="workout_day" name="day" required>
+                            <option value="" selected disabled>Selecciona un día</option>
+                            {% for day in routine.days.all %}
+                                <option value="{{ day.id }}">{{ day.day_of_week }}{% if day.focus %} - {{ day.focus }}{% endif %}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="workout_date">Fecha del entrenamiento:</label>
+                        <input type="date" class="form-control" id="workout_date" name="date" required>
+                    </div>
+                    
+                    <div class="workout-mode-selector mt-4">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> Selecciona cómo quieres ejecutar tu entrenamiento:
+                        </div>
+                        
+                        <div class="workout-mode">
+                            <input type="radio" id="mode_bulk" name="mode" value="bulk" checked>
+                            <label for="mode_bulk" class="workout-mode-option">
+                                <div class="mode-icon">
+                                    <i class="fas fa-list-ul"></i>
+                                </div>
+                                <div class="mode-details">
+                                    <h5>Registrar todos los ejercicios de una vez</h5>
+                                    <p>Registra todos los ejercicios sin modificar</p>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <div class="workout-mode mt-3">
+                            <input type="radio" id="mode_step" name="mode" value="step">
+                            <label for="mode_step" class="workout-mode-option">
+                                <div class="mode-icon">
+                                    <i class="fas fa-play-circle"></i>
+                                </div>
+                                <div class="mode-details">
+                                    <h5>Ejecutar entrenamiento paso a paso</h5>
+                                    <p>Modificar series, reps y peso durante el entrenamiento</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="submit" form="startWorkoutForm" class="btn btn-primary">Comenzar Entrenamiento</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Manejo de colapso de días
+        const dayHeaders = document.querySelectorAll('.day-header');
+        dayHeaders.forEach(header => {
+            header.addEventListener('click', function() {
+                const icon = this.querySelector('.fas');
+                if (icon) {
+                    icon.classList.toggle('fa-chevron-down');
+                    icon.classList.toggle('fa-chevron-up');
+                }
+            });
+        });
+
+        // Inicializar la fecha actual en el selector de fecha
+        const dateInput = document.getElementById('workout_date');
+        if (dateInput) {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            dateInput.value = `${year}-${month}-${day}`;
+        }
+
+        // Modificar los botones de comenzar para que abran el modal
+        const startButtons = document.querySelectorAll('.btn-start-workout');
+        startButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                $('#startWorkoutModal').modal('show');
+            });
+        });
+    });
+</script>
+{% endblock %} 

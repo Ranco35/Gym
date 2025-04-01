@@ -36,12 +36,15 @@ urlpatterns = [
     # API de gestión de usuarios
     path('api/users/', include('gym_tracker.users.urls', namespace='users')),
     path('stats/', include('gym_tracker.stats.urls')),  # Nueva URL para estadísticas
+    
+    # Rutas para la PWA
+    path('pwa/', include('gym_pwa.urls', namespace='pwa')),
+    path('', include('pwa.urls')),  # Para manifest.json y service worker
 ]
 
-# Archivos estáticos (solo en desarrollo)
-if settings.DEBUG:
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Siempre servir archivos estáticos para el desarrollo local
+urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 # Añadimos la ruta principal para renderizar la página principal con el dashboard
 urlpatterns += [

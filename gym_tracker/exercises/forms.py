@@ -38,20 +38,22 @@ class ExerciseForm(forms.ModelForm):
         model = Exercise
         fields = [
             'name', 
+            'slug',
             'description',
+            'muscle_group',
             'primary_muscles',
             'secondary_muscles', 
-            'instructions', 
             'tips', 
-            'category', 
             'equipment', 
             'difficulty', 
-            'youtube_link',
+            'video_url',
             'image'
         ]
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'slug': forms.TextInput(attrs={'class': 'form-control', 'required': False}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'muscle_group': forms.Select(attrs={'class': 'form-select'}),
             'primary_muscles': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Ejemplo: Pectorales, Deltoides anterior'
@@ -60,20 +62,14 @@ class ExerciseForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'Ejemplo: Tríceps, Deltoides medio'
             }),
-            'instructions': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 4,
-                'placeholder': 'Describe paso a paso cómo realizar el ejercicio correctamente'
-            }),
             'tips': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 3,
                 'placeholder': 'Consejos adicionales para mejorar la ejecución del ejercicio'
             }),
-            'category': forms.Select(attrs={'class': 'form-select'}),
-            'equipment': forms.Select(attrs={'class': 'form-select'}),
+            'equipment': forms.TextInput(attrs={'class': 'form-control'}),
             'difficulty': forms.Select(attrs={'class': 'form-select'}),
-            'youtube_link': forms.URLInput(attrs={
+            'video_url': forms.URLInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'https://www.youtube.com/watch?v=...'
             }),

@@ -1,0 +1,84 @@
+{% extends 'gym_pwa/base.html' %}
+{% load static %}
+
+{% block title %}Seleccionar Rutina - GymWorl{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1 class="display-4">Seleccionar Rutina</h1>
+        <button class="btn btn-light btn-close-icon" onclick="window.history.back()">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
+    <div class="training-date-info mb-4 text-center">
+        <p class="lead">Entrenamiento para: <strong>{{ training_date }}</strong></p>
+    </div>
+    
+    <!-- Mis rutinas semanales -->
+    <div class="routine-section mb-4">
+        <div class="section-header mb-3">
+            <h2>Mis Rutinas</h2>
+        </div>
+
+        {% if user_routines %}
+            <div class="routine-list">
+                {% for routine in user_routines %}
+                    <div class="routine-card">
+                        <div class="routine-card-body">
+                            <h3 class="routine-card-title">{{ routine.name }}</h3>
+                            <div class="routine-days-badges">
+                                {% for day in routine.days.all %}
+                                    <span class="badge badge-secondary">{{ day.day_of_week }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="routine-card-actions">
+                            <a href="/pwa/routine/{{ routine.id }}/start/?date={{ training_date }}" class="btn btn-primary btn-block">
+                                Seleccionar y elegir día
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>No tienes rutinas creadas.</p>
+                <a href="/workouts/create/" class="btn btn-primary">Crear Rutina</a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Rutinas asignadas por entrenador -->
+    {% if assigned_routines %}
+        <div class="routine-section mb-4">
+            <div class="section-header mb-3">
+                <h2>Rutinas de Mi Entrenador</h2>
+            </div>
+
+            <div class="routine-list">
+                {% for routine in assigned_routines %}
+                    <div class="routine-card">
+                        <div class="routine-card-body">
+                            <h3 class="routine-card-title">{{ routine.name }}</h3>
+                            <p class="trainer-name">
+                                <i class="pwa-icon pwa-icon-user"></i> {{ routine.created_by.get_full_name }}
+                            </p>
+                        </div>
+                        <div class="routine-card-actions">
+                            <a href="/pwa/workout/{{ routine.id }}/?type=trainer&date={{ training_date }}" class="btn btn-primary btn-block">
+                                Seleccionar esta rutina
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="actions-container mt-4">
+        <a href="{% url 'gym_pwa:home' %}" class="btn btn-secondary btn-lg btn-block">Cancelar</a>
+    </div>
+</div>
+{% endblock %} 

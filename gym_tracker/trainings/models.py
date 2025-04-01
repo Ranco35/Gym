@@ -134,6 +134,14 @@ class UserProfile(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def save(self, *args, **kwargs):
+        # Convertir imagen a WebP si existe y no es ya WebP
+        if self.photo and not self.photo.name.endswith('.webp'):
+            from gym_pwa.utils import convert_to_webp
+            self.photo = convert_to_webp(self.photo)
+            
+        super(UserProfile, self).save(*args, **kwargs)
+
     def __str__(self):
         return f"Perfil de {self.user.get_full_name() or self.user.username}"
 
