@@ -160,7 +160,7 @@
         {% for set in all_sets %}
         <div class="exercise-pill {% if set.id in completed_set_ids %}completed{% elif forloop.counter == current_set_index %}active{% endif %}" 
              onclick="selectExercise({{ forloop.counter }})">
-            {{ forloop.counter }}. {{ set.exercise|truncatechars:15 }}
+            {{ forloop.counter }}. {{ set.exercise.name|truncatechars:15 }}
         </div>
         {% endfor %}
     </div>
@@ -186,7 +186,7 @@
     <!-- Ejercicio actual -->
     <div class="card mb-3 exercise-card">
         <div class="card-body">
-            <h5 class="card-title mb-2">{{ current_set.exercise }}</h5>
+            <h5 class="card-title mb-2">{{ current_set.exercise.name }}</h5>
             <div class="row">
                 <div class="col-4 text-center">
                     <div class="info-box">
@@ -317,7 +317,7 @@
         <div class="list-group-item p-2">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <strong>{{ completed_set.set.exercise }}</strong>
+                    <strong>{{ completed_set.set.exercise.name }}</strong>
                     <br>
                     <small>
                         {{ completed_set.weight }}kg | 

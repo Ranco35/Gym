@@ -161,7 +161,7 @@ def routine_detail(request, pk):
                 for trainer_set in day.sets.all():
                     exercises.append({
                         'id': trainer_set.id,
-                        'name': trainer_set.exercise,
+                        'name': trainer_set.exercise.name,
                         'sets': trainer_set.sets_count,
                         'reps': trainer_set.reps,
                         'weight': trainer_set.weight,

@@ -93,7 +93,7 @@
     <!-- Ejercicio actual -->
     <div class="card mb-3 exercise-card">
         <div class="card-body">
-            <h5 class="card-title">{{ current_set.exercise }}</h5>
+            <h5 class="card-title">{{ current_set.exercise.name }}</h5>
             <div class="row">
                 <div class="col-4 text-center border-end">
                     <div class="h3 mb-0">{{ current_set.weight }}</div>
@@ -140,7 +140,7 @@
         <div class="list-group-item py-2">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <strong>{{ completed_set.set.exercise }}</strong>
+                    <strong>{{ completed_set.set.exercise.name }}</strong>
                     <br>
                     <small>
                         {{ completed_set.weight }}kg | 
