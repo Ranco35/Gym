@@ -290,8 +290,11 @@
                                     {% endif %}
                                     
                                     <div class="routine-actions">
-                                        <a href="/pwa/workout/{{ routine.id }}/?type=trainer" class="btn btn-primary btn-block">
+                                        <a href="/pwa/workout/{{ routine.id }}/?type=trainer" class="btn btn-primary btn-block mb-2">
                                             Comenzar Entrenamiento
+                                        </a>
+                                        <a href="/pwa/routine/{{ routine.id }}/set-active/" class="btn btn-outline-primary btn-block">
+                                            Establecer como Activa
                                         </a>
                                     </div>
                                 </div>

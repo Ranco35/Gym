@@ -85,6 +85,14 @@ def pwa_workout_player(request, workout_id):
     workout_date = request.GET.get('date')
     workout_mode = request.GET.get('mode', 'step')  # Por defecto, usamos mode=step
     
+    # Verificar si hay un ID de rutina guardado en la sesión y usarlo si existe
+    session_routine_id = request.session.get('selected_routine_id')
+    if session_routine_id and int(session_routine_id) != workout_id:
+        messages.info(request, "Usando la rutina seleccionada previamente")
+        workout_id = int(session_routine_id)
+        # Guardar el ID en la sesión para futuras referencias
+        request.session['selected_routine_id'] = workout_id
+    
     # Intentar obtener el entrenamiento (podría ser rutina personal o de entrenador)
     try:
         # Primero verificar si es un entrenamiento personal
@@ -404,4 +412,40 @@ def update_profile_photo(request):
     else:
         messages.error(request, 'No se ha seleccionado ninguna foto')
     
-    return redirect('gym_pwa:profile') 
+    return redirect('gym_pwa:profile')
+
+@login_required
+def set_active_routine(request, routine_id):
+    """Establece una rutina como la activa para el usuario."""
+    try:
+        # Verificar si la rutina existe (podría ser TrainerTraining o WeeklyRoutine)
+        routine_exists = False
+        
+        # Verificar si es una rutina de entrenador
+        try:
+            trainer_routine = TrainerTraining.objects.get(id=routine_id, user=request.user)
+            routine_exists = True
+            routine_name = trainer_routine.name
+        except TrainerTraining.DoesNotExist:
+            pass
+            
+        # Si no es de entrenador, verificar si es una rutina semanal personal
+        if not routine_exists:
+            try:
+                weekly_routine = WeeklyRoutine.objects.get(id=routine_id, user=request.user)
+                routine_exists = True
+                routine_name = weekly_routine.name
+            except WeeklyRoutine.DoesNotExist:
+                pass
+        
+        if routine_exists:
+            # Guardar el ID de la rutina en la sesión
+            request.session['selected_routine_id'] = routine_id
+            messages.success(request, f"Rutina '{routine_name}' establecida como activa.")
+        else:
+            messages.error(request, "No se encontró la rutina especificada.")
+    except Exception as e:
+        messages.error(request, f"Error al establecer la rutina activa: {str(e)}")
+    
+    # Redirigir de vuelta a la lista de rutinas
+    return redirect('gym_pwa:workouts') 

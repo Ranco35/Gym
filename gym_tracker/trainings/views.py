@@ -293,6 +293,9 @@ def create_training_from_routine(request):
     # Guardar la fecha en la sesión para usarla en execute_training
     request.session['training_date'] = training_date_str
     
+    # Guardar el ID de la rutina seleccionada para asegurar que se use la correcta
+    request.session['selected_routine_id'] = routine_id
+    
     # Redirigir a la vista de ejecución de entrenamiento
     return redirect('trainings:execute-training', routine_id=routine_id, day_id=routine_day_id)
 
@@ -313,6 +316,12 @@ def execute_training(request, routine_id, day_id):
     if routine_id == 0 or day_id == 0:
         messages.warning(request, "Por favor, selecciona una rutina y un día válidos")
         return redirect('trainings:training-list-create')
+    
+    # Verificar si hay un ID de rutina guardado en la sesión y usarlo si existe
+    session_routine_id = request.session.get('selected_routine_id')
+    if session_routine_id and int(session_routine_id) != routine_id:
+        messages.info(request, "Usando la rutina seleccionada previamente")
+        routine_id = int(session_routine_id)
     
     # Intentar obtener rutina como WeeklyRoutine o como TrainerTraining
     routine = None
