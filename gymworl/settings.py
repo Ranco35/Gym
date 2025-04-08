@@ -1,9 +1,28 @@
-# Configuración de DigitalOcean Spaces
-AWS_ACCESS_KEY_ID = 'DO00ELANT2VXA3J9G3Q9'
-AWS_SECRET_ACCESS_KEY = 'ed2stFqA+Oj0Avrpow2/Z1obmzjcx8NG9Iooh7k6Z/o'
-AWS_STORAGE_BUCKET_NAME = 'lifen-cl-system'
+import os
+from pathlib import Path
+import environ
+
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Inicializa environ
+env = environ.Env()
+environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
+
+# === GENERAL DJANGO ===
+DEBUG = env.bool('DEBUG', default=True)
+DJANGO_ENV = env('DJANGO_ENV', default='development')
+SECRET_KEY = env('SECRET_KEY')
+
+# === HOSTS PERMITIDOS ===
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['127.0.0.1', 'localhost', '134.199.224.217', 'gym.360losrios.cl'])
+
+# === DIGITALOCEAN SPACES ===
+AWS_ACCESS_KEY_ID = env('DO_SPACE_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = env('DO_SPACE_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = env('DO_SPACE_BUCKET_NAME')
+AWS_S3_ENDPOINT_URL = env('DO_SPACE_ENDPOINT_URL')
 AWS_DEFAULT_ACL = 'public-read'
-AWS_S3_ENDPOINT_URL = 'https://nyc3.digitaloceanspaces.com'
 AWS_QUERYSTRING_AUTH = False
 
 AWS_S3_OBJECT_PARAMETERS = {
@@ -28,9 +47,13 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'storages',
     'channels',
-    'trainers',
-    'gym_tracker',
-    'stats',
+    'corsheaders',
+    'gym_tracker.users',
+    'gym_tracker.workouts',
+    'gym_tracker.exercises',
+    'gym_tracker.trainings',
+    'gym_tracker.stats',
+    'trainers.apps.TrainersConfig',
 ]
 
 # Channels configuration
@@ -65,10 +88,6 @@ CORS_ALLOW_HEADERS = [
 ]
 CORS_EXPOSE_HEADERS = ['content-disposition']
 
-# Añadir corsheaders a las apps instaladas si no está ya
-if 'corsheaders' not in INSTALLED_APPS:
-    INSTALLED_APPS.append('corsheaders')
-
 # Añadir middleware de CORS
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',  # Debe estar antes de CommonMiddleware
@@ -79,4 +98,58 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-] 
+]
+
+# Configuración de templates
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [BASE_DIR / 'templates'],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+
+# === BASE DE DATOS REMOTA (DIGITALOCEAN vía túnel SSH en local) ===
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'gym_db',
+        'USER': 'eduardo',
+        'PASSWORD': '123llifen789.',
+        'HOST': 'localhost',
+        'PORT': '5433',
+        'OPTIONS': {
+            'sslmode': 'disable',
+            'connect_timeout': 10,
+        }
+    }
+}
+
+# Configuración de archivos estáticos
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+
+# Configuración de archivos media
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Configuración de autenticación
+AUTH_USER_MODEL = 'users.User'
+
+# Configuración de idioma y zona horaria
+LANGUAGE_CODE = 'es'
+TIME_ZONE = 'America/Santiago'
+USE_I18N = True
+USE_TZ = True
+
+# Default primary key field type
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField' 

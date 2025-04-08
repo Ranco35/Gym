@@ -100,32 +100,28 @@ class Exercise(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Fecha de creación')
     updated_at = models.DateTimeField(auto_now=True, null=True)
 
-    def save(self, *args, **kwargs):
-        # Generar slug si no existe
-        if not self.slug:
-            # Crear slug y limpiarlo de caracteres especiales
-            base_slug = slugify(self.name)
-            # Reemplazar cualquier caracter no alfanumérico o guión por un guión
-            self.slug = re.sub(r'[^a-zA-Z0-9_-]', '-', base_slug)
-            
-            # Asegurar que el slug sea único
-            counter = 1
-            original_slug = self.slug
-            while Exercise.objects.filter(slug=self.slug).exclude(pk=self.pk).exists():
-                self.slug = f"{original_slug}-{counter}"
-                counter += 1
-            
-        # Convertir imagen a WebP si existe y no es ya WebP
-        if self.image and not self.image.name.endswith('.webp'):
-            self.image = convert_to_webp(self.image)
-            
-        super(Exercise, self).save(*args, **kwargs)
-    
-    def get_absolute_url(self):
-        return reverse('exercise_detail', args=[self.slug])
-    
+    class Meta:
+        verbose_name = "Ejercicio"
+        verbose_name_plural = "Ejercicios"
+        ordering = ['name']
+        unique_together = ['name', 'created_by']  # Un usuario no puede crear dos ejercicios con el mismo nombre
+
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.name)
+            self.slug = base_slug
+            # Si ya existe un ejercicio con este slug, añadir un número
+            counter = 1
+            while Exercise.objects.filter(slug=self.slug).exists():
+                self.slug = f"{base_slug}-{counter}"
+                counter += 1
+        super().save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        return reverse('exercise_detail', args=[self.slug])
     
     def clean(self):
         # Validar el link de YouTube
@@ -147,11 +143,6 @@ class Exercise(models.Model):
             return None
             
         return f'https://www.youtube.com/embed/{video_id}'
-
-    class Meta:
-        verbose_name = 'Ejercicio'
-        verbose_name_plural = 'Ejercicios'
-        ordering = ['name']
 
 class ExerciseImage(models.Model):
     """Modelo para imágenes adicionales de ejercicios."""

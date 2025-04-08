@@ -143,11 +143,11 @@
             <div class="row">
                 <div class="col-md-3">
                     <div class="mb-3">
-                        <label for="categoryFilter" class="form-label">Categoría</label>
+                        <label for="categoryFilter" class="form-label">Grupo Muscular</label>
                         <select class="form-select" id="categoryFilter">
-                            <option value="">Todas las categorías</option>
-                            {% for category in categories %}
-                            <option value="{{ category.id }}">{{ category.name }}</option>
+                            <option value="">Todos los grupos musculares</option>
+                            {% for group, name in exercise.MUSCLE_GROUPS %}
+                            <option value="{{ group }}">{{ name }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -189,9 +189,8 @@
         {% with exercise=item.exercise can_edit=item.can_edit %}
         <div class="col-md-4 mb-4 exercise-item" 
              data-difficulty="{{ exercise.get_difficulty_display }}"
-             data-category="{{ exercise.category.id|default:"" }}"
              data-muscle="{{ exercise.muscle_group }}"
-             data-equipment="{{ exercise.equipment.id|default:"" }}"
+             data-equipment="{{ exercise.equipment|default:"" }}"
              data-creator="{% if exercise.created_by == user %}me{% endif %}">
             <div class="card exercise-card h-100 {{ exercise.get_difficulty_display|lower }}">
                 {% if exercise.image %}
@@ -256,7 +255,7 @@
 document.addEventListener('DOMContentLoaded', function() {    
     // Filtros
     const difficultyFilter = document.getElementById('difficultyFilter');
-    const categoryFilter = document.getElementById('categoryFilter');
+    const muscleGroupFilter = document.getElementById('categoryFilter');
     const equipmentFilter = document.getElementById('equipmentFilter');
     const searchInput = document.getElementById('searchInput');
     const exercises = document.querySelectorAll('.exercise-item');
@@ -264,23 +263,23 @@ document.addEventListener('DOMContentLoaded', function() {
     // Función para filtrar ejercicios
     function filterExercises() {
         const searchTerm = searchInput.value.toLowerCase();
-        const selectedCategory = categoryFilter.value;
+        const selectedMuscleGroup = muscleGroupFilter.value;
         const selectedDifficulty = difficultyFilter.value;
         const selectedEquipment = equipmentFilter.value;
 
         exercises.forEach(exercise => {
             const title = exercise.querySelector('.card-title').textContent.toLowerCase();
             const description = exercise.querySelector('.card-text').textContent.toLowerCase();
-            const category = exercise.dataset.category;
+            const muscleGroup = exercise.dataset.muscle;
             const difficulty = exercise.dataset.difficulty;
             const equipment = exercise.dataset.equipment;
 
             const matchesSearch = title.includes(searchTerm) || description.includes(searchTerm);
-            const matchesCategory = !selectedCategory || category === selectedCategory;
+            const matchesMuscleGroup = !selectedMuscleGroup || muscleGroup === selectedMuscleGroup;
             const matchesDifficulty = !selectedDifficulty || difficulty === selectedDifficulty;
             const matchesEquipment = !selectedEquipment || equipment === selectedEquipment;
 
-            if (matchesSearch && matchesCategory && matchesDifficulty && matchesEquipment) {
+            if (matchesSearch && matchesMuscleGroup && matchesDifficulty && matchesEquipment) {
                 exercise.style.display = '';
             } else {
                 exercise.style.display = 'none';
@@ -289,7 +288,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     searchInput.addEventListener('input', filterExercises);
-    categoryFilter.addEventListener('change', filterExercises);
+    muscleGroupFilter.addEventListener('change', filterExercises);
     difficultyFilter.addEventListener('change', filterExercises);
     equipmentFilter.addEventListener('change', filterExercises);
 });

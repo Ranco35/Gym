@@ -7,6 +7,7 @@ from django.contrib.auth import views as auth_views
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from gym_tracker.views import home_view, csrf_failure, current_user_view
+from gym_tracker.exercises.urls import api_patterns as exercises_api_patterns, web_urlpatterns as exercises_web_patterns
 
 # Página de login personalizada
 def serve_login_page(request):
@@ -26,14 +27,15 @@ urlpatterns = [
     path('login/', serve_login_page, name='custom_login'),
     
     # Rutas de la interfaz web
-    path('exercises/', include('gym_tracker.exercises.urls', namespace='exercises')),
+    path('exercises/', include((exercises_web_patterns, 'exercises'), namespace='exercises')),
     path('workouts/', include('gym_tracker.workouts.urls', namespace='workouts')),
     path('trainings/', include('gym_tracker.trainings.urls', namespace='trainings')),
     
     # Ruta para el área de entrenadores
     path('trainers/', include('trainers.urls', namespace='trainers')),
     
-    # API de gestión de usuarios
+    # API endpoints
+    path('api/exercises/', include((exercises_api_patterns, 'exercises_api'), namespace='exercises_api')),
     path('api/users/', include('gym_tracker.users.urls', namespace='users')),
     path('stats/', include('gym_tracker.stats.urls')),  # Nueva URL para estadísticas
     

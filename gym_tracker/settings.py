@@ -112,11 +112,11 @@ WSGI_APPLICATION = 'gym_tracker.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'gym_db',
-        'USER': 'eduardo',
-        'PASSWORD': '123llifen789.',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'NAME': env('DB_NAME'),
+        'USER': env('DB_USER'),
+        'PASSWORD': env('DB_PASSWORD'),
+        'HOST': env('DB_HOST'),
+        'PORT': env('DB_PORT'),
     }
 }
 
@@ -194,8 +194,28 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8000",
     "http://gym.360losrios.cl",
     "https://gym.360losrios.cl",
+    "https://nyc3.digitaloceanspaces.com",
 ]
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
 # Configuración del tema de admin-interface
 X_FRAME_OPTIONS = 'SAMEORIGIN'

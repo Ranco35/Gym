@@ -3,6 +3,38 @@
 {% load training_tags %}
 
 {% block content %}
+<style>
+    @media (max-width: 768px) {
+        .container-fluid {
+            padding: 0 !important;
+        }
+        .card {
+            border-radius: 0;
+            margin-bottom: 0;
+        }
+        .card-body {
+            padding: 1rem;
+        }
+        .table-responsive {
+            margin-bottom: 1rem;
+        }
+        .btn-group {
+            width: 100%;
+            margin: 1rem 0;
+        }
+        .btn-group .btn {
+            flex: 1;
+            margin: 0;
+        }
+        .list-group-item {
+            padding: 0.75rem;
+        }
+        #timer {
+            font-size: 2.5rem;
+        }
+    }
+</style>
+
 <div class="container-fluid py-4">
     <!-- Encabezado -->
     <div class="row mb-4">
@@ -249,9 +281,9 @@
                                 {% endif %}
                             </div>
                             {% if is_trainer_routine %}
-                            <small class="d-block">{{ ex.reps }} reps {% if ex.weight %}- {{ ex.weight }}{% endif %}</small>
+                            <small class="d-block">{{ ex.reps }} reps {% if ex.weight %}- {{ ex.weight }} kg{% endif %}</small>
                             {% else %}
-                            <small class="d-block">{{ ex.reps }} reps {% if ex.weight %}- {{ ex.weight }}{% endif %}</small>
+                            <small class="d-block">{{ ex.reps }} reps {% if ex.weight %}- {{ ex.weight }} kg{% endif %}</small>
                             {% endif %}
                         </div>
                         {% endfor %}
@@ -340,6 +372,12 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Ocultar el menú lateral en móviles
+        if (window.innerWidth <= 768) {
+            document.querySelector('.sidebar').style.display = 'none';
+            document.querySelector('.main-content').style.marginLeft = '0';
+        }
+
         // Variables del temporizador
         const timerDisplay = document.getElementById('timer');
         const startButton = document.getElementById('startTimer');

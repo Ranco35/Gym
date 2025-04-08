@@ -9,11 +9,7 @@ from .views import (
     export_exercises,
     exercise_list,
     exercise_delete,
-    # Nuevas vistas para categorías
-    CategoryListView,
-    CategoryCreateView,
-    CategoryUpdateView,
-    CategoryDeleteView
+    exercise_detail,
 )
 
 app_name = 'exercises'
@@ -40,15 +36,9 @@ urlpatterns = [
     path('<slug:slug>/edit/', exercise_edit, name='exercise-edit-slug'),
     path('<int:pk>/delete/', exercise_delete, name='exercise-delete'),
     path('<slug:slug>/delete/', exercise_delete, name='exercise-delete-slug'),
-    path('<int:pk>/', ExerciseDetailView.as_view(), name='exercise-detail'),
-    path('<str:slug>/', ExerciseDetailView.as_view(), name='exercise-detail-slug'),
-    
-    # URLs para gestión de categorías
-    path('categories/', CategoryListView.as_view(), name='category-list'),
-    path('categories/create/', CategoryCreateView.as_view(), name='category-create'),
-    path('categories/<int:pk>/update/', CategoryUpdateView.as_view(), name='category-update'),
-    path('categories/<int:pk>/delete/', CategoryDeleteView.as_view(), name='category-delete'),
+    path('<int:pk>/', exercise_detail, name='exercise-detail'),
+    path('<str:slug>/', exercise_detail, name='exercise-detail-slug'),
 ]
 
 # URLs específicas para cada tipo de ruta
-web_urlpatterns = urlpatterns  # Para /web/exercises/
+web_urlpatterns = urlpatterns

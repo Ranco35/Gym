@@ -471,7 +471,7 @@ def execute_training(request, routine_id, day_id):
     
     # Procesar el peso del ejercicio actual
     if exercise_weight == '' or exercise_weight is None:
-        exercise_weight = 0
+        exercise_weight = None  # Cambiamos de 0 a None para que no se muestre un valor por defecto
     
     # Obtener o crear el entrenamiento actual
     training, created = Training.objects.get_or_create(

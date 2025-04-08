@@ -20,6 +20,7 @@ from rest_framework.permissions import IsAuthenticated
 import json
 import tempfile
 import os
+from django.utils.text import slugify
 
 class ExerciseListView(generics.ListCreateAPIView):
     """
@@ -53,8 +54,6 @@ def exercise_list(request):
     """
     # Obtener todos los ejercicios
     exercises = Exercise.objects.all().order_by('name')
-    categories = ExerciseCategory.objects.all()
-    equipment = Equipment.objects.all()
     
     # Para cada ejercicio, determinar si el usuario actual puede editarlo
     exercises_with_permissions = []
@@ -67,8 +66,7 @@ def exercise_list(request):
     return render(request, 'exercises/exercise_list.html', {
         'exercises_with_permissions': exercises_with_permissions,
         'exercises': exercises,  # Mantener compatibilidad
-        'categories': categories,
-        'equipment': equipment
+        'exercise': Exercise,  # Para acceder a MUSCLE_GROUPS en el template
     })
 
 @login_required
@@ -128,135 +126,61 @@ def exercise_edit(request, pk=None, slug=None):
 def export_exercises(request):
     """
     Vista para exportar ejercicios en formato JSON o Excel.
+    Los usuarios pueden exportar sus propios ejercicios o todos si son admin/superuser.
     """
-    # Registrar información de la solicitud para depuración
-    print(f"\n-------- INICIO EXPORTACIÓN --------")
-    print(f"Método: {request.method}")
-    print(f"Ruta: {request.path}")
-    print(f"Query params: {request.GET}")
-    print(f"Headers: {request.headers.get('User-Agent')}")
-    
-    # Determinar si se solicita JSON o Excel basado en la URL
-    # Si la URL contiene 'json', exportar como JSON
-    is_json_export = 'json' in request.path
-    print(f"Formato solicitado: {'JSON' if is_json_export else 'Excel'}")
-    
-    if is_json_export:
-        try:
-            # Obtener IDs de ejercicios a exportar
-            exercise_ids = request.GET.getlist('ids', [])
-            print(f"IDs solicitados: {exercise_ids}")
-            
-            # Filtrar ejercicios según los IDs proporcionados o permisos
-            if is_admin_or_superuser(request.user):
-                if exercise_ids:
-                    queryset = Exercise.objects.filter(id__in=exercise_ids)
-                else:
-                    queryset = Exercise.objects.all()
-            else:
-                # Usuarios normales solo ven sus ejercicios
-                if exercise_ids:
-                    queryset = Exercise.objects.filter(id__in=exercise_ids, created_by=request.user)
-                else:
-                    queryset = Exercise.objects.filter(created_by=request.user)
-            
-            print(f"Ejercicios encontrados: {len(queryset)}")
-            
+    try:
+        # Obtener ejercicios según permisos
+        if is_admin_or_superuser(request.user):
+            exercises = Exercise.objects.all()
+        else:
+            # Los usuarios normales solo pueden exportar sus propios ejercicios
+            exercises = Exercise.objects.filter(created_by=request.user)
+        
+        # Verificar si hay ejercicios para exportar
+        if not exercises.exists():
+            messages.error(request, 'No hay ejercicios para exportar.')
+            return redirect('exercises:exercise-list')
+        
+        # Determinar si se solicita JSON o Excel basado en la URL
+        is_json_export = 'json' in request.path
+        
+        if is_json_export:
             # Serializar los datos
-            serializer = ExerciseExportSerializer(queryset, many=True)
-            json_data = json.dumps(serializer.data, indent=4)
+            serializer = ExerciseExportSerializer(exercises, many=True)
+            json_data = json.dumps(serializer.data, indent=4, ensure_ascii=False)
             
-            # Crear archivo para descargar directamente sin usar archivo temporal
+            # Crear respuesta
             response = HttpResponse(
                 json_data,
-                content_type='application/json'
+                content_type='application/json; charset=utf-8'
             )
-            
-            # Configurar encabezados para descarga
-            filename = "exercises_export.json"
-            response['Content-Disposition'] = f'attachment; filename="{filename}"'
-            
-            # Añadir encabezados adicionales para CORS y caché
-            response['Content-Length'] = len(json_data)
-            response['Access-Control-Allow-Origin'] = '*'
-            response['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
-            response['Access-Control-Allow-Headers'] = 'Content-Type, X-Requested-With, X-CSRFToken'
-            response['Access-Control-Expose-Headers'] = 'Content-Disposition, Content-Length'
-            response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-            response['Pragma'] = 'no-cache'
-            response['Expires'] = '0'
-            
-            # Debug: registrar información sobre la respuesta
-            print(f"Exportación JSON completada: {len(queryset)} ejercicios")
-            print(f"Tamaño de datos: {len(json_data)} bytes")
-            print(f"Encabezados response: {dict(response.headers)}")
-            print(f"-------- FIN EXPORTACIÓN --------\n")
-            
+            response['Content-Disposition'] = f'attachment; filename="ejercicios_exportados_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json"'
             return response
-        except Exception as e:
-            # Capturar cualquier excepción para mostrar un error más descriptivo
-            import traceback
-            print(f"Error en export_exercises (JSON): {str(e)}")
-            print(traceback.format_exc())
-            print(f"-------- ERROR EXPORTACIÓN --------\n")
             
-            # Devolver una respuesta de error en formato JSON
-            error_response = JsonResponse({
-                'error': str(e),
-                'detail': 'Ha ocurrido un error durante la exportación de ejercicios.'
-            }, status=500)
-            
-            # Añadir encabezados CORS
-            error_response['Access-Control-Allow-Origin'] = '*'
-            error_response['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
-            error_response['Access-Control-Allow-Headers'] = 'Content-Type, X-Requested-With'
-            
-            return error_response
-    else:
-        try:
-            # Exportación en formato Excel
-            if is_admin_or_superuser(request.user):
-                # Admins y superusuarios ven todos los ejercicios
-                exercises = Exercise.objects.all()
-            else:
-                # Otros usuarios solo ven sus ejercicios creados
-                exercises = Exercise.objects.filter(created_by=request.user)
-            
-            # Definir las columnas a exportar
-            columns = [
-                'id', 'name', 'slug', 'description', 'muscle_group', 'difficulty', 
-                'primary_muscles', 'secondary_muscles', 'equipment', 
-                'tips', 'video_url', 'image_url'
-            ]
-            
-            # Crear una lista de diccionarios con los datos de los ejercicios
+        else:
+            # Crear DataFrame con los datos
             data = []
-            base_url = request.build_absolute_uri('/').rstrip('/')
-            
             for exercise in exercises:
-                # Generar URL de la imagen si existe
-                image_url = ''
-                if exercise.image and hasattr(exercise.image, 'url'):
-                    image_url = base_url + exercise.image.url
-                
                 exercise_data = {
-                    'id': exercise.id,
-                    'name': exercise.name,
-                    'slug': exercise.slug,
-                    'description': exercise.description,
-                    'muscle_group': exercise.muscle_group,
-                    'difficulty': exercise.difficulty,
-                    'primary_muscles': exercise.primary_muscles,
-                    'secondary_muscles': exercise.secondary_muscles,
-                    'equipment': exercise.equipment,
-                    'tips': exercise.tips,
-                    'video_url': exercise.video_url,
-                    'image_url': image_url
+                    'ID': exercise.id,
+                    'Nombre': exercise.name,
+                    'Slug': exercise.slug,
+                    'Descripción': exercise.description,
+                    'Grupo Muscular': exercise.get_muscle_group_display(),
+                    'Dificultad': exercise.get_difficulty_display(),
+                    'Músculos Principales': exercise.primary_muscles or '',
+                    'Músculos Secundarios': exercise.secondary_muscles or '',
+                    'Equipamiento': exercise.equipment or '',
+                    'Consejos': exercise.tips or '',
+                    'URL del Video': exercise.video_url or '',
+                    'Imagen Principal': exercise.image.url if exercise.image else '',
+                    'Fecha de Creación': exercise.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                    'Última Actualización': exercise.updated_at.strftime('%Y-%m-%d %H:%M:%S')
                 }
                 data.append(exercise_data)
             
-            # Crear un DataFrame con los datos
-            df = pd.DataFrame(data, columns=columns)
+            # Crear DataFrame
+            df = pd.DataFrame(data)
             
             # Crear el archivo Excel
             output = io.BytesIO()
@@ -280,17 +204,11 @@ def export_exercises(request):
             response['Content-Disposition'] = f'attachment; filename=ejercicios_exportados_{timestamp}.xlsx'
             
             return response
-        except Exception as e:
-            # Capturar cualquier excepción para mostrar un error más descriptivo
-            import traceback
-            print(f"Error en export_exercises (Excel): {str(e)}")
-            print(traceback.format_exc())
             
-            # Devolver una respuesta de error en formato JSON
-            return JsonResponse({
-                'error': str(e),
-                'detail': 'Ha ocurrido un error durante la exportación de ejercicios a Excel.'
-            }, status=500)
+    except Exception as e:
+        print(f"Error en export_exercises: {str(e)}")
+        messages.error(request, f'Error al exportar ejercicios: {str(e)}')
+        return redirect('exercises:exercise-list')
 
 @api_view(['GET'])
 def export_exercises_template(request):
@@ -424,87 +342,181 @@ def export_exercises_template(request):
             }, status=500)
 
 @login_required
-@user_passes_test(is_trainer_or_admin)
 def import_exercises(request):
     """
-    Vista para importar ejercicios desde un archivo Excel.
-    Solo disponible para entrenadores y administradores.
+    Vista para importar ejercicios desde un archivo JSON o Excel.
     """
-    if request.method == 'POST' and request.FILES.get('excel_file'):
-        try:
-            excel_file = request.FILES['excel_file']
-            
-            # Leer el archivo Excel
-            df = pd.read_excel(excel_file)
-            
-            # Validar que el archivo tenga las columnas requeridas
-            required_columns = ['name', 'description', 'muscle_group', 'difficulty']
-            for col in required_columns:
-                if col not in df.columns:
-                    messages.error(request, f'El archivo no contiene la columna "{col}" que es requerida.')
-                    return redirect('exercises:import-exercises')
-            
-            # Procesar los ejercicios
-            success_count = 0
-            error_count = 0
+    if request.method == 'GET':
+        return render(request, 'exercises/import_exercises.html')
+    
+    try:
+        imported_count = 0
+        updated_count = 0
+        errors = []
+        
+        # Mapeo de valores en español a inglés
+        muscle_group_map = {
+            'pecho': 'chest',
+            'espalda': 'back',
+            'hombros': 'shoulders',
+            'brazos': 'arms',
+            'piernas': 'legs',
+            'core': 'core',
+            'cuerpo completo': 'full_body',
+            'cardio': 'cardio',
+            # Versiones con mayúsculas
+            'Pecho': 'chest',
+            'Espalda': 'back',
+            'Hombros': 'shoulders',
+            'Brazos': 'arms',
+            'Piernas': 'legs',
+            'Core': 'core',
+            'Cuerpo Completo': 'full_body',
+            'Cardio': 'cardio'
+        }
+        
+        difficulty_map = {
+            'principiante': 'beginner',
+            'intermedio': 'intermediate',
+            'avanzado': 'advanced',
+            'fácil': 'beginner',
+            'medio': 'intermediate',
+            'difícil': 'advanced',
+            # Versiones con mayúsculas
+            'Principiante': 'beginner',
+            'Intermedio': 'intermediate',
+            'Avanzado': 'advanced',
+            'Fácil': 'beginner',
+            'Medio': 'intermediate',
+            'Difícil': 'advanced'
+        }
+        
+        # Verificar archivo
+        if 'file' not in request.FILES:
+            messages.error(request, 'No se ha proporcionado ningún archivo.')
+            return redirect('exercises:exercise-list')
+        
+        uploaded_file = request.FILES['file']
+        file_extension = uploaded_file.name.split('.')[-1].lower()
+        
+        if file_extension == 'json':
+            data = json.loads(uploaded_file.read().decode('utf-8'))
+            if not isinstance(data, list):
+                data = [data]
+                
+        elif file_extension in ['xlsx', 'xls']:
+            df = pd.read_excel(uploaded_file)
+            data = []
             
             for _, row in df.iterrows():
-                try:
-                    # Crear o actualizar el ejercicio
-                    exercise_name = row['name']
-                    
-                    # Si ya existe un ejercicio con ese nombre, actualizarlo
-                    exercise, created = Exercise.objects.get_or_create(
-                        name=exercise_name,
-                        defaults={
-                            'created_by': request.user,
-                        }
-                    )
-                    
-                    # Actualizar campos obligatorios
-                    exercise.description = row['description']
-                    exercise.muscle_group = row['muscle_group']
-                    exercise.difficulty = row['difficulty']
-                    
-                    # Actualizar campos opcionales si están presentes en el Excel
-                    if 'primary_muscles' in df.columns and not pd.isna(row['primary_muscles']):
-                        exercise.primary_muscles = row['primary_muscles']
-                    
-                    if 'secondary_muscles' in df.columns and not pd.isna(row['secondary_muscles']):
-                        exercise.secondary_muscles = row['secondary_muscles']
-                    
-                    if 'equipment' in df.columns and not pd.isna(row['equipment']):
-                        exercise.equipment = row['equipment']
-                    
-                    if 'tips' in df.columns and not pd.isna(row['tips']):
-                        exercise.tips = row['tips']
-                    
-                    if 'video_url' in df.columns and not pd.isna(row['video_url']):
-                        exercise.video_url = row['video_url']
-                    
-                    # Guardar los cambios
-                    exercise.save()
-                    success_count += 1
-                    
-                except Exception as e:
-                    error_count += 1
-                    print(f"Error importando ejercicio {row.get('name', 'desconocido')}: {e}")
-            
-            # Mostrar mensaje de éxito
-            if success_count > 0:
-                messages.success(request, f'Se han importado {success_count} ejercicios correctamente.')
-            
-            # Mostrar mensaje de error si hubo problemas
-            if error_count > 0:
-                messages.warning(request, f'No se pudieron importar {error_count} ejercicios. Revise el archivo.')
+                def safe_str(value):
+                    if pd.isna(value):
+                        return ''
+                    return str(value).strip()
                 
+                # Obtener y validar el grupo muscular
+                muscle_group = safe_str(row.get('Grupo Muscular', ''))
+                muscle_group = muscle_group_map.get(muscle_group.lower(), muscle_group.lower())
+                
+                # Obtener y validar la dificultad
+                difficulty = safe_str(row.get('Dificultad', ''))
+                difficulty = difficulty_map.get(difficulty.lower(), difficulty.lower())
+                
+                # Limitar la longitud de los campos de texto
+                primary_muscles = safe_str(row.get('Músculos Principales', ''))[:100]
+                secondary_muscles = safe_str(row.get('Músculos Secundarios', ''))[:100]
+                
+                # Obtener y validar la URL del video
+                video_url = safe_str(row.get('URL del Video', ''))
+                if video_url and not video_url.startswith('http'):
+                    video_url = f'https://www.youtube.com/watch?v={video_url}'
+                
+                exercise_data = {
+                    'name': safe_str(row.get('Nombre', ''))[:100],
+                    'slug': slugify(safe_str(row.get('Nombre', '')))[:100],
+                    'description': safe_str(row.get('Descripción', ''))[:500],
+                    'muscle_group': muscle_group,
+                    'difficulty': difficulty,
+                    'primary_muscles': primary_muscles,
+                    'secondary_muscles': secondary_muscles,
+                    'equipment': safe_str(row.get('Equipamiento', ''))[:100],
+                    'tips': safe_str(row.get('Consejos', ''))[:500],
+                    'video_url': video_url
+                }
+                
+                # Validar grupo muscular
+                if exercise_data['muscle_group'] not in dict(Exercise.MUSCLE_GROUPS).keys():
+                    errors.append({
+                        'data': exercise_data['name'],
+                        'errors': f"Grupo muscular '{muscle_group}' no válido. Valores válidos: {', '.join(dict(Exercise.MUSCLE_GROUPS).keys())}"
+                    })
+                    continue
+                
+                # Validar dificultad
+                if exercise_data['difficulty'] not in dict(Exercise.DIFFICULTY_LEVELS).keys():
+                    errors.append({
+                        'data': exercise_data['name'],
+                        'errors': f"Dificultad '{difficulty}' no válida. Valores válidos: {', '.join(dict(Exercise.DIFFICULTY_LEVELS).keys())}"
+                    })
+                    continue
+                
+                data.append(exercise_data)
+        else:
+            messages.error(request, 'Formato de archivo no soportado. Use JSON o Excel (.xlsx, .xls)')
             return redirect('exercises:exercise-list')
+        
+        # Procesar los datos
+        for exercise_data in data:
+            try:
+                # Verificar si existe por slug
+                slug = exercise_data.get('slug') or slugify(exercise_data.get('name', ''))
+                existing = None
                 
-        except Exception as e:
-            messages.error(request, f'Error al procesar el archivo: {str(e)}')
-            return redirect('exercises:import-exercises')
-    
-    return render(request, 'exercises/import_exercises.html')
+                if slug:
+                    try:
+                        existing = Exercise.objects.get(slug=slug)
+                    except Exercise.DoesNotExist:
+                        pass
+                
+                # Eliminar category_id si existe
+                if 'category_id' in exercise_data:
+                    del exercise_data['category_id']
+                
+                serializer = ExerciseImportSerializer(instance=existing, data=exercise_data)
+                
+                if serializer.is_valid():
+                    exercise = serializer.save(created_by=request.user)
+                    if existing:
+                        updated_count += 1
+                    else:
+                        imported_count += 1
+                else:
+                    errors.append({
+                        'data': exercise_data.get('name', 'Desconocido'),
+                        'errors': serializer.errors
+                    })
+            except Exception as e:
+                errors.append({
+                    'data': exercise_data.get('name', 'Desconocido'),
+                    'errors': str(e)
+                })
+        
+        # Mostrar mensajes de resultado
+        if imported_count > 0:
+            messages.success(request, f'Se importaron {imported_count} ejercicios nuevos.')
+        if updated_count > 0:
+            messages.info(request, f'Se actualizaron {updated_count} ejercicios existentes.')
+        if errors:
+            messages.warning(request, f'Hubo {len(errors)} errores durante la importación.')
+            for error in errors:
+                messages.error(request, f'Error en {error["data"]}: {error["errors"]}')
+        
+        return redirect('exercises:exercise-list')
+        
+    except Exception as e:
+        print(f"Error al importar ejercicios: {str(e)}")
+        messages.error(request, f'Error al importar ejercicios: {str(e)}')
+        return redirect('exercises:exercise-list')
 
 @login_required
 def exercise_delete(request, pk=None, slug=None):
@@ -531,145 +543,19 @@ def exercise_delete(request, pk=None, slug=None):
         'exercise': exercise
     })
 
-# Verificación de permisos
-def is_admin_or_superuser(user):
-    return user.is_authenticated and (user.is_superuser or user.role == 'ADMIN')
-
-# Vistas de CRUD para categorías
-class CategoryListView(UserPassesTestMixin, ListView):
-    model = ExerciseCategory
-    template_name = 'exercises/category_list.html'
-    context_object_name = 'categories'
-    ordering = ['name']
-    
-    def test_func(self):
-        return is_admin_or_superuser(self.request.user)
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        # Añadir contador de ejercicios por categoría
-        categories = context['categories']
-        for category in categories:
-            category.exercise_count = Exercise.objects.filter(category=category).count()
-        return context
-
-class CategoryCreateView(UserPassesTestMixin, CreateView):
-    model = ExerciseCategory
-    form_class = ExerciseCategoryForm
-    template_name = 'exercises/category_form.html'
-    success_url = reverse_lazy('exercises:category-list')
-    
-    def test_func(self):
-        return is_admin_or_superuser(self.request.user)
-    
-    def form_valid(self, form):
-        messages.success(self.request, f'Categoría "{form.instance.name}" creada correctamente.')
-        return super().form_valid(form)
-
-class CategoryUpdateView(UserPassesTestMixin, UpdateView):
-    model = ExerciseCategory
-    form_class = ExerciseCategoryForm
-    template_name = 'exercises/category_form.html'
-    success_url = reverse_lazy('exercises:category-list')
-    
-    def test_func(self):
-        return is_admin_or_superuser(self.request.user)
-    
-    def form_valid(self, form):
-        messages.success(self.request, f'Categoría "{form.instance.name}" actualizada correctamente.')
-        return super().form_valid(form)
-
-class CategoryDeleteView(UserPassesTestMixin, DeleteView):
-    model = ExerciseCategory
-    template_name = 'exercises/category_confirm_delete.html'
-    success_url = reverse_lazy('exercises:category-list')
-    context_object_name = 'category'
-    
-    def test_func(self):
-        return is_admin_or_superuser(self.request.user)
-    
-    def delete(self, request, *args, **kwargs):
-        category = self.get_object()
-        try:
-            result = super().delete(request, *args, **kwargs)
-            messages.success(request, f'Categoría "{category.name}" eliminada correctamente.')
-            return result
-        except Exception as e:
-            messages.error(request, f'No se pudo eliminar la categoría. Error: {str(e)}')
-            return redirect('exercises:category-list')
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        # Añadir contador de ejercicios que usan esta categoría
-        category = context['category']
-        context['exercise_count'] = category.exercises.count()
-        return context
-
-@api_view(['POST', 'GET'])
-@permission_classes([IsAuthenticated])
-def import_exercises(request):
+@login_required
+def exercise_detail(request, pk=None, slug=None):
     """
-    Vista para importar ejercicios desde un archivo JSON.
+    Vista para mostrar los detalles de un ejercicio.
     """
-    print(f"\n-------- SOLICITUD IMPORT EXERCISES --------")
-    print(f"Método: {request.method}")
-    print(f"Headers: {request.headers}")
+    if pk:
+        exercise = get_object_or_404(Exercise, pk=pk)
+    else:
+        exercise = get_object_or_404(Exercise, slug=slug)
     
-    # Si es una solicitud GET, solo mostrar la página
-    if request.method == 'GET':
-        print("Retornando plantilla HTML para importar ejercicios")
-        return render(request, 'exercises/import_exercises.html')
+    can_edit = can_edit_exercise(request.user, exercise)
     
-    # Procesar solicitud POST con datos JSON
-    try:
-        data = json.loads(request.body)
-        
-        if not isinstance(data, list):
-            data = [data]
-            
-        imported_count = 0
-        updated_count = 0
-        errors = []
-        
-        for exercise_data in data:
-            # Verificar si existe por slug
-            slug = exercise_data.get('slug')
-            existing = None
-            
-            if slug:
-                try:
-                    existing = Exercise.objects.get(slug=slug)
-                except Exercise.DoesNotExist:
-                    pass
-                
-            serializer = ExerciseImportSerializer(instance=existing, data=exercise_data)
-            
-            if serializer.is_valid():
-                if existing:
-                    updated_count += 1
-                else:
-                    imported_count += 1
-                
-                serializer.save(created_by=request.user)
-            else:
-                errors.append({
-                    'data': exercise_data.get('name', 'Desconocido'),
-                    'errors': serializer.errors
-                })
-        
-        return Response({
-            'imported': imported_count,
-            'updated': updated_count,
-            'errors': errors
-        })
-    except json.JSONDecodeError:
-        return Response({
-            'error': 'El cuerpo de la solicitud debe contener JSON válido'
-        }, status=400)
-    except Exception as e:
-        print(f"Error en import_exercises: {str(e)}")
-        import traceback
-        print(traceback.format_exc())
-        return Response({
-            'error': str(e)
-        }, status=500)
+    return render(request, 'exercises/exercise_detail.html', {
+        'exercise': exercise,
+        'can_edit': can_edit,
+    })

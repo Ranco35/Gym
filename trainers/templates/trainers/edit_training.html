@@ -274,7 +274,9 @@
                         <select class="form-select" id="exercise" name="exercise" required data-day-id="{{ day.id }}">
                             <option value="">Selecciona un ejercicio</option>
                             {% for exercise in all_exercises %}
-                            <option value="{{ exercise.name }}" data-category="{{ exercise.category }}" data-primary-muscles="{{ exercise.primary_muscles }}">{{ exercise.name }} ({{ exercise.category }})</option>
+                            <option value="{{ exercise.name }}" data-muscle-group="{{ exercise.muscle_group }}" data-primary-muscles="{{ exercise.primary_muscles }}">
+                                {{ exercise.name }} ({{ exercise.get_muscle_group_display }})
+                            </option>
                             {% endfor %}
                         </select>
                     </div>
@@ -357,16 +359,16 @@
                     return;
                 }
                 
-                const category = option.getAttribute('data-category');
+                const muscleGroup = option.getAttribute('data-muscle-group');
                 const primaryMuscles = option.getAttribute('data-primary-muscles');
                 
                 // Comprobar si el ejercicio coincide con alguno de los músculos seleccionados
-                const matchesCategory = muscles.includes(category);
+                const matchesMuscleGroup = muscles.includes(muscleGroup);
                 const matchesPrimaryMuscles = primaryMuscles && muscles.some(muscle => 
                     primaryMuscles.toLowerCase().includes(muscle.toLowerCase())
                 );
                 
-                if (matchesCategory || matchesPrimaryMuscles) {
+                if (matchesMuscleGroup || matchesPrimaryMuscles) {
                     option.style.display = '';
                 } else {
                     option.style.display = 'none';

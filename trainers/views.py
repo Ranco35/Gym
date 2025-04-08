@@ -695,7 +695,7 @@ def edit_training(request, student_id, training_id):
         days_with_sets[day] = TrainerSet.objects.filter(training_day=day).order_by('order')
     
     # Obtener todos los ejercicios de la base de datos
-    all_exercises = Exercise.objects.all().order_by('category', 'name')
+    all_exercises = Exercise.objects.all().order_by('muscle_group', 'name')
 
     if request.method == 'POST':
         # Si se está añadiendo un nuevo set
