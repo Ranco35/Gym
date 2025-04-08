@@ -145,7 +145,7 @@ class TrainerTrainingDay(models.Model):
 class TrainerSet(models.Model):
     """Series de ejercicios para rutinas de entrenamiento."""
     training_day = models.ForeignKey(TrainerTrainingDay, on_delete=models.CASCADE, related_name='sets')
-    exercise = models.CharField("Ejercicio", max_length=200)
+    exercise = models.ForeignKey('exercises.Exercise', on_delete=models.CASCADE, verbose_name="Ejercicio")
     sets_count = models.IntegerField("Número de series", default=3)
     reps = models.IntegerField("Repeticiones", default=12)
     weight = models.FloatField("Peso (kg)", null=True, blank=True)
@@ -159,7 +159,7 @@ class TrainerSet(models.Model):
         verbose_name_plural = "Series de ejercicios"
 
     def __str__(self):
-        return f"{self.exercise} - {self.training_day}"
+        return f"{self.exercise.name} - {self.training_day}"
         
     @property
     def suggested_weight(self):

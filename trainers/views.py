@@ -696,12 +696,24 @@ def edit_training(request, student_id, training_id):
     
     # Obtener todos los ejercicios de la base de datos
     all_exercises = Exercise.objects.all().order_by('muscle_group', 'name')
+    
+    # Depuración: contar ejercicios por grupo muscular
+    print(f"Total de ejercicios: {all_exercises.count()}")
+    for group, label in Exercise.MUSCLE_GROUPS:
+        count = all_exercises.filter(muscle_group=group).count()
+        print(f"  - {label} ({group}): {count} ejercicios")
+    
+    # Verificar específicamente los ejercicios de pecho
+    chest_exercises = all_exercises.filter(muscle_group='chest')
+    print(f"Ejercicios de pecho: {chest_exercises.count()}")
+    for ex in chest_exercises:
+        print(f"  - ID: {ex.id}, Nombre: {ex.name}, Grupo: {ex.muscle_group}")
 
     if request.method == 'POST':
         # Si se está añadiendo un nuevo set
         if 'add_set' in request.POST:
             day_id = request.POST.get('day_id')
-            exercise = request.POST.get('exercise')
+            exercise_id = request.POST.get('exercise')
             sets_count = request.POST.get('sets_count', 4)
             reps = request.POST.get('reps')
             weight = request.POST.get('weight', None)
@@ -709,6 +721,9 @@ def edit_training(request, student_id, training_id):
             
             # Verificar que existe el día
             training_day = get_object_or_404(TrainerTrainingDay, id=day_id, training=training)
+            
+            # Obtener el ejercicio por ID
+            exercise = get_object_or_404(Exercise, id=exercise_id)
             
             # Obtener el último orden
             last_order = TrainerSet.objects.filter(
@@ -726,7 +741,7 @@ def edit_training(request, student_id, training_id):
                 order=last_order + 1
             )
             
-            messages.success(request, f'Ejercicio "{exercise}" añadido correctamente')
+            messages.success(request, f'Ejercicio "{exercise.name}" añadido correctamente')
             # Redirigir a la misma página con un parámetro para mantener activa la pestaña del día donde se agregó el ejercicio
             base_url = reverse('trainers:edit_training', kwargs={'student_id': student_id, 'training_id': training_id})
             return redirect(f'{base_url}?active_day={day_id}')
@@ -739,7 +754,7 @@ def edit_training(request, student_id, training_id):
                 set_obj = TrainerSet.objects.get(id=set_id, training_day__training=training)
                 # Guardar el ID del día antes de eliminar el set
                 day_id = set_obj.training_day.id
-                exercise_name = set_obj.exercise
+                exercise_name = set_obj.exercise.name
                 set_obj.delete()
                 messages.success(request, f'Ejercicio "{exercise_name}" eliminado correctamente')
             except TrainerSet.DoesNotExist:

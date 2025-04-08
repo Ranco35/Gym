@@ -270,11 +270,21 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label for="exercise" class="form-label">Seleccionar Ejercicio *</label>
+                        <div class="d-flex justify-content-between mb-2">
+                            <label for="exercise" class="form-label">Seleccionar Ejercicio *</label>
+                            <div>
+                                <button type="button" class="btn btn-sm btn-outline-primary" id="show-all-exercises">
+                                    Mostrar todos
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="show-chest-exercises">
+                                    Solo pecho
+                                </button>
+                            </div>
+                        </div>
                         <select class="form-select" id="exercise" name="exercise" required data-day-id="{{ day.id }}">
                             <option value="">Selecciona un ejercicio</option>
                             {% for exercise in all_exercises %}
-                            <option value="{{ exercise.name }}" data-muscle-group="{{ exercise.muscle_group }}" data-primary-muscles="{{ exercise.primary_muscles }}">
+                            <option value="{{ exercise.id }}" data-muscle-group="{{ exercise.muscle_group }}" data-primary-muscles="{{ exercise.primary_muscles }}">
                                 {{ exercise.name }} ({{ exercise.get_muscle_group_display }})
                             </option>
                             {% endfor %}
@@ -317,6 +327,65 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Depuración: comprobar los ejercicios en el selector al cargar
+        const exerciseSelect = document.getElementById('exercise');
+        if (exerciseSelect) {
+            console.log('Ejercicios en el selector al cargar la página:');
+            const allOptions = exerciseSelect.querySelectorAll('option');
+            console.log(`Total de opciones: ${allOptions.length}`);
+            
+            Array.from(allOptions).forEach(option => {
+                if (option.value !== '') {  // Ignorar la opción placeholder
+                    console.log(`  - Valor: ${option.value}, Texto: ${option.text}, Grupo: ${option.getAttribute('data-muscle-group')}`);
+                }
+            });
+            
+            // Contar por grupo muscular
+            const muscleGroups = {};
+            Array.from(allOptions).forEach(option => {
+                const group = option.getAttribute('data-muscle-group');
+                if (group && option.value !== '') {
+                    muscleGroups[group] = (muscleGroups[group] || 0) + 1;
+                }
+            });
+            
+            console.log('Conteo por grupo muscular:');
+            Object.entries(muscleGroups).forEach(([group, count]) => {
+                console.log(`  - ${group}: ${count} ejercicios`);
+            });
+        }
+        
+        // Botones para filtrar ejercicios
+        document.getElementById('show-all-exercises')?.addEventListener('click', function() {
+            const exerciseSelect = document.getElementById('exercise');
+            const allOptions = exerciseSelect.querySelectorAll('option');
+            
+            // Mostrar todas las opciones
+            allOptions.forEach(option => {
+                option.style.display = '';
+            });
+            
+            console.log('Mostrando todos los ejercicios');
+        });
+        
+        document.getElementById('show-chest-exercises')?.addEventListener('click', function() {
+            const exerciseSelect = document.getElementById('exercise');
+            const allOptions = exerciseSelect.querySelectorAll('option');
+            
+            // Ocultar todas y luego mostrar solo las de pecho
+            allOptions.forEach(option => {
+                const muscleGroup = option.getAttribute('data-muscle-group');
+                
+                if (option.value === '' || muscleGroup === 'chest') {
+                    option.style.display = '';
+                } else {
+                    option.style.display = 'none';
+                }
+            });
+            
+            console.log('Mostrando solo ejercicios de pecho');
+        });
+        
         // Modal de añadir ejercicio - configurar día seleccionado
         const addExerciseModal = document.getElementById('addExerciseModal');
         if (addExerciseModal) {
@@ -331,10 +400,25 @@
                 modalDayId.value = dayId;
                 dayLabel.textContent = `Día: ${dayName}`;
                 
+                // Depuración: mostrar todas las opciones disponibles
+                const exerciseSelect = document.getElementById('exercise');
+                const allOptions = exerciseSelect.querySelectorAll('option');
+                console.log('Opciones disponibles:', Array.from(allOptions).map(opt => ({ 
+                    value: opt.value, 
+                    text: opt.text,
+                    muscleGroup: opt.getAttribute('data-muscle-group')
+                })));
+                
+                // Recargar las opciones para asegurarnos de que todas están visibles
+                allOptions.forEach(option => {
+                    option.style.display = '';
+                });
+                
                 // Obtener los músculos seleccionados para este día (usando checkboxes)
                 const muscleCheckboxes = document.querySelectorAll(`.muscle-checkbox[data-day-id="${dayId}"]:checked`);
                 if (muscleCheckboxes.length > 0) {
                     const selectedMuscles = Array.from(muscleCheckboxes).map(cb => cb.value);
+                    console.log('Músculos seleccionados:', selectedMuscles);
                     filterExercisesByMuscles(selectedMuscles);
                 }
             });
@@ -345,13 +429,20 @@
             const exerciseSelect = document.getElementById('exercise');
             const allOptions = exerciseSelect.querySelectorAll('option');
             
+            console.log('Filtrando ejercicios por músculos:', muscles);
+            console.log('Total de opciones:', allOptions.length);
+            
             if (!muscles || muscles.length === 0) {
                 // Si no hay músculos seleccionados, mostrar todos los ejercicios
+                console.log('No hay músculos seleccionados, mostrando todos los ejercicios');
                 allOptions.forEach(option => {
                     option.style.display = '';
                 });
                 return;
             }
+            
+            let visibleCount = 0;
+            let hiddenCount = 0;
             
             allOptions.forEach(option => {
                 // La primera opción (placeholder) siempre se muestra
@@ -362,6 +453,8 @@
                 const muscleGroup = option.getAttribute('data-muscle-group');
                 const primaryMuscles = option.getAttribute('data-primary-muscles');
                 
+                console.log(`Ejercicio: ${option.text}, Grupo: ${muscleGroup}, Músculos: ${primaryMuscles}`);
+                
                 // Comprobar si el ejercicio coincide con alguno de los músculos seleccionados
                 const matchesMuscleGroup = muscles.includes(muscleGroup);
                 const matchesPrimaryMuscles = primaryMuscles && muscles.some(muscle => 
@@ -370,10 +463,16 @@
                 
                 if (matchesMuscleGroup || matchesPrimaryMuscles) {
                     option.style.display = '';
+                    visibleCount++;
+                    console.log(`  -> MOSTRADO (${matchesMuscleGroup ? 'coincide grupo muscular' : 'coincide músculos primarios'})`);
                 } else {
                     option.style.display = 'none';
+                    hiddenCount++;
+                    console.log(`  -> OCULTO (no coincide con los músculos seleccionados)`);
                 }
             });
+            
+            console.log(`Resultado del filtrado: ${visibleCount} opciones visibles, ${hiddenCount} opciones ocultas`);
             
             // Establecer la primera opción visible como seleccionada
             const firstVisibleOption = Array.from(allOptions).find(option => 
@@ -382,8 +481,10 @@
             
             if (firstVisibleOption) {
                 exerciseSelect.value = firstVisibleOption.value;
+                console.log(`Seleccionada primera opción visible: ${firstVisibleOption.text}`);
             } else {
                 exerciseSelect.value = ''; // Si no hay coincidencias, seleccionar el placeholder
+                console.log('No hay opciones visibles, seleccionando placeholder');
             }
         }
         
