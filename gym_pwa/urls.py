@@ -18,6 +18,7 @@ urlpatterns = [
     path('routine/<int:routine_id>/', views.pwa_routine_detail, name='routine_detail'),
     path('routine/<int:routine_id>/start/', views.pwa_routine_start, name='routine_start'),
     path('routine/<int:routine_id>/set-active/', views.set_active_routine, name='set_active_routine'),
+    path('routine/<int:routine_id>/delete/', views.delete_routine, name='delete_routine'),
     
     # Utilidades
     path('admin/convert-images/', views.convert_images_to_webp, name='convert_images'),

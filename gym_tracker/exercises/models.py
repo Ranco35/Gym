@@ -90,6 +90,8 @@ class Exercise(models.Model):
     image = models.ImageField(upload_to='exercises/', blank=True, null=True, verbose_name='Imagen')
     video_url = models.URLField(blank=True, null=True, verbose_name='URL del video')
     
+    is_active = models.BooleanField(default=True, verbose_name='Activo')
+    
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
         null=True, 

@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Ejercicio: {{ set_obj.exercise.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'trainers:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'trainers:student_list' %}">Estudiantes</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'trainers:student_detail' student.id %}">{{ student.get_full_name|default:student.username }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'trainers:student_trainings' student.id %}">Rutinas</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'trainers:edit_training' student.id training.id %}?active_day={{ set_obj.training_day.id }}">Editar: {{ training.name }}</a></li>
+            <li class="breadcrumb-item active">Editar Ejercicio: {{ set_obj.exercise.name }}</li>
+        </ol>
+    </nav>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1>Editar Ejercicio</h1>
+            <p class="text-muted">
+                Rutina: {{ training.name }} | Día: {{ set_obj.training_day.day_of_week }} | Ejercicio: {{ set_obj.exercise.name }}
+            </p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Detalles del Ejercicio</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="sets_count" class="form-label">Número de Series *</label>
+                                <input type="number" class="form-control" id="sets_count" name="sets_count" value="{{ sets_count }}" min="1" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="reps" class="form-label">Repeticiones *</label>
+                                <input type="text" class="form-control" id="reps" name="reps" value="{{ reps }}" placeholder="Ej: 10-12" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="weight" class="form-label">Peso (kg)</label>
+                            <input type="number" step="0.1" class="form-control" id="weight" name="weight" value="{{ weight|default_if_none:'' }}" placeholder="Ej: 40.5">
+                             <div class="form-text">Deja en blanco si no aplica (ej: ejercicios corporales).</div>
+                       </div>
+                       
+                       <div class="mb-3">
+                           <label for="notes" class="form-label">Notas Adicionales</label>
+                           <textarea class="form-control" id="notes" name="notes" rows="3">{{ notes|default_if_none:'' }}</textarea>
+                           <div class="form-text">Ej: Drop set en la última serie, tempo 2-0-2, etc.</div>
+                       </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'trainers:edit_training' student.id training.id %}?active_day={{ set_obj.training_day.id }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

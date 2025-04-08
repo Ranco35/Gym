@@ -38,7 +38,6 @@ class ExerciseForm(forms.ModelForm):
         model = Exercise
         fields = [
             'name', 
-            'slug',
             'description',
             'muscle_group',
             'primary_muscles',
@@ -51,7 +50,6 @@ class ExerciseForm(forms.ModelForm):
         ]
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
-            'slug': forms.TextInput(attrs={'class': 'form-control', 'required': False}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'muscle_group': forms.Select(attrs={'class': 'form-select'}),
             'primary_muscles': forms.TextInput(attrs={

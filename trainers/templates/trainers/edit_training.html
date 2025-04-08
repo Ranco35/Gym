@@ -194,14 +194,18 @@
                                                         <td><strong>{{ set.exercise.name }}</strong></td>
                                                         <td>{{ set.sets_count }}</td>
                                                         <td>{{ set.reps }}</td>
-                                                        <td>{{ set.weight }}</td>
-                                                        <td>{{ set.notes|default:"-" }}</td>
+                                                        <td>{{ set.weight|default_if_none:"-" }}</td>
+                                                        <td>{{ set.notes|default_if_none:"-" }}</td>
                                                         <td>
+                                                            <a href="{% url 'trainers:edit_trainer_set' set.id %}" class="btn btn-sm btn-outline-secondary me-1" title="Editar ejercicio">
+                                                                <i class="fas fa-pencil-alt"></i>
+                                                            </a>
                                                             <form method="post" action="{% url 'trainers:edit_training' trainer_student.student.id training.id %}" class="d-inline" onsubmit="return confirm('¿Estás seguro de eliminar este ejercicio?');">
                                                                 {% csrf_token %}
                                                                 <input type="hidden" name="delete_set" value="1">
                                                                 <input type="hidden" name="set_id" value="{{ set.id }}">
-                                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                                <input type="hidden" name="day_id" value="{{ day.id }}">
+                                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar ejercicio">
                                                                     <i class="fas fa-trash"></i>
                                                                 </button>
                                                             </form>
@@ -259,7 +263,7 @@
                 <h5 class="modal-title" id="addExerciseModalLabel">Añadir Nuevo Ejercicio</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form method="post" action="{% url 'trainers:edit_training' trainer_student.student.id training.id %}">
+            <form method="post" id="add-exercise-form" action="{% url 'trainers:edit_training' trainer_student.student.id training.id %}">
                 {% csrf_token %}
                 <input type="hidden" name="add_set" value="1">
                 <input type="hidden" name="day_id" id="modal-day-id">
@@ -378,7 +382,7 @@
                 
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Añadir Ejercicio</button>
+                    <button type="submit" id="add-exercise-submit-btn" class="btn btn-primary">Añadir Ejercicio</button>
                 </div>
             </form>
         </div>
@@ -493,6 +497,19 @@
                 group.style.display = '';
             });
         });
+        
+        // Deshabilitar botón de submit en el modal al enviar para evitar duplicados
+        const addExerciseForm = document.getElementById('add-exercise-form');
+        const addExerciseSubmitBtn = document.getElementById('add-exercise-submit-btn');
+        
+        if (addExerciseForm && addExerciseSubmitBtn) {
+            addExerciseForm.addEventListener('submit', function() {
+                // Deshabilitar botón
+                addExerciseSubmitBtn.disabled = true;
+                // Cambiar texto (opcional)
+                addExerciseSubmitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Guardando...';
+            });
+        }
     });
 </script>
 {% endblock %} 

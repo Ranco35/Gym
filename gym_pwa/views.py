@@ -448,4 +448,47 @@ def set_active_routine(request, routine_id):
         messages.error(request, f"Error al establecer la rutina activa: {str(e)}")
     
     # Redirigir de vuelta a la lista de rutinas
+    return redirect('gym_pwa:workouts')
+
+@login_required
+def delete_routine(request, routine_id):
+    """Elimina una rutina si el usuario tiene permisos."""
+    try:
+        # Intentar eliminar la rutina (podría ser TrainerTraining o WeeklyRoutine)
+        deleted = False
+        
+        # Verificar si es una rutina de entrenador creada por el usuario
+        try:
+            routine = TrainerTraining.objects.get(
+                models.Q(created_by=request.user) & models.Q(id=routine_id)
+            )
+            routine_name = routine.name
+            routine.delete()
+            deleted = True
+            messages.success(request, f"Rutina '{routine_name}' eliminada correctamente.")
+        except TrainerTraining.DoesNotExist:
+            pass
+            
+        # Si no es de entrenador, verificar si es una rutina semanal personal
+        if not deleted:
+            try:
+                routine = WeeklyRoutine.objects.get(id=routine_id, user=request.user)
+                routine_name = routine.name
+                routine.delete()
+                deleted = True
+                messages.success(request, f"Rutina '{routine_name}' eliminada correctamente.")
+            except WeeklyRoutine.DoesNotExist:
+                pass
+        
+        if not deleted:
+            messages.error(request, "No tienes permisos para eliminar esta rutina o no existe.")
+            
+        # Limpiar la rutina activa en la sesión si es la que se eliminó
+        if request.session.get('selected_routine_id') == str(routine_id):
+            del request.session['selected_routine_id']
+            
+    except Exception as e:
+        messages.error(request, f"Error al eliminar la rutina: {str(e)}")
+    
+    # Redirigir de vuelta a la lista de rutinas
     return redirect('gym_pwa:workouts') 

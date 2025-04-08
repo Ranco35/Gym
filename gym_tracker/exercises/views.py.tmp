@@ -1,0 +1,67 @@
+@login_required
+def export_exercises(request):
+    """
+    Vista para exportar ejercicios en formato JSON o Excel.
+    Los usuarios pueden exportar sus propios ejercicios o todos si son admin/superuser.
+    """
+    try:
+        # Obtener ejercicios según permisos
+        if is_admin_or_superuser(request.user):
+            exercises = Exercise.objects.all()
+        else:
+            exercises = Exercise.objects.filter(created_by=request.user)
+        
+        if not exercises.exists():
+            messages.error(request, 'No hay ejercicios para exportar.')
+            return redirect('exercises:exercise-list')
+        
+        is_json_export = 'json' in request.path
+        
+        if is_json_export:
+            serializer = ExerciseExportSerializer(exercises, many=True)
+            json_data = json.dumps(serializer.data, indent=4, ensure_ascii=False)
+            response = HttpResponse(json_data, content_type='application/json; charset=utf-8')
+            response['Content-Disposition'] = f'attachment; filename="ejercicios_exportados_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json"'
+            return response
+        
+        # Exportar Excel
+        data = []
+        for exercise in exercises:
+            exercise_data = {
+                'ID': exercise.id,
+                'Nombre': exercise.name,
+                'Slug': exercise.slug,
+                'Descripción': exercise.description,
+                'Grupo Muscular': exercise.get_muscle_group_display(),
+                'Dificultad': exercise.get_difficulty_display(),
+                'Músculos Principales': exercise.primary_muscles or '',
+                'Músculos Secundarios': exercise.secondary_muscles or '',
+                'Equipamiento': exercise.equipment or '',
+                'Consejos': exercise.tips or '',
+                'URL del Video': exercise.video_url or '',
+                'Imagen Principal': exercise.image.url if exercise.image else '',
+                'Fecha de Creación': exercise.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                'Última Actualización': exercise.updated_at.strftime('%Y-%m-%d %H:%M:%S')
+            }
+            data.append(exercise_data)
+        
+        df = pd.DataFrame(data)
+        output = io.BytesIO()
+        
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Ejercicios')
+            worksheet = writer.sheets['Ejercicios']
+            for i, col in enumerate(df.columns):
+                column_width = max(df[col].astype(str).map(len).max(), len(col)) + 2
+                worksheet.column_dimensions[chr(65 + i)].width = column_width
+        
+        output.seek(0)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        response = HttpResponse(output.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename=ejercicios_exportados_{timestamp}.xlsx'
+        return response
+        
+    except Exception as e:
+        print(f"Error en export_exercises: {str(e)}")
+        messages.error(request, f'Error al exportar ejercicios: {str(e)}')
+        return redirect('exercises:exercise-list') 

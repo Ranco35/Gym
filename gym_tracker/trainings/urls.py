@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .views import TrainingListCreateView, TrainingDetailView, save_set_simple, edit_user_training, delete_set, edit_set # Asegurarse de importar las vistas
 
 app_name = 'trainings'
 
@@ -35,4 +36,23 @@ urlpatterns = [
     
     # Estadísticas
     path('stats/', views.training_stats, name='training_stats'),
+    
+    path('api/trainings/', TrainingListCreateView.as_view(), name='training-list-create'),
+    path('api/trainings/<int:pk>/', TrainingDetailView.as_view(), name='training-detail'),
+    path('api/toggle_complete/<int:pk>/', views.toggle_complete, name='toggle-complete'),
+    path('api/get_routine_days/<int:routine_id>/', views.get_routine_days, name='get-routine-days'),
+    path('create_from_routine/', views.create_training_from_routine, name='create-from-routine'),
+    path('execute/<int:routine_id>/<int:day_id>/', views.execute_training, name='execute-training'),
+    path('session/<int:training_id>/', views.training_session_view, name='training-session'),
+    path('api/save_set/', views.save_set, name='save-set'), # Para Sets del modelo Training
+    path('api/save_set_simple/', save_set_simple, name='save_set_simple'), # Para guardar sets rápidos
+    path('api/get_completed_sets/<int:training_id>/', views.get_completed_sets, name='get-completed-sets'),
+    path('stats/', views.training_stats, name='training-stats'),
+    path('routines/', views.routine_list, name='routine_list'),
+    path('list/', views.training_list, name='training_list'), # Vista para listar entrenamientos completados
+    path('set/<int:set_id>/delete/', delete_set, name='delete_set'),
+    path('api/create_training_session/', views.create_training_session, name='create_training_session'),
+    
+    # Nueva ruta para ver detalles de rutina asignada por entrenador
+    path('assigned-trainings/<int:training_id>/', views.assigned_training_detail, name='assigned_training_detail'),
 ]

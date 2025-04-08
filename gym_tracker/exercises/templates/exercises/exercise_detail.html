@@ -1,137 +1,102 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 {% load static %}
 
-{% block title %}{{ exercise.name }} - GymTracker 360{% endblock %}
+{% block title %}{{ exercise.name }}{% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container mt-4">
     <div class="row">
         <div class="col-md-8">
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{% url 'exercises:exercise-list' %}">Ejercicios</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">{{ exercise.name }}</li>
-                </ol>
-            </nav>
-
             <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0">{{ exercise.name }}</h3>
+                    {% if can_edit %}
+                    <div>
+                        <a href="{% if exercise.slug %}{% url 'exercises:exercise-edit-slug' slug=exercise.slug %}{% else %}{% url 'exercises:exercise-edit' pk=exercise.pk %}{% endif %}" class="btn btn-primary">
+                            <i class="fas fa-edit"></i> Editar
+                        </a>
+                        <a href="{% if exercise.slug %}{% url 'exercises:exercise-delete-slug' slug=exercise.slug %}{% else %}{% url 'exercises:exercise-delete' pk=exercise.pk %}{% endif %}" class="btn btn-danger">
+                            <i class="fas fa-trash-alt"></i> Eliminar
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start mb-4">
-                        <h1 class="card-title h2">{{ exercise.name }}</h1>
-                        {% if can_edit %}
-                        <div class="btn-group">
-                            <a href="{% url 'exercises:exercise-edit' exercise.pk %}" class="btn btn-primary">
-                                <i class="fas fa-edit me-2"></i>Editar
-                            </a>
-                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteExerciseModal">
-                                <i class="fas fa-trash me-2"></i>Eliminar
-                            </button>
-                        </div>
-                        {% endif %}
-                    </div>
-
                     {% if exercise.image %}
-                    <div class="text-center mb-4">
-                        <img src="{{ exercise.image.url }}" alt="{{ exercise.name }}" class="img-fluid rounded" style="max-height: 400px;">
-                    </div>
+                    <img src="{{ exercise.image.url }}" alt="{{ exercise.name }}" class="img-fluid mb-3">
                     {% endif %}
 
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <h5><i class="fas fa-dumbbell me-2"></i>Grupo Muscular</h5>
-                            <p>{{ exercise.get_muscle_group_display }}</p>
-                        </div>
-                        <div class="col-md-6">
-                            <h5><i class="fas fa-signal me-2"></i>Dificultad</h5>
-                            <p>{{ exercise.get_difficulty_display }}</p>
-                        </div>
-                    </div>
+                    <h5>Descripción</h5>
+                    <p>{{ exercise.description|linebreaks }}</p>
 
-                    <div class="mb-4">
-                        <h5><i class="fas fa-align-left me-2"></i>Descripción</h5>
-                        <p>{{ exercise.description|linebreaks }}</p>
-                    </div>
-
-                    {% if exercise.primary_muscles or exercise.secondary_muscles %}
-                    <div class="row mb-4">
-                        {% if exercise.primary_muscles %}
+                    <div class="row">
                         <div class="col-md-6">
-                            <h5><i class="fas fa-bullseye me-2"></i>Músculos Principales</h5>
-                            <p>{{ exercise.primary_muscles }}</p>
+                            <h5>Detalles</h5>
+                            <ul class="list-unstyled">
+                                <li><strong>Grupo Muscular:</strong> {{ exercise.get_muscle_group_display }}</li>
+                                <li><strong>Dificultad:</strong> {{ exercise.get_difficulty_display }}</li>
+                                <li><strong>Equipamiento:</strong> {{ exercise.equipment|default:"No requiere" }}</li>
+                            </ul>
                         </div>
-                        {% endif %}
-                        {% if exercise.secondary_muscles %}
                         <div class="col-md-6">
-                            <h5><i class="fas fa-dot-circle me-2"></i>Músculos Secundarios</h5>
-                            <p>{{ exercise.secondary_muscles }}</p>
+                            <h5>Músculos</h5>
+                            <ul class="list-unstyled">
+                                <li><strong>Principales:</strong> {{ exercise.primary_muscles|default:"No especificado" }}</li>
+                                <li><strong>Secundarios:</strong> {{ exercise.secondary_muscles|default:"No especificado" }}</li>
+                            </ul>
                         </div>
-                        {% endif %}
                     </div>
-                    {% endif %}
-
-                    {% if exercise.equipment %}
-                    <div class="mb-4">
-                        <h5><i class="fas fa-tools me-2"></i>Equipamiento</h5>
-                        <p>{{ exercise.equipment }}</p>
-                    </div>
-                    {% endif %}
 
                     {% if exercise.tips %}
-                    <div class="mb-4">
-                        <h5><i class="fas fa-lightbulb me-2"></i>Consejos</h5>
-                        <p>{{ exercise.tips|linebreaks }}</p>
-                    </div>
+                    <h5>Consejos</h5>
+                    <p>{{ exercise.tips|linebreaks }}</p>
                     {% endif %}
 
                     {% if exercise.video_url %}
-                    <div class="mb-4">
-                        <h5><i class="fab fa-youtube me-2"></i>Video Demostrativo</h5>
-                        <div class="ratio ratio-16x9">
-                            <iframe src="{{ exercise.video_url|safe }}" allowfullscreen></iframe>
-                        </div>
+                    <h5>Video Demostrativo</h5>
+                    <div class="embed-responsive embed-responsive-16by9">
+                        <iframe class="embed-responsive-item" src="{{ exercise.video_url }}" allowfullscreen></iframe>
                     </div>
                     {% endif %}
-
-                    <div class="text-muted">
-                        <small>
-                            Creado: {{ exercise.created_at|date:"d/m/Y H:i" }}
-                            {% if exercise.created_by %}
-                            por {{ exercise.created_by.get_full_name|default:exercise.created_by.username }}
-                            {% endif %}
-                        </small>
-                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="{% url 'exercises:exercise-list' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Volver al listado
+                    </a>
                 </div>
             </div>
         </div>
-
+        
         <div class="col-md-4">
-            <!-- Aquí puedes añadir contenido relacionado, como otros ejercicios similares -->
+            {% if exercise.images.all %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Imágenes adicionales</h5>
+                </div>
+                <div class="card-body">
+                    <div id="exerciseCarousel" class="carousel slide" data-ride="carousel">
+                        <div class="carousel-inner">
+                            {% for image in exercise.images.all %}
+                            <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                                <img src="{{ image.image.url }}" class="d-block w-100" alt="Imagen {{ forloop.counter }}">
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% if exercise.images.count > 1 %}
+                        <a class="carousel-control-prev" href="#exerciseCarousel" role="button" data-slide="prev">
+                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                            <span class="sr-only">Anterior</span>
+                        </a>
+                        <a class="carousel-control-next" href="#exerciseCarousel" role="button" data-slide="next">
+                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                            <span class="sr-only">Siguiente</span>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
-
-{% if can_edit %}
-<!-- Modal de Confirmación de Eliminación -->
-<div class="modal fade" id="deleteExerciseModal" tabindex="-1" aria-labelledby="deleteExerciseModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="deleteExerciseModalLabel">Confirmar Eliminación</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                ¿Estás seguro de que deseas eliminar el ejercicio "{{ exercise.name }}"?
-                Esta acción no se puede deshacer.
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <form action="{% url 'exercises:exercise-delete' exercise.pk %}" method="post" class="d-inline">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-danger">Eliminar</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
 {% endblock %} 

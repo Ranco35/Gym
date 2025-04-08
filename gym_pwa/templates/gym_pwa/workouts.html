@@ -293,8 +293,11 @@
                                         <a href="/pwa/workout/{{ routine.id }}/?type=trainer" class="btn btn-primary btn-block mb-2">
                                             Comenzar Entrenamiento
                                         </a>
-                                        <a href="/pwa/routine/{{ routine.id }}/set-active/" class="btn btn-outline-primary btn-block">
+                                        <a href="/pwa/routine/{{ routine.id }}/set-active/" class="btn btn-outline-primary btn-block mb-2">
                                             Establecer como Activa
+                                        </a>
+                                        <a href="/pwa/routine/{{ routine.id }}/delete/" class="btn btn-outline-danger btn-block" onclick="return confirm('¿Estás seguro de que deseas eliminar esta rutina?');">
+                                            Eliminar Rutina
                                         </a>
                                     </div>
                                 </div>

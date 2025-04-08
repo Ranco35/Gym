@@ -694,7 +694,7 @@ def edit_training(request, student_id, training_id):
     for day in training_days:
         days_with_sets[day] = TrainerSet.objects.filter(training_day=day).order_by('order')
     
-    # Obtener todos los ejercicios de la base de datos
+    # Obtener todos los ejercicios activos de la base de datos
     all_exercises = Exercise.objects.all().order_by('muscle_group', 'name')
     
     # Depuración: contar ejercicios por grupo muscular
@@ -749,7 +749,7 @@ def edit_training(request, student_id, training_id):
         # Si se está eliminando un set
         elif 'delete_set' in request.POST:
             set_id = request.POST.get('set_id')
-            day_id = None
+            day_id = request.POST.get('day_id') # Recuperamos el day_id
             try:
                 set_obj = TrainerSet.objects.get(id=set_id, training_day__training=training)
                 # Guardar el ID del día antes de eliminar el set
@@ -828,6 +828,25 @@ def edit_training(request, student_id, training_id):
             # Redirigir a la misma página con un parámetro para mantener activa la pestaña del día actualizado
             base_url = reverse('trainers:edit_training', kwargs={'student_id': student_id, 'training_id': training_id})
             return redirect(f'{base_url}?active_day={day_id}')
+        
+        # Si se está eliminando un ejercicio
+        elif 'delete_exercise' in request.POST:
+            exercise_id = request.POST.get('exercise_id')
+            try:
+                exercise = Exercise.objects.get(id=exercise_id)
+                # Verificar si el ejercicio está en uso
+                if TrainerSet.objects.filter(exercise=exercise).exists():
+                    # Si está en uso, marcar como inactivo
+                    exercise.soft_delete()
+                    messages.success(request, f'Ejercicio "{exercise.name}" marcado como inactivo')
+                else:
+                    # Si no está en uso, eliminar completamente
+                    exercise.delete()
+                    messages.success(request, f'Ejercicio "{exercise.name}" eliminado correctamente')
+            except Exercise.DoesNotExist:
+                messages.error(request, 'El ejercicio no existe')
+            
+            return redirect('trainers:edit_training', student_id=student_id, training_id=training_id)
     
     # Obtener el día activo de la URL (si existe)
     active_day = request.GET.get('active_day')
@@ -1001,9 +1020,20 @@ def select_routine_day(request, routine_id, session_id, student_id):
         
         # Copiar los ejercicios de la rutina al entrenamiento temporal
         for i, exercise in enumerate(routine_day.exercises.all()):
+            # Obtener el objeto Exercise en lugar de solo usar el nombre
+            try:
+                # Intentar buscar el ejercicio por nombre
+                exercise_obj = Exercise.objects.get(name=exercise.exercise.name)
+            except Exercise.DoesNotExist:
+                # Si no existe, crear el ejercicio
+                exercise_obj = Exercise.objects.create(
+                    name=exercise.exercise.name,
+                    description=f"Ejercicio importado desde rutina: {routine.name}"
+                )
+                
             TrainerSet.objects.create(
                 training_day=training_day,
-                exercise=exercise.exercise.name,
+                exercise=exercise_obj,  # Usar el objeto de ejercicio
                 sets_count=exercise.sets,
                 reps=exercise.reps,
                 weight=exercise.weight,
@@ -1190,3 +1220,72 @@ def use_training_routine(request, training_id, session_id, student_id):
     
     messages.success(request, f'Sesión iniciada para la rutina {training.name}')
     return redirect('trainers:live_session', session_id=session.id)
+
+@login_required
+@trainer_required
+def edit_trainer_set(request, set_id):
+    """Vista para editar un ejercicio específico (TrainerSet) dentro de una rutina."""
+    set_obj = get_object_or_404(TrainerSet, id=set_id)
+    # Asegurarnos de que el entrenador actual es el que creó la rutina original
+    if request.user != set_obj.training_day.training.created_by:
+        messages.error(request, "No tienes permiso para editar este ejercicio.")
+        # Redirigir a una página segura, p.ej., el dashboard del entrenador
+        return redirect('trainers:dashboard') 
+
+    training = set_obj.training_day.training
+    student = training.user
+
+    if request.method == 'POST':
+        # Procesar formulario
+        sets_count_str = request.POST.get('sets_count')
+        reps = request.POST.get('reps')
+        weight_str = request.POST.get('weight')
+        notes = request.POST.get('notes', '')
+
+        try:
+            set_obj.sets_count = int(sets_count_str) if sets_count_str else 1
+            set_obj.reps = reps
+            set_obj.notes = notes
+            
+            if weight_str and weight_str.strip():
+                # Reemplazar coma por punto para conversión a float
+                weight_str = weight_str.replace(',', '.')
+                set_obj.weight = float(weight_str)
+            else:
+                set_obj.weight = None
+                
+            set_obj.save()
+            messages.success(request, f'Ejercicio "{set_obj.exercise.name}" actualizado correctamente.')
+            
+            # Redirigir de vuelta a la página de edición de la rutina, manteniendo la pestaña activa
+            base_url = reverse('trainers:edit_training', kwargs={'student_id': student.id, 'training_id': training.id})
+            return redirect(f'{base_url}?active_day={set_obj.training_day.id}')
+
+        except (ValueError, TypeError) as e:
+            messages.error(request, f'Error al actualizar el ejercicio: Datos inválidos. {e}')
+        except Exception as e:
+             messages.error(request, f'Ocurrió un error inesperado: {e}')
+             
+        # Si hay error, volver a mostrar el formulario con los datos ingresados
+        context = {
+            'set_obj': set_obj,
+            'student': student,
+            'training': training,
+            'sets_count': sets_count_str, # Pasar los valores POST para repoblar
+            'reps': reps,
+            'weight': weight_str,
+            'notes': notes,
+        }
+        return render(request, 'trainers/edit_trainer_set.html', context)
+
+    # Si es GET, mostrar formulario con datos actuales
+    context = {
+        'set_obj': set_obj,
+        'student': student,
+        'training': training,
+        'sets_count': set_obj.sets_count,
+        'reps': set_obj.reps,
+        'weight': set_obj.weight,
+        'notes': set_obj.notes,
+    }
+    return render(request, 'trainers/edit_trainer_set.html', context)

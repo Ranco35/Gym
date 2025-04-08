@@ -15,6 +15,7 @@ from django.core.exceptions import ValidationError
 from PIL import Image
 from io import BytesIO
 from django.core.files.base import ContentFile
+from django.urls import reverse
 
 from .models import Training, Set, UserProfile, Exercise
 from .serializers import TrainingSerializer
@@ -356,10 +357,16 @@ def execute_training(request, routine_id, day_id):
         # Para TrainerTraining, usar TrainerSet
         exercise_objects = routine_day.sets.all().order_by('order')
         
+        # Agregar mensaje para depurar si hay ejercicios
+        messages.debug(request, f"Día: {routine_day.day_of_week} - Encontrados {exercise_objects.count()} ejercicios")
+        
         # Convertir TrainerSet a formato compatible con la vista
         for trainer_set in exercise_objects:
             # Obtener el ejercicio directamente desde la relación ForeignKey
             exercise_obj = trainer_set.exercise
+            
+            # Imprimir información de debug del ejercicio
+            messages.debug(request, f"Ejercicio: {exercise_obj.name}, Sets: {trainer_set.sets_count}, Reps: {trainer_set.reps}")
             
             # Crear un objeto similar a RoutineExercise para mantener la compatibilidad
             exercises.append({
@@ -375,9 +382,14 @@ def execute_training(request, routine_id, day_id):
         # Para WeeklyRoutine, usar RoutineExercise
         exercise_objects = routine_day.exercises.all().order_by('order')
         exercises = list(exercise_objects)
+        
+        # Agregar mensaje para depurar si hay ejercicios
+        messages.debug(request, f"Día: {routine_day.day_of_week} - Encontrados {len(exercises)} ejercicios")
     
     if not exercises:
-        messages.error(request, "No hay ejercicios configurados para este día de entrenamiento.")
+        # Agregar mensajes de depuración adicionales
+        messages.error(request, f"No hay ejercicios configurados para este día ({routine_day.day_of_week}) de entrenamiento.")
+        messages.debug(request, f"Rutina: {routine.name} (ID: {routine.id}), Día: {routine_day.day_of_week} (ID: {routine_day.id})")
         return redirect('trainings:training-list-create')
     
     # Obtener el ejercicio actual (por defecto el primero)
@@ -1474,3 +1486,68 @@ def edit_set(request, set_id):
         'set': set_obj,
         'training': training
     })
+
+@login_required
+def assigned_training_detail(request, training_id):
+    """Vista para que el estudiante vea y edite los detalles de una rutina asignada por su entrenador."""
+    training = get_object_or_404(TrainerTraining, id=training_id)
+
+    # Verificar que el usuario logueado es el estudiante al que pertenece la rutina
+    if request.user != training.user:
+        messages.error(request, "No tienes permiso para ver esta rutina.")
+        return redirect('trainings:dashboard') # O a donde sea apropiado
+
+    # Manejar la actualización de un set
+    if request.method == 'POST':
+        if 'update_set' in request.POST:
+            set_id = request.POST.get('set_id')
+            day_id = request.POST.get('day_id') # Para la redirección
+            sets_count = request.POST.get('sets_count')
+            reps = request.POST.get('reps')
+            weight_str = request.POST.get('weight')
+            notes = request.POST.get('notes', '')
+
+            try:
+                # Asegurarse de que el set pertenezca a esta rutina específica y al usuario
+                set_obj = TrainerSet.objects.get(id=set_id, training_day__training=training)
+                
+                # Validar y actualizar
+                set_obj.sets_count = int(sets_count) if sets_count else 1
+                set_obj.reps = reps
+                set_obj.notes = notes
+                
+                if weight_str and weight_str.strip():
+                    set_obj.weight = float(weight_str.replace(',', '.'))
+                else:
+                    set_obj.weight = None
+                    
+                set_obj.save()
+                messages.success(request, f'Ejercicio "{set_obj.exercise.name}" actualizado.')
+                
+            except TrainerSet.DoesNotExist:
+                messages.error(request, 'El ejercicio a actualizar no existe o no pertenece a esta rutina.')
+            except (ValueError, TypeError) as e:
+                messages.error(request, f'Error al actualizar el ejercicio: {e}')
+
+            # Redirigir a la misma página manteniendo la pestaña activa
+            base_url = reverse('trainings:assigned_training_detail', kwargs={'training_id': training_id})
+            return redirect(f'{base_url}?active_day={day_id}')
+        else:
+            # Manejar otros posibles POST requests si los hubiera
+            pass
+
+    # Obtener los días de entrenamiento y sus sets para mostrarlos
+    training_days = training.days.all()
+    days_with_sets = {}
+    for day in training_days:
+        days_with_sets[day] = TrainerSet.objects.filter(training_day=day).order_by('order')
+
+    # Obtener el día activo de la URL para mantener la pestaña correcta
+    active_day = request.GET.get('active_day')
+
+    context = {
+        'training': training,
+        'days_with_sets': days_with_sets,
+        'active_day': active_day,
+    }
+    return render(request, 'trainings/assigned_training_detail.html', context)

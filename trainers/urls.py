@@ -35,4 +35,7 @@ urlpatterns = [
     
     # Añadir la nueva URL
     path('training/<int:training_id>/use/<int:session_id>/<int:student_id>/', views.use_training_routine, name='use_training_routine'),
+
+    # Nueva ruta para editar un set individual
+    path('set/<int:set_id>/edit/', views.edit_trainer_set, name='edit_trainer_set'),
 ] 

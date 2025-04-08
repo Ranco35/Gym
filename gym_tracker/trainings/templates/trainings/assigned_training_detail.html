@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalle de Rutina: {{ training.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'trainings:dashboard' %}">Dashboard</a></li>
+            {# Podríamos añadir un enlace a 'Mis Rutinas Asignadas' si existe #}
+            <li class="breadcrumb-item active">Rutina: {{ training.name }}</li>
+        </ol>
+    </nav>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1>{{ training.name }}</h1>
+            <p class="text-muted">
+                Asignada por: {{ training.created_by.get_full_name|default:training.created_by.username }} | 
+                Fecha de Inicio: {{ training.date|date:"d/m/Y" }}
+            </p>
+            {% if training.description %}
+                <p>{{ training.description }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Ejercicios por Día</h5>
+                </div>
+                <div class="card-body">
+                    {% if days_with_sets %}
+                        <ul class="nav nav-tabs mb-4" id="daysTabs" role="tablist">
+                            {% for day, sets in days_with_sets.items %}
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link {% if active_day and active_day == day.id|stringformat:'i' %}active{% elif not active_day and forloop.first %}active{% endif %}" 
+                                            id="day-{{ day.id }}-tab" 
+                                            data-bs-toggle="tab" 
+                                            data-bs-target="#day-{{ day.id }}" 
+                                            type="button" 
+                                            role="tab" 
+                                            aria-controls="day-{{ day.id }}" 
+                                            aria-selected="{% if active_day and active_day == day.id|stringformat:'i' %}true{% elif not active_day and forloop.first %}true{% else %}false{% endif %}">
+                                        {{ day.day_of_week }}
+                                    </button>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                        <div class="tab-content" id="daysTabsContent">
+                            {% for day, sets in days_with_sets.items %}
+                                <div class="tab-pane fade {% if active_day and active_day == day.id|stringformat:'i' %}show active{% elif not active_day and forloop.first %}show active{% endif %}" 
+                                     id="day-{{ day.id }}" 
+                                     role="tabpanel" 
+                                     aria-labelledby="day-{{ day.id }}-tab">
+                                    
+                                    <div class="mb-3">
+                                        <h5>{{ day.day_of_week }}</h5>
+                                        {% if day.focus %}<p class="text-muted fst-italic">Enfoque: {{ day.focus }}</p>{% endif %}
+                                    </div>
+
+                                    {% if sets %}
+                                        <div class="table-responsive">
+                                            <table class="table table-hover">
+                                                <thead>
+                                                    <tr>
+                                                        <th>#</th>
+                                                        <th>Ejercicio</th>
+                                                        <th>Series</th>
+                                                        <th>Repeticiones</th>
+                                                        <th>Peso (kg)</th>
+                                                        <th>Notas</th>
+                                                        <th>Acciones</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for set in sets %}
+                                                    <tr>
+                                                        <form method="post" action="{% url 'trainings:assigned_training_detail' training.id %}" class="d-inline set-update-form">
+                                                            {% csrf_token %}
+                                                            <input type="hidden" name="update_set" value="1">
+                                                            <input type="hidden" name="set_id" value="{{ set.id }}">
+                                                            <input type="hidden" name="day_id" value="{{ day.id }}"> {# Para saber a qué día redirigir #}
+
+                                                            <td>{{ forloop.counter }}</td>
+                                                            <td><strong>{{ set.exercise.name }}</strong></td>
+                                                            <td>
+                                                                <input type="number" class="form-control form-control-sm" name="sets_count" value="{{ set.sets_count }}" min="1" style="width: 70px;" required>
+                                                            </td>
+                                                            <td>
+                                                                <input type="text" class="form-control form-control-sm" name="reps" value="{{ set.reps }}" style="width: 70px;" required>
+                                                            </td>
+                                                            <td>
+                                                                <input type="number" step="0.1" class="form-control form-control-sm" name="weight" value="{{ set.weight|default_if_none:'' }}" min="0" style="width: 80px;">
+                                                            </td>
+                                                            <td>
+                                                                <input type="text" class="form-control form-control-sm" name="notes" value="{{ set.notes|default_if_none:'' }}" placeholder="-">
+                                                            </td>
+                                                            <td>
+                                                                <button type="submit" class="btn btn-sm btn-outline-primary me-1" title="Guardar cambios">
+                                                                    <i class="fas fa-save"></i>
+                                                                </button>
+                                                                {# El estudiante no puede eliminar sets #}
+                                                            </td>
+                                                        </form> {# Fin del formulario de actualización #}
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    {% else %}
+                                        <div class="alert alert-info">
+                                            No hay ejercicios asignados para este día.
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            Esta rutina no tiene días asignados.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-12 text-end">
+             {# Quizás un botón para iniciar la sesión basada en esta rutina #}
+             {# <a href="#" class="btn btn-success">Iniciar Entrenamiento</a> #}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Mantener activa la pestaña seleccionada después de recarga
+        const urlParams = new URLSearchParams(window.location.search);
+        const activeDay = urlParams.get('active_day');
+        
+        if (activeDay) {
+            const tab = document.getElementById(`day-${activeDay}-tab`);
+            if (tab) {
+                if (typeof bootstrap !== 'undefined') {
+                    const bsTab = new bootstrap.Tab(tab);
+                    bsTab.show();
+                }
+            }
+        }
+    });
+</script>
+{% endblock %} 
