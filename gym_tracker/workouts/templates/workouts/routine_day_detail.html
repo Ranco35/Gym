@@ -91,7 +91,7 @@
                         class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
                         <option value="">Selecciona un ejercicio</option>
                         {% for exercise in all_exercises %}
-                        <option value="{{ exercise.pk }}" data-category="{{ exercise.category }}" data-primary-muscles="{{ exercise.primary_muscles }}">{{ exercise.name }} ({{ exercise.category }})</option>
+                        <option value="{{ exercise.pk }}" data-muscle-group="{{ exercise.muscle_group }}" data-primary-muscles="{{ exercise.primary_muscles }}">{{ exercise.name }} ({{ exercise.get_muscle_group_display }})</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -169,16 +169,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
                 
-                const category = option.getAttribute('data-category');
+                const muscleGroup = option.getAttribute('data-muscle-group');
                 const primaryMuscles = option.getAttribute('data-primary-muscles');
                 
                 // Comprobar si el ejercicio coincide con alguno de los músculos seleccionados
-                const matchesCategory = muscles.includes(category);
+                const matchesMuscleGroup = muscles.includes(muscleGroup);
                 const matchesPrimaryMuscles = primaryMuscles && muscles.some(muscle => 
                     primaryMuscles.toLowerCase().includes(muscle.toLowerCase())
                 );
                 
-                if (matchesCategory || matchesPrimaryMuscles) {
+                if (matchesMuscleGroup || matchesPrimaryMuscles) {
                     option.style.display = '';
                 } else {
                     option.style.display = 'none';

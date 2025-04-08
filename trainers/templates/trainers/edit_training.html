@@ -272,12 +272,15 @@
                     <div class="mb-3">
                         <div class="d-flex justify-content-between mb-2">
                             <label for="exercise" class="form-label">Seleccionar Ejercicio *</label>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="show-all-groups">
+                                Mostrar todos
+                            </button>
                         </div>
                         <select class="form-select" id="exercise" name="exercise" required>
                             <option value="">Selecciona un ejercicio</option>
                             
                             <!-- Pecho -->
-                            <optgroup label="Pecho">
+                            <optgroup label="Pecho" data-muscle-group="chest">
                             {% for exercise in all_exercises %}
                                 {% if exercise.muscle_group == 'chest' %}
                                 <option value="{{ exercise.id }}">{{ exercise.name }}</option>
@@ -286,7 +289,7 @@
                             </optgroup>
                             
                             <!-- Espalda -->
-                            <optgroup label="Espalda">
+                            <optgroup label="Espalda" data-muscle-group="back">
                             {% for exercise in all_exercises %}
                                 {% if exercise.muscle_group == 'back' %}
                                 <option value="{{ exercise.id }}">{{ exercise.name }}</option>
@@ -295,7 +298,7 @@
                             </optgroup>
                             
                             <!-- Hombros -->
-                            <optgroup label="Hombros">
+                            <optgroup label="Hombros" data-muscle-group="shoulders">
                             {% for exercise in all_exercises %}
                                 {% if exercise.muscle_group == 'shoulders' %}
                                 <option value="{{ exercise.id }}">{{ exercise.name }}</option>
@@ -304,7 +307,7 @@
                             </optgroup>
                             
                             <!-- Brazos -->
-                            <optgroup label="Brazos">
+                            <optgroup label="Brazos" data-muscle-group="arms">
                             {% for exercise in all_exercises %}
                                 {% if exercise.muscle_group == 'arms' %}
                                 <option value="{{ exercise.id }}">{{ exercise.name }}</option>
@@ -313,7 +316,7 @@
                             </optgroup>
                             
                             <!-- Piernas -->
-                            <optgroup label="Piernas">
+                            <optgroup label="Piernas" data-muscle-group="legs">
                             {% for exercise in all_exercises %}
                                 {% if exercise.muscle_group == 'legs' %}
                                 <option value="{{ exercise.id }}">{{ exercise.name }}</option>
@@ -322,7 +325,7 @@
                             </optgroup>
                             
                             <!-- Core -->
-                            <optgroup label="Core">
+                            <optgroup label="Core" data-muscle-group="core">
                             {% for exercise in all_exercises %}
                                 {% if exercise.muscle_group == 'core' %}
                                 <option value="{{ exercise.id }}">{{ exercise.name }}</option>
@@ -331,7 +334,7 @@
                             </optgroup>
                             
                             <!-- Cuerpo Completo -->
-                            <optgroup label="Cuerpo Completo">
+                            <optgroup label="Cuerpo Completo" data-muscle-group="full_body">
                             {% for exercise in all_exercises %}
                                 {% if exercise.muscle_group == 'full_body' %}
                                 <option value="{{ exercise.id }}">{{ exercise.name }}</option>
@@ -340,7 +343,7 @@
                             </optgroup>
                             
                             <!-- Cardio -->
-                            <optgroup label="Cardio">
+                            <optgroup label="Cardio" data-muscle-group="cardio">
                             {% for exercise in all_exercises %}
                                 {% if exercise.muscle_group == 'cardio' %}
                                 <option value="{{ exercise.id }}">{{ exercise.name }}</option>
@@ -414,7 +417,55 @@
                 if (focusInput) {
                     focusInput.value = selectedMuscles.join(', ');
                 }
+                
+                // Guardar selección para usarla cuando se abra el modal
+                localStorage.setItem(`muscles_day_${dayId}`, JSON.stringify(selectedMuscles));
             });
+        });
+        
+        // Filtrar ejercicios basados en los músculos seleccionados
+        addExerciseModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const dayId = button.getAttribute('data-day-id');
+            
+            // Recuperar músculos seleccionados del localStorage
+            const storedMuscles = localStorage.getItem(`muscles_day_${dayId}`);
+            if (storedMuscles) {
+                const selectedMuscles = JSON.parse(storedMuscles);
+                
+                // Solo filtrar si hay músculos seleccionados
+                if (selectedMuscles && selectedMuscles.length > 0) {
+                    // Mapear nombres de músculos a códigos de grupo muscular
+                    const muscleMapping = {
+                        'Pecho': 'chest',
+                        'Espalda': 'back',
+                        'Hombros': 'shoulders',
+                        'Brazos': 'arms',
+                        'Piernas': 'legs',
+                        'Abdominales': 'core',
+                        'Core': 'core',
+                        'Cardio': 'cardio',
+                        'Cuerpo Completo': 'full_body'
+                    };
+                    
+                    // Convertir nombres a códigos
+                    const muscleGroups = selectedMuscles.map(muscle => muscleMapping[muscle]).filter(Boolean);
+                    
+                    // Ocultar los optgroups que no corresponden a los músculos seleccionados
+                    const select = document.getElementById('exercise');
+                    const optgroups = select.querySelectorAll('optgroup');
+                    
+                    optgroups.forEach(group => {
+                        const muscleGroup = group.getAttribute('data-muscle-group');
+                        
+                        if (muscleGroups.includes(muscleGroup)) {
+                            group.style.display = '';
+                        } else {
+                            group.style.display = 'none';
+                        }
+                    });
+                }
+            }
         });
         
         // Mantener activa la pestaña seleccionada después de recarga
@@ -432,6 +483,16 @@
                 }
             }
         }
+        
+        // Botón para mostrar todos los grupos musculares
+        document.getElementById('show-all-groups').addEventListener('click', function() {
+            const select = document.getElementById('exercise');
+            const optgroups = select.querySelectorAll('optgroup');
+            
+            optgroups.forEach(group => {
+                group.style.display = '';
+            });
+        });
     });
 </script>
 {% endblock %} 

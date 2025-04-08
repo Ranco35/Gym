@@ -222,8 +222,8 @@ def routine_day_detail(request, routine_pk, day_pk):
     # Obtener ejercicios para este día
     exercises = RoutineExercise.objects.filter(routine_day=day).order_by('order')
     
-    # Obtener todos los ejercicios para seleccionar, incluyendo sus categorías y músculos
-    all_exercises = Exercise.objects.all().order_by('category', 'name')
+    # Obtener todos los ejercicios para seleccionar, incluyendo sus grupos musculares y músculos
+    all_exercises = Exercise.objects.all().order_by('muscle_group', 'name')
     
     if request.method == 'POST':
         # Añadir un nuevo ejercicio a la rutina del día
