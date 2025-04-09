@@ -123,6 +123,7 @@ def pwa_workout_player(request, workout_id):
         sets = Set.objects.filter(training=workout).select_related('exercise').order_by('set_number')
         
         for set_obj in sets:
+            # Convertir los objetos Exercise a diccionarios antes de serializarlos
             exercise_data = {
                 'id': set_obj.id,
                 'exercise_id': set_obj.exercise.id,
@@ -199,7 +200,7 @@ def pwa_workout_player(request, workout_id):
     context = {
         'workout': workout,
         'workout_type': workout_type,
-        'workout_data': json.dumps(workout_data),
+        'workout_data': json.dumps(workout_data, default=str),
         'workout_mode': workout_mode
     }
     
