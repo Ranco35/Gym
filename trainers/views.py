@@ -695,7 +695,7 @@ def edit_training(request, student_id, training_id):
         days_with_sets[day] = TrainerSet.objects.filter(training_day=day).order_by('order')
     
     # Obtener todos los ejercicios activos de la base de datos
-    all_exercises = Exercise.objects.all().order_by('muscle_group', 'name')
+    all_exercises = Exercise.objects.filter(is_active=True).order_by('muscle_group', 'name')
     
     # Depuración: contar ejercicios por grupo muscular
     print(f"Total de ejercicios: {all_exercises.count()}")

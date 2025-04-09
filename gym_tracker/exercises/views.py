@@ -63,6 +63,10 @@ def exercise_list(request):
             'can_edit': can_edit_exercise(request.user, exercise)
         })
     
+    # DEBUG: Imprimir IDs que se pasan a la plantilla
+    active_ids_passed = [item['exercise'].id for item in exercises_with_permissions]
+    print(f"DEBUG: IDs de ejercicios activos pasados a la plantilla: {active_ids_passed}")
+
     return render(request, 'exercises/exercise_list.html', {
         'exercises_with_permissions': exercises_with_permissions,
         'exercises': exercises,  # Mantener compatibilidad
