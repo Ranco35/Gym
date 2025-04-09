@@ -120,7 +120,21 @@
                                                         {% for set in sets %}
                                                         <tr>
                                                             <td>{{ forloop.counter }}</td>
-                                                            <td><strong>{{ set.exercise.name }}</strong></td>
+                                                            <td>
+                                                                <div class="d-flex align-items-center">
+                                                                    {% if set.exercise.image %}
+                                                                        <img src="{{ set.exercise.image.url }}" alt="{{ set.exercise.name }}" class="img-thumbnail me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                                                                    {% else %}
+                                                                        <span class="me-2" style="width: 40px; height: 40px; display: inline-block; background-color: #f0f0f0; vertical-align: middle;"></span> {# Placeholder #}
+                                                                    {% endif %}
+                                                                    <div>
+                                                                        <strong>{{ set.exercise.name }}</strong>
+                                                                        {% if set.exercise.video_url %}
+                                                                            <a href="{{ set.exercise.video_url }}" target="_blank" class="ms-1" title="Ver video"><i class="fab fa-youtube text-danger"></i></a>
+                                                                        {% endif %}
+                                                                    </div>
+                                                                </div>
+                                                            </td>
                                                             <td>{{ set.sets_count }}</td>
                                                             <td>{{ set.reps }}</td>
                                                             <td>{{ set.weight }}</td>

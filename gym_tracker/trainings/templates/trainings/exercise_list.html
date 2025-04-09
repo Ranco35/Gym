@@ -59,7 +59,7 @@
                     <span class="badge bg-light text-dark">{{ exercise.muscle_group }}</span>
                 </div>
                 {% if exercise.image %}
-                <img src="{{ exercise.image.url }}" class="card-img-top" alt="{{ exercise.name }}" style="height: 200px; object-fit: cover;">
+                <img src="{{ exercise.image.url }}" class="card-img-top" alt="{{ exercise.name }}" style="height: auto; max-height: 200px; object-fit: cover;">
                 {% else %}
                 <div class="card-img-top bg-light d-flex justify-content-center align-items-center" style="height: 200px;">
                     <i class="fas fa-dumbbell fa-4x text-secondary"></i>

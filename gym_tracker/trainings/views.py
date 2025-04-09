@@ -84,10 +84,9 @@ class TrainingListCreateView(generics.ListCreateAPIView):
                 
                 # Asegurarse de que el entrenamiento tenga toda la información necesaria
                 training.routine_name = routine_info
-                # Añadir el conteo de series completadas al objeto de entrenamiento
-                training.completed_sets_count = training.completed_sets_count
-                # Añadir el conteo de series extras
-                training.extra_sets_count = training.extra_sets_count
+                # Temporal: Asignar valores por defecto para evitar AttributeError
+                training.completed_sets_count = 0 
+                training.extra_sets_count = 0
                 grouped_trainings[date_str][routine_info].append(training)
             
             # Ordenar los entrenamientos dentro de cada rutina por el orden original
