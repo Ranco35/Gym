@@ -1,35 +1,46 @@
 from django.urls import path
 from .views import (
+    # API
     WorkoutListCreateView, 
     WorkoutDetailView,
-    routine_selection,
-    routine_list,
+    
+    # Routines
+    routine_selection, 
+    routine_list, 
     routine_detail,
-    routine_day_detail,
-    delete_routine_exercise,
+    
+    # Routine Days
+    routine_day_detail, 
+    delete_routine_exercise, 
     update_routine_focus,
-    edit_routine,
-    delete_routine,
+    
+    # Routine Management
+    edit_routine, 
+    delete_routine, 
     view_assigned_routine
 )
 
 app_name = 'workouts'
 
-# URLs para la API REST
+# Patrones de URL para la API
 api_patterns = [
-    path('api/workouts/', WorkoutListCreateView.as_view(), name='workout-list-create-api'),
-    path('api/workouts/<int:pk>/', WorkoutDetailView.as_view(), name='workout-detail-api'),
+    path('workouts/', WorkoutListCreateView.as_view(), name='workout-list-create-api'),
+    path('workouts/<int:pk>/', WorkoutDetailView.as_view(), name='workout-detail-api'),
 ]
 
-# URLs para la interfaz web
-urlpatterns = [
-    path('', routine_list, name='workout-list'),  # Vista principal de rutinas
-    path('new/', routine_selection, name='workout-new'),  # Crear nueva rutina
-    path('<int:pk>/', routine_detail, name='workout-detail'),  # Ver detalle de rutina
-    path('<int:pk>/edit/', edit_routine, name='workout-edit'),  # Editar rutina existente
-    path('<int:pk>/delete/', delete_routine, name='workout-delete'),  # Eliminar rutina (solo admin/superuser)
-    path('<int:routine_pk>/day/<int:day_pk>/', routine_day_detail, name='workout-day-detail'),
-    path('exercise/<int:exercise_pk>/delete/', delete_routine_exercise, name='delete-routine-exercise'),
-    path('day/<int:day_pk>/update-focus/', update_routine_focus, name='update-routine-focus'),
-    path('rutina-asignada/', view_assigned_routine, name='view-assigned-routine'),
+# Patrones de URL para la interfaz web
+web_urlpatterns = [
+    path('', routine_selection, name='routine-selection'),
+    path('routines/', routine_list, name='routine-list'),
+    path('routines/<int:pk>/', routine_detail, name='routine-detail'),
+    path('routines/<int:routine_id>/day/<int:day_id>/', routine_day_detail, name='routine-day-detail'),
+    path('routines/<int:routine_id>/day/<int:day_id>/exercise/<int:exercise_id>/delete/', delete_routine_exercise, name='delete-routine-exercise'),
+    path('routines/<int:routine_id>/day/<int:day_id>/update-focus/', update_routine_focus, name='update-routine-focus'),
+    path('routines/<int:pk>/edit/', edit_routine, name='routine-edit'),
+    path('routines/<int:pk>/delete/', delete_routine, name='routine-delete'),
+    path('assigned/<int:pk>/', view_assigned_routine, name='view-assigned-routine'),
+    path('routines/create/', routine_selection, name='routine-create'),
 ]
+
+# Mantener urlpatterns para compatibilidad
+urlpatterns = web_urlpatterns + api_patterns

@@ -1,55 +1,87 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Rutinas de Entrenamiento{% endblock %}
+{% block title %}Mis Rutinas{% endblock %}
 
 {% block content %}
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Mis Rutinas</h1>
-        <a href="#" class="btn btn-primary">
-            <i class="fas fa-plus me-2"></i> Nueva Rutina
+        <div class="d-flex align-items-center">
+            <a href="#" class="btn btn-primary me-3">
+                <i class="fas fa-user me-2"></i>Mis Rutinas Personales
+                <span class="badge bg-white text-primary ms-2">{{ personal_count }}</span>
+            </a>
+            <a href="#" class="btn btn-outline-success">
+                <i class="fas fa-user-tie me-2"></i>Rutinas Asignadas
+                <span class="badge bg-success ms-2">{{ assigned_count }}</span>
+            </a>
+        </div>
+        <a href="{% url 'trainings:training-create-from-routine' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Nueva Rutina
         </a>
     </div>
 
-    {% if routines %}
     <div class="row">
         {% for routine in routines %}
-        <div class="col-md-4 mb-4">
-            <div class="card h-100">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="card-title mb-0">{{ routine.name }}</h5>
+        <div class="col-12 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header {% if routine.is_assigned %}bg-success{% else %}bg-primary{% endif %} text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">{{ routine.name }}</h5>
+                        {% if routine.is_assigned %}
+                        <span class="badge bg-light text-success">Asignada por entrenador</span>
+                        {% endif %}
+                    </div>
                 </div>
                 <div class="card-body">
-                    <p class="card-text">{{ routine.description|truncatewords:20 }}</p>
-                    <p><strong>Ejercicios:</strong> {{ routine.exercises.count }}</p>
-                    <p><small class="text-muted">Creada: {{ routine.created_at|date:"d/m/Y" }}</small></p>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-2">
+                                <i class="fas fa-user me-2"></i>
+                                <strong>Creado por:</strong> {{ routine.creator }}
+                            </p>
+                            <p class="mb-2">
+                                <i class="fas fa-calendar me-2"></i>
+                                <strong>Creado:</strong> {{ routine.created_at|date:"d/m/Y H:i" }}
+                            </p>
+                            <p class="mb-2">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Descripción:</strong> {{ routine.description }}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="mb-3">Días de entrenamiento:</h6>
+                            <div class="d-flex flex-wrap gap-2">
+                                {% for day in routine.training_days %}
+                                <span class="badge {% if routine.is_assigned %}bg-success{% else %}bg-primary{% endif %}">{{ day }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-footer bg-white">
-                    <div class="btn-group w-100">
-                        <a href="#" class="btn btn-outline-primary">
-                            <i class="fas fa-eye"></i> Ver
+                <div class="card-footer bg-transparent">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{% url 'trainings:routine-dates' routine.month_year|urlencode %}" 
+                           class="btn {% if routine.is_assigned %}btn-success{% else %}btn-primary{% endif %}">
+                            <i class="fas fa-eye me-2"></i>Ver Detalles
                         </a>
-                        <a href="#" class="btn btn-outline-secondary">
+                        {% if not routine.is_assigned %}
+                        <button class="btn btn-outline-secondary">
                             <i class="fas fa-edit"></i> Editar
-                        </a>
-                        <a href="#" class="btn btn-success">
-                            <i class="fas fa-play"></i> Iniciar
-                        </a>
+                        </button>
+                        {% endif %}
                     </div>
                 </div>
             </div>
         </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                No tienes rutinas registradas. ¡Comienza creando una nueva!
+            </div>
+        </div>
         {% endfor %}
     </div>
-    {% else %}
-    <div class="alert alert-info text-center p-5">
-        <i class="fas fa-info-circle fa-3x mb-3"></i>
-        <h4>Aún no tienes rutinas</h4>
-        <p>Crea tu primera rutina para comenzar a entrenar.</p>
-        <a href="#" class="btn btn-primary mt-3">
-            <i class="fas fa-plus me-2"></i> Crear mi primera rutina
-        </a>
-    </div>
-    {% endif %}
 </div>
 {% endblock %} 

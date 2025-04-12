@@ -8,13 +8,121 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Sesiones de Entrenamiento</h1>
-        <a href="{% url 'trainers:dashboard' %}" class="btn btn-outline-primary">
-            <i class="fas fa-arrow-left"></i> Volver al Dashboard
-        </a>
+        <div class="btn-group">
+            <a href="{% url 'trainers:dashboard' %}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Volver al Dashboard
+            </a>
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#newSessionModal">
+                <i class="fas fa-plus"></i> Nueva Sesión
+            </button>
+        </div>
+    </div>
+    
+    <!-- Modal para iniciar nueva sesión -->
+    <div class="modal fade" id="newSessionModal" tabindex="-1" aria-labelledby="newSessionModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="newSessionModalLabel">Iniciar Nueva Sesión</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    {% if students %}
+                    <div class="mb-3">
+                        <label for="studentSelect" class="form-label">Seleccionar Estudiante</label>
+                        <select class="form-select" id="studentSelect">
+                            <option value="">Selecciona un estudiante</option>
+                            {% for student in students %}
+                            <option value="{{ student.student.id }}">{{ student.student.get_full_name|default:student.student.email }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div id="routineOptionsContainer" style="display: none;">
+                        <h5>Seleccionar Rutina</h5>
+                        
+                        {% if trainer_routines %}
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">Rutinas Asignadas</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="list-group">
+                                    {% for routine in trainer_routines %}
+                                    <a href="#" class="list-group-item list-group-item-action select-routine" 
+                                       data-routine-id="{{ routine.id }}" 
+                                       data-routine-type="trainer">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="mb-1">{{ routine.name }}</h6>
+                                                <small class="text-muted">
+                                                    Creada: {{ routine.date|date:"d/m/Y" }}
+                                                </small>
+                                            </div>
+                                            <div>
+                                                <span class="badge bg-primary">{{ routine.days.count }} días</span>
+                                            </div>
+                                        </div>
+                                    </a>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if weekly_routines %}
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">Rutinas Semanales</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="list-group">
+                                    {% for routine in weekly_routines %}
+                                    <a href="#" class="list-group-item list-group-item-action select-routine" 
+                                       data-routine-id="{{ routine.id }}" 
+                                       data-routine-type="weekly">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="mb-1">{{ routine.name }}</h6>
+                                                <small class="text-muted">
+                                                    {{ routine.user.get_full_name|default:routine.user.email }}
+                                                </small>
+                                            </div>
+                                            <div>
+                                                <span class="badge bg-success">{{ routine.days.count }} días</span>
+                                            </div>
+                                        </div>
+                                    </a>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if not trainer_routines and not weekly_routines %}
+                        <div class="alert alert-warning">
+                            No hay rutinas disponibles para asignar.
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    {% else %}
+                    <div class="alert alert-info">
+                        No tienes estudiantes asignados. <a href="{% url 'trainers:student_list' %}">Añade estudiantes</a> primero.
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Sesiones Activas -->
-    {% with active_sessions=sessions|dictsortreversed:"started_at"|filter_active %}
+    {% with active_sessions=sessions|filter_active %}
     {% if active_sessions %}
     <div class="card mb-4">
         <div class="card-header bg-warning">
@@ -64,10 +172,10 @@
     {% endif %}
     {% endwith %}
 
-    <!-- Historial de Sesiones -->
+    <!-- Todas las Sesiones -->
     <div class="card">
         <div class="card-header">
-            <h4 class="mb-0"><i class="fas fa-history"></i> Historial de Sesiones</h4>
+            <h4 class="mb-0"><i class="fas fa-list"></i> Todas las Sesiones</h4>
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -83,7 +191,6 @@
                     </thead>
                     <tbody>
                         {% for session in sessions %}
-                        {% if session.ended_at %}
                         <tr>
                             <td>{{ session.trainer_student.student.email }}</td>
                             <td>
@@ -96,16 +203,20 @@
                             </td>
                             <td>{{ session.started_at|date:"d/m/Y H:i" }}</td>
                             <td>
+                                {% if session.ended_at %}
                                 <span class="badge bg-success">Completada</span>
+                                {% else %}
+                                <span class="badge bg-warning">Activa</span>
+                                {% endif %}
                             </td>
                             <td>
                                 <a href="{% url 'trainers:live_session' session.id %}" 
                                    class="btn btn-info btn-sm">
-                                    <i class="fas fa-eye"></i> Ver
+                                    <i class="fas fa-{% if session.ended_at %}eye{% else %}play{% endif %}"></i> 
+                                    {% if session.ended_at %}Ver{% else %}Continuar{% endif %}
                                 </a>
                             </td>
                         </tr>
-                        {% endif %}
                         {% endfor %}
                     </tbody>
                 </table>
@@ -122,6 +233,44 @@
         var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
         var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
             return new bootstrap.Popover(popoverTriggerEl)
+        });
+        
+        // Manejar la selección de estudiante
+        const studentSelect = document.getElementById('studentSelect');
+        const routineOptionsContainer = document.getElementById('routineOptionsContainer');
+        
+        if (studentSelect) {
+            studentSelect.addEventListener('change', function() {
+                if (this.value) {
+                    routineOptionsContainer.style.display = 'block';
+                } else {
+                    routineOptionsContainer.style.display = 'none';
+                }
+            });
+        }
+        
+        // Manejar la selección de rutina
+        const routineLinks = document.querySelectorAll('.select-routine');
+        routineLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const studentId = studentSelect.value;
+                const routineId = this.getAttribute('data-routine-id');
+                const routineType = this.getAttribute('data-routine-type');
+                
+                if (!studentId) {
+                    alert('Por favor, selecciona un estudiante primero.');
+                    return;
+                }
+                
+                // Redirigir según el tipo de rutina
+                if (routineType === 'trainer') {
+                    window.location.href = `/trainers/training/${routineId}/use/0/${studentId}/`;
+                } else if (routineType === 'weekly') {
+                    window.location.href = `/trainers/students/${studentId}/select-routine/0/?routine_id=${routineId}&type=weekly`;
+                }
+            });
         });
     });
 </script>

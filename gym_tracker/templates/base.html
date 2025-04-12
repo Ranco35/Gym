@@ -113,17 +113,17 @@
                             <a href="{% url 'trainings:dashboard' %}" class="list-group-item list-group-item-action {% if '/trainings/' in request.path and '/trainings/dashboard/' in request.path %}active{% endif %}">
                                 <i class="fas fa-tachometer-alt fa-fw me-2"></i> Dashboard
                             </a>
-                            <a href="{% url 'workouts:workout-list' %}" 
+                            <a href="{% url 'workouts:routine-list' %}" 
                                class="list-group-item list-group-item-action {% if '/workouts/' in request.path %}active{% endif %}">
                                 <i class="fas fa-calendar-alt me-2"></i>Rutinas
                             </a>
-                            <a href="{% url 'trainings:exercise_list' %}" class="list-group-item list-group-item-action {% if '/trainings/exercises/' in request.path %}active{% endif %}">
+                            <a href="{% url 'exercises:exercise-list' %}" class="list-group-item list-group-item-action {% if '/exercises/' in request.path %}active{% endif %}">
                                 <i class="fas fa-dumbbell fa-fw me-2"></i> Ejercicios
                             </a>
-                            <a href="{% url 'trainings:training-list-create' %}" class="list-group-item list-group-item-action {% if '/trainings/training/' in request.path %}active{% endif %}">
+                            <a href="{% url 'trainings:dashboard' %}" class="list-group-item list-group-item-action {% if '/trainings/' in request.path and not '/trainings/stats/' in request.path %}active{% endif %}">
                                 <i class="fas fa-running fa-fw me-2"></i> Entrenamientos
                             </a>
-                            <a href="{% url 'trainings:training_stats' %}" class="list-group-item list-group-item-action {% if '/trainings/stats/' in request.path %}active{% endif %}">
+                            <a href="{% url 'trainings:training-stats' %}" class="list-group-item list-group-item-action {% if '/trainings/stats/' in request.path %}active{% endif %}">
                                 <i class="fas fa-chart-line fa-fw me-2"></i> Estadísticas
                             </a>
                         </div>

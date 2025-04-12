@@ -18,7 +18,7 @@
                                 <i class="fas fa-dumbbell fa-2x text-primary mb-3"></i>
                                 <h5 class="card-title">Ejercicios</h5>
                                 <p class="card-text">Explora nuestro catálogo de ejercicios y crea tus rutinas.</p>
-                                <a href="{% url 'trainings:exercise_list' %}" class="btn btn-primary">Ver Ejercicios</a>
+                                <a href="{% url 'exercises:exercise-list' %}" class="btn btn-primary">Ver Ejercicios</a>
                             </div>
                         </div>
                     </div>
@@ -31,7 +31,7 @@
                                 <h5 class="card-title">Rutinas</h5>
                                 <p class="card-text">Organiza tus entrenamientos semanales de forma efectiva.</p>
                                 <div class="text-center mt-4">
-                                    <a href="{% url 'workouts:workout-list' %}" class="btn btn-success">
+                                    <a href="{% url 'workouts:routine-list' %}" class="btn btn-success">
                                         <i class="fas fa-calendar-alt me-2"></i>Ver Rutinas
                                     </a>
                                 </div>
@@ -46,7 +46,7 @@
                                 <i class="fas fa-chart-line fa-2x text-info mb-3"></i>
                                 <h5 class="card-title">Seguimiento</h5>
                                 <p class="card-text">Monitorea tu progreso y visualiza tus logros.</p>
-                                <a href="{% url 'trainings:training-list-create' %}" class="btn btn-info text-white">Ver Progreso</a>
+                                <a href="{% url 'trainings:dashboard' %}" class="btn btn-info text-white">Ver Progreso</a>
                             </div>
                         </div>
                     </div>

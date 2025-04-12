@@ -1,58 +1,74 @@
 from django.urls import path
-from . import views
-from .views import TrainingListCreateView, TrainingDetailView, save_set_simple, edit_user_training, delete_set, edit_set # Asegurarse de importar las vistas
+from .views import (
+    TrainingDetailView,
+    TrainingListView,
+    RoutineDatesView,
+    RoutineDateExercisesView,
+    delete_training, 
+    toggle_complete, 
+    get_routine_days, 
+    create_training_from_routine,
+    execute_training, 
+    training_session_view, 
+    save_set, 
+    save_set_simple, 
+    get_completed_sets,
+    delete_set, 
+    edit_set,
+    training_stats, 
+    dashboard,
+    profile_edit,
+    assigned_training_detail, 
+    create_training_session, 
+    edit_user_training,
+)
 
 app_name = 'trainings'
 
-urlpatterns = [
-    # Dashboard
-    path('', views.dashboard, name='dashboard'),
+# Patrones de URL para la API
+api_patterns = [
+    path('api/trainings/', TrainingListView.as_view(), name='training-list-create'),
+    path('api/trainings/<int:pk>/', TrainingDetailView.as_view(), name='training-detail-api'),
+    path('api/toggle-complete/<int:pk>/', toggle_complete, name='toggle-complete-api'),
+    path('api/routine-days/<int:routine_id>/', get_routine_days, name='get-routine-days-api'),
+    path('api/save-set/', save_set, name='save-set-api'),
+    path('api/save-set-simple/', save_set_simple, name='save-set-simple-api'),
+    path('api/completed-sets/<int:training_id>/', get_completed_sets, name='get-completed-sets-api'),
+    path('api/create-session/', create_training_session, name='create-session-api'),
+]
+
+# Patrones de URL para la interfaz web
+web_urlpatterns = [
+    # Dashboard y Perfil
+    path('', dashboard, name='dashboard'),
+    path('profile/edit/', profile_edit, name='profile_edit'),
     
-    # Perfil de usuario
-    path('profile/edit/', views.profile_edit, name='profile_edit'),
-    
-    # Ejercicios (redirección a la app de exercises)
-    path('exercises/', views.exercise_list, name='exercise_list'),
+    # Rutinas
+    path('routines/', TrainingListView.as_view(), name='routine-list'),
+    path('routines/<str:routine_name>/', RoutineDatesView.as_view(), name='routine-dates'),
+    path('routines/<str:routine_name>/<str:date>/', RoutineDateExercisesView.as_view(), name='routine-exercises'),
     
     # Entrenamientos
-    path('training/', views.training_list, name='training-list-create'),
-    path('training/<int:pk>/', views.training_list, name='training-detail'),
-    path('training/<int:pk>/delete/', views.delete_training, name='delete-training'),
-    path('training/<int:pk>/edit/', views.edit_user_training, name='edit-training'),
-    path('training/create-from-routine/', views.create_training_from_routine, name='create-training-from-routine'),
-    path('routine/<int:routine_id>/days/', views.get_routine_days, name='get-routine-days'),
+    path('trainings/<int:pk>/delete/', delete_training, name='training-delete'),
+    path('trainings/<int:pk>/edit/', edit_user_training, name='training-edit'),
+    path('trainings/create/', create_training_from_routine, name='training-create-from-routine'),
     
     # Series
-    path('set/<int:set_id>/edit/', views.edit_set, name='edit-set'),
-    path('set/<int:set_id>/delete/', views.delete_set, name='delete-set'),
+    path('sets/<int:set_id>/edit/', edit_set, name='set-edit'),
+    path('sets/<int:set_id>/delete/', delete_set, name='set-delete'),
     
-    # Ejecución de entrenamientos
-    path('execute/<int:routine_id>/day/<int:day_id>/', views.execute_training, name='execute-training'),
-    
-    # Sesiones de entrenamiento
-    path('session/<int:training_id>/', views.training_session_view, name='session'),
-    path('session/<int:training_id>/sets/', views.save_set, name='save-set'),
-    path('session/<int:training_id>/sets/completed/', views.get_completed_sets, name='get-completed-sets'),
+    # Ejecución y Sesiones
+    path('execute/<int:routine_id>/day/<int:day_id>/', execute_training, name='execute-training'),
+    path('session/<int:training_id>/', training_session_view, name='session'),
+    path('session/<int:training_id>/sets/', save_set, name='save-set'),
+    path('session/<int:training_id>/sets/completed/', get_completed_sets, name='get-completed-sets'),
     
     # Estadísticas
-    path('stats/', views.training_stats, name='training_stats'),
+    path('stats/', training_stats, name='training-stats'),
     
-    path('api/trainings/', TrainingListCreateView.as_view(), name='training-list-create'),
-    path('api/trainings/<int:pk>/', TrainingDetailView.as_view(), name='training-detail'),
-    path('api/toggle_complete/<int:pk>/', views.toggle_complete, name='toggle-complete'),
-    path('api/get_routine_days/<int:routine_id>/', views.get_routine_days, name='get-routine-days'),
-    path('create_from_routine/', views.create_training_from_routine, name='create-from-routine'),
-    path('execute/<int:routine_id>/<int:day_id>/', views.execute_training, name='execute-training'),
-    path('session/<int:training_id>/', views.training_session_view, name='training-session'),
-    path('api/save_set/', views.save_set, name='save-set'), # Para Sets del modelo Training
-    path('api/save_set_simple/', save_set_simple, name='save_set_simple'), # Para guardar sets rápidos
-    path('api/get_completed_sets/<int:training_id>/', views.get_completed_sets, name='get-completed-sets'),
-    path('stats/', views.training_stats, name='training-stats'),
-    path('routines/', views.routine_list, name='routine_list'),
-    path('list/', views.training_list, name='training_list'), # Vista para listar entrenamientos completados
-    path('set/<int:set_id>/delete/', delete_set, name='delete_set'),
-    path('api/create_training_session/', views.create_training_session, name='create_training_session'),
-    
-    # Nueva ruta para ver detalles de rutina asignada por entrenador
-    path('assigned-trainings/<int:training_id>/', views.assigned_training_detail, name='assigned_training_detail'),
+    # Asignaciones
+    path('assigned/<int:training_id>/', assigned_training_detail, name='assigned-training-detail'),
 ]
+
+# Mantener urlpatterns para compatibilidad
+urlpatterns = web_urlpatterns + api_patterns

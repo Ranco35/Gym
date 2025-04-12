@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'gym_tracker.exercises',
     'gym_tracker.trainings',
     'gym_tracker.stats',
+    'gym_tracker.goals',
     'trainers.apps.TrainersConfig',
 ]
 

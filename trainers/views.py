@@ -8,7 +8,7 @@ from .models import TrainerProfile, TrainerStudent, LiveTrainingSession, LiveSet
 from gym_tracker.trainings.models import Training, Set
 from .decorators import trainer_required
 from django.contrib.auth import get_user_model
-from gym_tracker.workouts.models import WeeklyRoutine
+from gym_tracker.workouts.models import WeeklyRoutine, RoutineDay, RoutineExercise
 from gym_tracker.exercises.models import Exercise
 from django.urls import reverse
 
@@ -114,18 +114,33 @@ def live_session(request, session_id):
         trainer_student__trainer=request.user
     )
     
-    # Obtener los días de entrenamiento de la sesión
+    # Obtener el día actual de entrenamiento
+    # Por defecto, usar el primer día de la rutina
+    selected_day_id = request.GET.get('day_id')
+    
+    # Obtener todos los días de entrenamiento de la sesión
     training_days = session.training.days.all()
     
-    # Obtener todos los sets de todos los días
-    all_sets = []
-    for day in training_days:
-        day_sets = day.sets.all().order_by('order')
-        all_sets.extend(day_sets)
+    if not training_days.exists():
+        messages.warning(request, "Esta sesión no tiene días de entrenamiento configurados")
+        return redirect('trainers:session_list')
+    
+    # Si se especificó un día, obtener ese día
+    if selected_day_id:
+        try:
+            selected_day = training_days.get(id=selected_day_id)
+        except (ValueError, TrainerTrainingDay.DoesNotExist):
+            selected_day = training_days.first()
+    else:
+        # Si no se especificó un día, usar el primer día
+        selected_day = training_days.first()
+    
+    # Obtener solo los sets del día seleccionado
+    all_sets = list(selected_day.sets.all().order_by('order'))
     
     # Si no hay sets, devolver un mensaje
     if not all_sets:
-        messages.warning(request, "Esta sesión no tiene ejercicios configurados")
+        messages.warning(request, f"El día {selected_day.day_of_week} no tiene ejercicios configurados")
         return redirect('trainers:session_list')
     
     # Obtener los sets completados
@@ -156,8 +171,10 @@ def live_session(request, session_id):
     current_set = all_sets[current_set_index - 1]
     
     # Imprimir información para depuración
+    print(f"Selected Day: {selected_day.day_of_week} (ID: {selected_day.id})")
     print(f"Current Set ID: {current_set.id}, Exercise: {current_set.exercise}")
     print(f"Weight: {current_set.weight}")
+    print(f"Total sets in day: {len(all_sets)}")
     
     context = {
         'session': session,
@@ -165,7 +182,9 @@ def live_session(request, session_id):
         'completed_set_ids': completed_set_ids,
         'current_set_index': current_set_index,
         'all_sets': all_sets,
-        'current_set': current_set
+        'current_set': current_set,
+        'training_days': training_days,
+        'selected_day': selected_day
     }
     return render(request, 'trainers/live_session.html', context)
 
@@ -398,8 +417,25 @@ def session_list(request):
         'training__days__sets'
     ).order_by('-started_at')
     
+    # Obtener estudiantes para iniciar nuevas sesiones
+    students = TrainerStudent.objects.filter(
+        trainer=request.user,
+        active=True
+    ).select_related('student')
+    
+    # Obtener rutinas disponibles
+    trainer_routines = TrainerTraining.objects.filter(
+        created_by=request.user
+    ).order_by('-date')
+    
+    # Obtener rutinas semanales disponibles
+    weekly_routines = WeeklyRoutine.objects.all().select_related('user').order_by('-created_at')
+    
     context = {
-        'sessions': sessions
+        'sessions': sessions,
+        'students': students,
+        'trainer_routines': trainer_routines,
+        'weekly_routines': weekly_routines
     }
     return render(request, 'trainers/session_list.html', context)
 
@@ -1072,18 +1108,32 @@ def student_live_session(request, session_id):
         ended_at__isnull=True
     )
     
-    # Obtener los días de entrenamiento de la sesión
+    # Obtener el día actual de entrenamiento
+    selected_day_id = request.GET.get('day_id')
+    
+    # Obtener todos los días de entrenamiento de la sesión
     training_days = session.training.days.all()
     
-    # Obtener todos los sets de todos los días
-    all_sets = []
-    for day in training_days:
-        day_sets = day.sets.all().order_by('order')
-        all_sets.extend(day_sets)
+    if not training_days.exists():
+        messages.warning(request, "Esta sesión no tiene días de entrenamiento configurados")
+        return redirect('trainings:dashboard')
+    
+    # Si se especificó un día, obtener ese día
+    if selected_day_id:
+        try:
+            selected_day = training_days.get(id=selected_day_id)
+        except (ValueError, TrainerTrainingDay.DoesNotExist):
+            selected_day = training_days.first()
+    else:
+        # Si no se especificó un día, usar el primer día
+        selected_day = training_days.first()
+    
+    # Obtener solo los sets del día seleccionado
+    all_sets = list(selected_day.sets.all().order_by('order'))
     
     # Si no hay sets, devolver un mensaje
     if not all_sets:
-        messages.warning(request, "Esta sesión no tiene ejercicios configurados")
+        messages.warning(request, f"El día {selected_day.day_of_week} no tiene ejercicios configurados")
         return redirect('trainings:dashboard')
     
     # Obtener los sets completados
@@ -1174,7 +1224,9 @@ def student_live_session(request, session_id):
         'all_sets': all_sets,
         'is_student': True,
         'current_set': current_set,
-        'session_start_time': session.started_at.isoformat()
+        'session_start_time': session.started_at.isoformat(),
+        'training_days': training_days,
+        'selected_day': selected_day
     }
     return render(request, 'trainers/student_live_session.html', context)
 

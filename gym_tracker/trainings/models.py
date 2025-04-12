@@ -37,11 +37,25 @@ class Training(models.Model):
     is_recurring = models.BooleanField(default=False)  # Si es un entrenamiento recurrente
     recurring_days = models.CharField(max_length=100, blank=True, help_text="Días de la semana separados por comas")  # Días para entrenamientos recurrentes
 
+    # Relación con TrainerTraining
+    trainer_training = models.ForeignKey(
+        'trainers.TrainerTraining',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assigned_trainings'
+    )
+
     def __str__(self):
         return f"{self.exercise.name} - {self.date}"
         
     class Meta:
         ordering = ['-date', '-created_at']  # Ordenar por fecha, más recientes primero
+
+    @property
+    def is_assigned(self):
+        """Determina si el entrenamiento fue asignado por un entrenador."""
+        return self.trainer_training is not None
 
 class Set(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)

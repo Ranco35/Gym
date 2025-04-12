@@ -5,7 +5,7 @@
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3">Mis Rutinas</h1>
-        <a href="{% url 'workouts:workout-new' %}" class="btn btn-primary">
+        <a href="{% url 'workouts:routine-create' %}" class="btn btn-primary">
             <i class="fas fa-plus me-2"></i>Nueva Rutina
         </a>
     </div>
@@ -120,15 +120,15 @@
                         </div>
                         <div class="card-footer bg-white border-top p-3">
                             <div class="d-grid gap-2">
-                                <a href="{% url 'workouts:workout-detail' routine.pk %}" class="btn btn-primary">
+                                <a href="{% url 'workouts:routine-detail' routine.pk %}" class="btn btn-primary">
                                     <i class="fas fa-eye me-2"></i>Ver detalles
                                 </a>
                                 <div class="btn-group">
-                                    <a href="{% url 'workouts:workout-edit' routine.pk %}" class="btn btn-outline-secondary">
+                                    <a href="{% url 'workouts:routine-edit' routine.pk %}" class="btn btn-outline-secondary">
                                         <i class="fas fa-edit me-1"></i>Editar
                                     </a>
                                     {% if user.role == 'ADMIN' or user.is_superuser %}
-                                    <a href="{% url 'workouts:workout-delete' routine.pk %}" class="btn btn-outline-danger">
+                                    <a href="{% url 'workouts:routine-delete' routine.pk %}" class="btn btn-outline-danger">
                                         <i class="fas fa-trash me-1"></i>Eliminar
                                     </a>
                                     {% endif %}
@@ -146,7 +146,7 @@
                 </div>
                 <h4 class="mb-3">No tienes rutinas personales</h4>
                 <p class="text-muted mb-4">Comienza creando tu primera rutina de entrenamiento</p>
-                <a href="{% url 'workouts:workout-new' %}" class="btn btn-primary btn-lg">
+                <a href="{% url 'workouts:routine-create' %}" class="btn btn-primary btn-lg">
                     <i class="fas fa-plus me-2"></i>Crear mi primera rutina
                 </a>
             </div>
@@ -190,10 +190,10 @@
                         </div>
                         <div class="card-footer bg-white border-top p-3">
                             <div class="d-grid gap-2">
-                                <a href="{% url 'workouts:workout-detail' routine.id %}" class="btn btn-primary">
+                                <a href="{% url 'workouts:routine-detail' routine.id %}" class="btn btn-primary">
                                     <i class="fas fa-eye me-2"></i>Ver detalles
                                 </a>
-                                <a href="{% url 'workouts:view-assigned-routine' %}" class="btn btn-success">
+                                <a href="{% url 'workouts:view-assigned-routine' routine.id %}" class="btn btn-success">
                                     <i class="fas fa-dumbbell me-2"></i>Entrenar Ahora
                                 </a>
                             </div>
@@ -211,7 +211,7 @@
                 <p class="text-muted mb-3">Cuando un entrenador te asigne una rutina, aparecerá aquí</p>
                 
                 <!-- Acceso directo a la rutina de Fer MArzo 2025 -->
-                <a href="{% url 'workouts:view-assigned-routine' %}" class="btn btn-success btn-lg">
+                <a href="{% url 'workouts:view-assigned-routine' 1 %}" class="btn btn-success btn-lg">
                     <i class="fas fa-eye me-2"></i>Ver Rutina Fer MArzo 2025
                 </a>
             </div>

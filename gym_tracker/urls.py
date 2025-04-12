@@ -40,7 +40,7 @@ urlpatterns = [
     path('stats/', include('gym_tracker.stats.urls')),  # Nueva URL para estadísticas
     
     # Rutas para la PWA
-    path('pwa/', include('gym_pwa.urls', namespace='pwa')),
+    path('pwa/', include('gym_tracker.pwa.urls', namespace='pwa')),
     path('', include('pwa.urls')),  # Para manifest.json y service worker
 ]
 
