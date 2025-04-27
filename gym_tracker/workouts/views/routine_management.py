@@ -83,33 +83,17 @@ def delete_routine(request, pk):
     })
 
 @login_required
-def view_assigned_routine(request):
+def view_assigned_routine(request, pk):
     """
     Vista de acceso directo para ver la rutina asignada.
     """
     try:
-        # Intentar obtener la rutina con ID 2
-        try:
-            routine = TrainerTraining.objects.get(id=2)
-        except TrainerTraining.DoesNotExist:
-            # Si no se encuentra, buscar una rutina que contenga "Fer Marzo" en el nombre
-            routine = TrainerTraining.objects.filter(name__icontains="Fer Marzo").first()
-            
-            if not routine:
-                messages.error(request, "No se encontró la rutina 'Fer Marzo 2025' ni la rutina con ID 2.")
-                return redirect('workouts:routine-list')
+        # Intentar obtener la rutina con el ID proporcionado
+        routine = TrainerTraining.objects.get(id=pk)
+    except TrainerTraining.DoesNotExist:
+        messages.error(request, f"No se encontró la rutina con ID {pk}.")
+        return redirect('workouts:routine-list')
         
-        is_assigned_routine = True
-        trainer_info = {
-            'name': routine.created_by.get_full_name() or routine.created_by.username,
-            'date_assigned': routine.created_at
-        }
-        
-        return render(request, 'workouts/routine_detail.html', {
-            'routine': routine,
-            'is_assigned_routine': is_assigned_routine,
-            'trainer_info': trainer_info
-        })
-    except Exception as e:
-        messages.error(request, f"Error al acceder a la rutina: {str(e)}")
-        return redirect('workouts:routine-list') 
+    return render(request, 'workouts/routine_detail.html', {
+        'routine': routine
+    }) 

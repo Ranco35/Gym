@@ -7,12 +7,12 @@ from ..models import WeeklyRoutine, RoutineDay, RoutineExercise
 from gym_tracker.exercises.models import Exercise
 
 @login_required
-def routine_day_detail(request, routine_pk, day_pk):
+def routine_day_detail(request, routine_id, day_id):
     """
     Muestra los detalles de un día de rutina y sus ejercicios.
     """
-    routine = get_object_or_404(WeeklyRoutine, pk=routine_pk, user=request.user)
-    day = get_object_or_404(RoutineDay, pk=day_pk, routine=routine)
+    routine = get_object_or_404(WeeklyRoutine, pk=routine_id, user=request.user)
+    day = get_object_or_404(RoutineDay, pk=day_id, routine=routine)
     
     # Obtener ejercicios para este día
     exercises = RoutineExercise.objects.filter(routine_day=day).order_by('order')
@@ -53,7 +53,7 @@ def routine_day_detail(request, routine_pk, day_pk):
                 day.focus = exercise.primary_muscles
                 day.save()
             
-            return redirect('workouts:workout-day-detail', routine_pk=routine_pk, day_pk=day_pk)
+            return redirect('workouts:routine-day-detail', routine_id=routine_id, day_id=day_id)
     
     return render(request, 'workouts/routine_day_detail.html', {
         'routine': routine,

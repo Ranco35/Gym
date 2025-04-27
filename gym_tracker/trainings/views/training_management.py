@@ -79,9 +79,10 @@ def create_training_from_routine(request):
     """
     Crea un nuevo entrenamiento basado en una rutina.
     """
+    # Aceptar ambos nombres de campo para compatibilidad
     routine_id = request.POST.get('routine_id')
-    day_id = request.POST.get('day_id')
-    date = request.POST.get('date')
+    day_id = request.POST.get('day_id') or request.POST.get('routine_day_id')
+    date = request.POST.get('date') or request.POST.get('training_date')
     
     if not all([routine_id, day_id, date]):
         return JsonResponse({'error': 'Faltan datos requeridos'}, status=400)
@@ -90,23 +91,47 @@ def create_training_from_routine(request):
         # Intentar obtener como rutina personal
         routine = Routine.objects.get(id=routine_id, user=request.user)
         day = RoutineDay.objects.get(id=day_id, routine=routine)
+        # Obtener ejercicios para rutina personal
+        routine_exercise = day.exercises.first() if hasattr(day, 'exercises') else None
+        if not routine_exercise:
+            return JsonResponse({'error': 'No hay ejercicios configurados para este día'}, status=400)
+        training = Training.objects.create(
+            user=request.user,
+            exercise=routine_exercise.exercise,
+            total_sets=routine_exercise.sets or 4,
+            reps=int(routine_exercise.reps) if routine_exercise.reps.isdigit() else 12,
+            weight=float(routine_exercise.weight) if routine_exercise.weight and routine_exercise.weight.replace('.', '', 1).isdigit() else None,
+            date=date,
+            day_of_week=day.day_of_week,
+            rest_time=routine_exercise.rest_time or 90,
+            intensity='Moderado',
+            notes=f"Entrenamiento basado en la rutina {routine.name}"
+        )
         is_assigned = False
     except (Routine.DoesNotExist, RoutineDay.DoesNotExist):
         # Intentar obtener como rutina asignada por entrenador
         try:
             routine = TrainerTraining.objects.get(id=routine_id, user=request.user)
             day = TrainerTrainingDay.objects.get(id=day_id, training=routine)
+            # Obtener ejercicios para rutina de entrenador
+            trainer_set = day.sets.first() if hasattr(day, 'sets') else None
+            if not trainer_set:
+                return JsonResponse({'error': 'No hay ejercicios configurados para este día'}, status=400)
+            training = Training.objects.create(
+                user=request.user,
+                exercise=trainer_set.exercise,
+                total_sets=trainer_set.sets_count or 4,
+                reps=int(trainer_set.reps) if str(trainer_set.reps).isdigit() else 12,
+                weight=float(trainer_set.weight) if trainer_set.weight and str(trainer_set.weight).replace('.', '', 1).isdigit() else None,
+                date=date,
+                day_of_week=day.day_of_week,
+                rest_time=trainer_set.rest_time or 90,
+                intensity='Moderado',
+                notes=f"Entrenamiento basado en la rutina {routine.name}"
+            )
             is_assigned = True
         except (TrainerTraining.DoesNotExist, TrainerTrainingDay.DoesNotExist):
             return JsonResponse({'error': 'Rutina o día no encontrado'}, status=404)
-    
-    # Crear el entrenamiento
-    training = Training.objects.create(
-        user=request.user,
-        name=f"{routine.name} - {day.day_of_week}",
-        date=date,
-        notes=f"Entrenamiento basado en la rutina {routine.name}"
-    )
     
     # Redirigir a la vista de ejecución del entrenamiento
     return redirect('trainings:execute-training', routine_id=routine_id, day_id=day_id) 

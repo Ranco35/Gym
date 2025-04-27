@@ -124,6 +124,9 @@
                                     <i class="fas fa-eye me-2"></i>Ver detalles
                                 </a>
                                 <div class="btn-group">
+                                    <a href="{% url 'trainings:training-history' %}?routine={{ routine.pk }}" class="btn btn-info text-white">
+                                        <i class="fas fa-history me-1"></i>Ver Historial
+                                    </a>
                                     <a href="{% url 'workouts:routine-edit' routine.pk %}" class="btn btn-outline-secondary">
                                         <i class="fas fa-edit me-1"></i>Editar
                                     </a>
@@ -193,9 +196,14 @@
                                 <a href="{% url 'workouts:routine-detail' routine.id %}" class="btn btn-primary">
                                     <i class="fas fa-eye me-2"></i>Ver detalles
                                 </a>
-                                <a href="{% url 'workouts:view-assigned-routine' routine.id %}" class="btn btn-success">
-                                    <i class="fas fa-dumbbell me-2"></i>Entrenar Ahora
-                                </a>
+                                <div class="btn-group">
+                                    <a href="{% url 'trainings:training-history' %}?routine={{ routine.id }}" class="btn btn-info text-white">
+                                        <i class="fas fa-history me-1"></i>Ver Historial
+                                    </a>
+                                    <a href="{% url 'workouts:view-assigned-routine' routine.id %}" class="btn btn-success">
+                                        <i class="fas fa-dumbbell me-2"></i>Entrenar Ahora
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>

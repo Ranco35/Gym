@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from django.urls import reverse
+from django.utils import timezone
 
 from ..models import Training, Set
 from ..forms import SetForm
@@ -35,15 +36,22 @@ def execute_training(request, routine_id, day_id):
     # Obtener o crear el entrenamiento actual
     training = Training.objects.filter(
         user=request.user,
-        name__startswith=f"{routine.name} - {day.day_of_week}",
+        date=timezone.now().date(),
+        day_of_week=day.day_of_week,
         completed=False
     ).first()
     
     if not training:
         training = Training.objects.create(
             user=request.user,
-            name=f"{routine.name} - {day.day_of_week}",
+            exercise=exercises.first().exercise if exercises else None,
+            total_sets=exercises.first().sets_count if exercises else 4,
+            reps=exercises.first().reps if exercises else 12,
+            weight=exercises.first().weight if exercises else 0,
             date=timezone.now().date(),
+            day_of_week=day.day_of_week,
+            rest_time=exercises.first().rest_time if exercises else 90,
+            intensity='Moderado',
             notes=f"Entrenamiento basado en la rutina {routine.name}"
         )
     

@@ -663,13 +663,13 @@ def create_training(request, student_id):
     
     if request.method == 'POST':
         name = request.POST.get('name', '').strip()
-        date = request.POST.get('date', '')
+        start_date = request.POST.get('start_date', '')
         selected_days = request.POST.getlist('days', [])
         
         # Validar datos
         if not name:
             form_errors.append('El nombre de la rutina es obligatorio.')
-        if not date:
+        if not start_date:
             form_errors.append('La fecha de inicio es obligatoria.')
         if not selected_days:
             form_errors.append('Debes seleccionar al menos un día de la semana.')
@@ -678,7 +678,7 @@ def create_training(request, student_id):
         if not form_errors:
             training = TrainerTraining.objects.create(
                 name=name,
-                date=date,
+                start_date=start_date,
                 user=trainer_student.student,
                 created_by=trainer
             )
@@ -687,7 +687,8 @@ def create_training(request, student_id):
             for day in selected_days:
                 TrainerTrainingDay.objects.create(
                     training=training,
-                    day_of_week=day
+                    day_of_week=day,
+                    focus=""
                 )
             
             messages.success(request, 'Rutina creada correctamente!')
@@ -806,10 +807,10 @@ def edit_training(request, student_id, training_id):
         elif 'update_training' in request.POST:
             name = request.POST.get('name')
             description = request.POST.get('description', '')
-            date = request.POST.get('date')
+            start_date = request.POST.get('start_date')
             selected_days = request.POST.getlist('days')
             
-            if not name or not date:
+            if not name or not start_date:
                 messages.error(request, 'El nombre y la fecha son obligatorios')
                 return redirect('trainers:edit_training', student_id=student_id, training_id=training_id)
                 
@@ -820,7 +821,7 @@ def edit_training(request, student_id, training_id):
             # Actualizar la rutina
             training.name = name
             training.description = description
-            training.date = date
+            training.start_date = start_date
             training.save()
             
             # Actualizar los días de entrenamiento
@@ -919,9 +920,9 @@ def copy_training(request, student_id, training_id):
     
     if request.method == 'POST':
         name = request.POST.get('name', f"Copia de {source_training.name}")
-        date = request.POST.get('date')
+        start_date = request.POST.get('start_date')
         
-        if not date:
+        if not start_date:
             messages.error(request, 'La fecha es obligatoria')
             return redirect('trainers:copy_training', student_id=student_id, training_id=training_id)
         
@@ -930,7 +931,7 @@ def copy_training(request, student_id, training_id):
             user=trainer_student.student,
             name=name,
             description=source_training.description,
-            date=date,
+            start_date=start_date,
             created_by=request.user
         )
         
@@ -1044,7 +1045,7 @@ def select_routine_day(request, routine_id, session_id, student_id):
             created_by=request.user,
             name=f"Sesión: {routine.name} - {routine_day.day_of_week}",
             description=f"Sesión basada en la rutina '{routine.name}', día {routine_day.day_of_week}",
-            date=today
+            start_date=today
         )
         
         # Crear el día de entrenamiento

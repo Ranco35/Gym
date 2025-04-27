@@ -42,8 +42,8 @@
                             </div>
                             
                             <div class="col-md-6 mb-3">
-                                <label for="date" class="form-label">Fecha de Inicio *</label>
-                                <input type="date" class="form-control" id="date" name="date" value="{{ training.date|date:'Y-m-d' }}" required>
+                                <label for="start_date" class="form-label">Fecha de Inicio *</label>
+                                <input type="date" class="form-control" id="start_date" name="start_date" value="{{ training.start_date|date:'Y-m-d' }}" required>
                             </div>
                         </div>
                         
@@ -174,60 +174,19 @@
                                     </div>
 
                                     {% if sets %}
-                                        <div class="table-responsive">
-                                            <table class="table table-hover">
-                                                <thead>
-                                                    <tr>
-                                                        <th>#</th>
-                                                        <th>Ejercicio</th>
-                                                        <th>Series</th>
-                                                        <th>Repeticiones</th>
-                                                        <th>Peso (kg)</th>
-                                                        <th>Notas</th>
-                                                        <th>Acciones</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {% for set in sets %}
-                                                    <tr>
-                                                        <td>{{ forloop.counter }}</td>
-                                                        <td>
-                                                            <div class="d-flex align-items-center">
-                                                                {% if set.exercise.image %}
-                                                                    <img src="{{ set.exercise.image.url }}" alt="{{ set.exercise.name }}" class="img-thumbnail me-2" style="width: 40px; height: 40px; object-fit: cover;">
-                                                                {% else %}
-                                                                    <span class="me-2" style="width: 40px; height: 40px; display: inline-block; background-color: #f0f0f0; vertical-align: middle;"></span> {# Placeholder #}
-                                                                {% endif %}
-                                                                <div>
-                                                                    <strong>{{ set.exercise.name }}</strong>
-                                                                    {% if set.exercise.video_url %}
-                                                                        <a href="{{ set.exercise.video_url }}" target="_blank" class="ms-1" title="Ver video"><i class="fab fa-youtube text-danger"></i></a>
-                                                                    {% endif %}
-                                                                </div>
-                                                            </div>
-                                                        </td>
-                                                        <td>{{ set.sets_count }}</td>
-                                                        <td>{{ set.reps }}</td>
-                                                        <td>{{ set.weight|default_if_none:"-" }}</td>
-                                                        <td>{{ set.notes|default_if_none:"-" }}</td>
-                                                        <td>
-                                                            <a href="{% url 'trainers:edit_trainer_set' set.id %}" class="btn btn-sm btn-outline-secondary me-1" title="Editar ejercicio">
-                                                                <i class="fas fa-pencil-alt"></i>
-                                                            </a>
-                                                            <form method="post" action="{% url 'trainers:edit_training' trainer_student.student.id training.id %}" class="d-inline" onsubmit="return confirm('¿Estás seguro de eliminar este ejercicio?');">
-                                                                {% csrf_token %}
-                                                                <input type="hidden" name="delete_set" value="1">
-                                                                <input type="hidden" name="set_id" value="{{ set.id }}">
-                                                                <input type="hidden" name="day_id" value="{{ day.id }}">
-                                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar ejercicio">
-                                                                    <i class="fas fa-trash"></i>
-                                                                </button>
-                                                            </form>
-                                                        </td>
-                                                    </tr>
-                                                    {% endfor %}
-                                                </tbody>
-                                            </table>
+                                        <div class="card mb-3">
+                                            <div class="card-header">
+                                                <strong>{{ day.day_of_week }}</strong> {% if day.focus %}- {{ day.focus }}{% endif %}
+                                            </div>
+                                            <div class="card-body">
+                                                <ul class="list-group">
+                                                {% for set in sets %}
+                                                    <li class="list-group-item">
+                                                        {{ set.exercise.name }} - {{ set.sets_count }}x{{ set.reps }} {% if set.weight %}@ {{ set.weight }}kg{% endif %} | Descanso: {{ set.rest_time }}s
+                                                    </li>
+                                                {% endfor %}
+                                                </ul>
+                                            </div>
                                         </div>
                                     {% else %}
                                         <div class="alert alert-info">

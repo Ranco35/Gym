@@ -47,8 +47,8 @@ class TrainerTrainingDayInline(admin.TabularInline):
 
 @admin.register(TrainerTraining)
 class TrainerTrainingAdmin(admin.ModelAdmin):
-    list_display = ('name', 'user', 'created_by', 'date', 'completed', 'created_at')
-    list_filter = ('completed', 'date', 'created_at')
+    list_display = ('name', 'user', 'created_by', 'start_date', 'completed', 'created_at')
+    list_filter = ('completed', 'start_date', 'created_at')
     search_fields = ('name', 'user__username', 'created_by__username')
     readonly_fields = ('created_at', 'updated_at')
     inlines = [TrainerTrainingDayInline]

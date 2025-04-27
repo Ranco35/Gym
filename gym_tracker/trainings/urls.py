@@ -22,6 +22,7 @@ from .views import (
     create_training_session, 
     edit_user_training,
 )
+from .views.training_history import training_history
 
 app_name = 'trainings'
 
@@ -47,6 +48,9 @@ web_urlpatterns = [
     path('routines/', TrainingListView.as_view(), name='routine-list'),
     path('routines/<str:routine_name>/', RoutineDatesView.as_view(), name='routine-dates'),
     path('routines/<str:routine_name>/<str:date>/', RoutineDateExercisesView.as_view(), name='routine-exercises'),
+    
+    # Historial
+    path('history/', training_history, name='training-history'),
     
     # Entrenamientos
     path('trainings/<int:pk>/delete/', delete_training, name='training-delete'),
