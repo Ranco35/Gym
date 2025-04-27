@@ -42,18 +42,34 @@ def execute_training(request, routine_id, day_id):
     ).first()
     
     if not training:
-        training = Training.objects.create(
-            user=request.user,
-            exercise=exercises.first().exercise if exercises else None,
-            total_sets=exercises.first().sets_count if exercises else 4,
-            reps=exercises.first().reps if exercises else 12,
-            weight=exercises.first().weight if exercises else 0,
-            date=timezone.now().date(),
-            day_of_week=day.day_of_week,
-            rest_time=exercises.first().rest_time if exercises else 90,
-            intensity='Moderado',
-            notes=f"Entrenamiento basado en la rutina {routine.name}"
-        )
+        if is_assigned:
+            primer_set = exercises.first()
+            training = Training.objects.create(
+                user=request.user,
+                exercise=primer_set.exercise if primer_set else None,
+                total_sets=primer_set.sets_count if primer_set else 4,
+                reps=primer_set.reps if primer_set else 12,
+                weight=primer_set.weight if primer_set else 0,
+                date=timezone.now().date(),
+                day_of_week=day.day_of_week,
+                rest_time=primer_set.rest_time if primer_set else 90,
+                intensity='Moderado',
+                notes=f"Entrenamiento basado en la rutina {routine.name}"
+            )
+        else:
+            primer_ejercicio = exercises.first()
+            training = Training.objects.create(
+                user=request.user,
+                exercise=primer_ejercicio.exercise if primer_ejercicio else None,
+                total_sets=primer_ejercicio.sets if primer_ejercicio else 4,
+                reps=primer_ejercicio.reps if primer_ejercicio else 12,
+                weight=primer_ejercicio.weight if primer_ejercicio else 0,
+                date=timezone.now().date(),
+                day_of_week=day.day_of_week,
+                rest_time=primer_ejercicio.rest_time if primer_ejercicio else 90,
+                intensity='Moderado',
+                notes=f"Entrenamiento basado en la rutina {routine.name}"
+            )
     
     # Obtener los sets completados
     completed_sets = Set.objects.filter(training=training).order_by('exercise', 'set_number')
@@ -65,14 +81,40 @@ def execute_training(request, routine_id, day_id):
             exercise_sets[set_obj.exercise.id] = []
         exercise_sets[set_obj.exercise.id].append(set_obj)
     
+    # Determinar el ejercicio actual (por ejemplo, el primero)
+    exercise = exercises.first() if exercises else None
+
+    # Día de la rutina
+    routine_day = day
+
+    # Fecha del entrenamiento
+    training_date = training.date if training else timezone.now().date()
+
+    # Progreso (ejemplo simple)
+    progress = {
+        'current': 1,
+        'total': exercises.count() if exercises else 0,
+        'percentage': 100 * 1 // (exercises.count() if exercises else 1)
+    }
+
+    # Para la rutina del día y el listado de ejercicios
+    all_exercises = list(exercises)
+    current_exercise_index = 0  # Por defecto el primero, puedes ajustar según navegación
+
     context = {
         'training': training,
         'routine': routine,
         'day': day,
         'exercises': exercises,
+        'exercise': exercise,
+        'routine_day': routine_day,
+        'training_date': training_date,
+        'progress': progress,
         'completed_sets': completed_sets,
         'exercise_sets': exercise_sets,
-        'is_assigned': is_assigned
+        'is_assigned': is_assigned,
+        'all_exercises': all_exercises,
+        'current_exercise_index': current_exercise_index,
     }
     
     return render(request, 'trainings/execute_training.html', context)
