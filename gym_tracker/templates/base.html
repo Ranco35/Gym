@@ -110,7 +110,7 @@
                             <a href="{% url 'home' %}" class="list-group-item list-group-item-action {% if request.path == '/' %}active{% endif %}">
                                 <i class="fas fa-home fa-fw me-2"></i> Inicio
                             </a>
-                            <a href="{% url 'trainings:dashboard' %}" class="list-group-item list-group-item-action {% if '/trainings/' in request.path and '/trainings/dashboard/' in request.path %}active{% endif %}">
+                            <a href="{% url 'trainings:dashboard' %}" class="list-group-item list-group-item-action {% if '/trainings/' in request.path %}active{% endif %}">
                                 <i class="fas fa-tachometer-alt fa-fw me-2"></i> Dashboard
                             </a>
                             <a href="{% url 'workouts:routine-list' %}" 

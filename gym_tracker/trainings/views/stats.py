@@ -27,6 +27,9 @@ def dashboard(request):
     # Obtener los últimos 5 entrenamientos
     recent_trainings = Training.objects.filter(user=request.user).order_by('-date')[:5]
     
+    # Obtener entrenamientos no terminados
+    incomplete_trainings = Training.objects.filter(user=request.user, completed=False).order_by('-date')
+    
     # Obtener los ejercicios más frecuentes
     top_exercises = Exercise.objects.filter(
         set__training__user=request.user
@@ -39,7 +42,8 @@ def dashboard(request):
         'completed_trainings': completed_trainings,
         'total_sets': total_sets,
         'recent_trainings': recent_trainings,
-        'top_exercises': top_exercises
+        'top_exercises': top_exercises,
+        'incomplete_trainings': incomplete_trainings,
     }
     
     return render(request, 'trainings/dashboard.html', context) 

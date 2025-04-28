@@ -93,7 +93,14 @@ def view_assigned_routine(request, pk):
     except TrainerTraining.DoesNotExist:
         messages.error(request, f"No se encontró la rutina con ID {pk}.")
         return redirect('workouts:routine-list')
-        
+    
+    trainer_info = {
+        'name': routine.created_by.get_full_name() or routine.created_by.username,
+        'date_assigned': routine.created_at
+    }
+    
     return render(request, 'workouts/routine_detail.html', {
-        'routine': routine
+        'routine': routine,
+        'is_assigned_routine': True,
+        'trainer_info': trainer_info
     }) 

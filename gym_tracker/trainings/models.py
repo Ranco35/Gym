@@ -68,8 +68,8 @@ class Set(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
-        ordering = ['training', 'set_number']
-        unique_together = ['training', 'set_number']
+        ordering = ['training', 'exercise', 'set_number']
+        unique_together = ['training', 'exercise', 'set_number']
 
     def __str__(self):
         return f"{self.training} - Serie {self.set_number}"

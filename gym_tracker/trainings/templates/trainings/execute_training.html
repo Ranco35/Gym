@@ -153,12 +153,16 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for set in completed_sets %}
+                                {% for set in exercise_sets|get_item:exercise.exercise.id %}
                                 <tr>
                                     <td>{{ set.set_number }}</td>
                                     <td>{{ set.weight|default:'-' }}</td>
                                     <td>{{ set.reps }}</td>
                                     <td><i class="fas fa-check text-success"></i></td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">Aún no has registrado series para este ejercicio.</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -168,6 +172,7 @@
                     <form method="post" id="setForm">
                         {% csrf_token %}
                         <input type="hidden" name="current_set" value="{{ current_set }}">
+                        <input type="hidden" name="current_exercise_index" value="{{ current_exercise_index }}">
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label for="weight" class="form-label">Peso (kg)</label>
@@ -204,7 +209,7 @@
                                         <i class="fas fa-forward me-2"></i>Saltar Serie
                                     </button>
 
-                                    <button type="submit" class="btn btn-success">
+                                    <button type="submit" name="complete_set" class="btn btn-success">
                                         <i class="fas fa-check me-2"></i>Completar Serie {{ current_set }}
                                     </button>
                                 </div>
@@ -381,6 +386,14 @@
         </div>
     </div>
 </div>
+
+{% if entrenamiento_finalizado %}
+<div class="alert alert-success text-center my-5">
+    <h3>¡Entrenamiento finalizado!</h3>
+    <p>Has completado todos los ejercicios del día. ¡Felicidades!</p>
+    <a href="{% url 'trainings:training-list-create' %}" class="btn btn-primary mt-3">Volver a mis entrenamientos</a>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}

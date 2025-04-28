@@ -101,6 +101,54 @@ def execute_training(request, routine_id, day_id):
     all_exercises = list(exercises)
     current_exercise_index = 0  # Por defecto el primero, puedes ajustar según navegación
 
+    # Obtener el índice de la serie actual desde el POST o la URL
+    current_set = int(request.POST.get('current_set', 1)) if request.method == 'POST' else 1
+    current_exercise_index = int(request.POST.get('current_exercise_index', 0)) if request.method == 'POST' else 0
+    total_sets = 0
+    if exercise:
+        total_sets = exercise.sets_count if is_assigned else exercise.sets
+        try:
+            total_sets = int(total_sets)
+        except:
+            total_sets = 1
+
+    entrenamiento_finalizado = False
+    if request.method == 'POST':
+        # Si se completó la serie, guardar el set
+        if 'complete_set' in request.POST:
+            # Guardar el set realizado
+            Set.objects.create(
+                user=request.user,
+                training=training,
+                exercise=exercise.exercise,
+                set_number=current_set,
+                reps=request.POST.get('reps', 0),
+                weight=request.POST.get('weight', 0),
+                completed=True
+            )
+            if current_set < total_sets:
+                current_set += 1
+            else:
+                # Avanzar al siguiente ejercicio y reiniciar la serie
+                if current_exercise_index + 1 < len(all_exercises):
+                    current_exercise_index += 1
+                    exercise = all_exercises[current_exercise_index]
+                    current_set = 1
+                else:
+                    entrenamiento_finalizado = True
+
+    # Actualizar el ejercicio actual según el índice
+    if all_exercises and not entrenamiento_finalizado:
+        exercise = all_exercises[current_exercise_index]
+
+    # Obtener los sets completados y agruparlos DESPUÉS de guardar el nuevo set
+    completed_sets = Set.objects.filter(training=training).order_by('exercise', 'set_number')
+    exercise_sets = {}
+    for set_obj in completed_sets:
+        if set_obj.exercise.id not in exercise_sets:
+            exercise_sets[set_obj.exercise.id] = []
+        exercise_sets[set_obj.exercise.id].append(set_obj)
+
     context = {
         'training': training,
         'routine': routine,
@@ -115,6 +163,8 @@ def execute_training(request, routine_id, day_id):
         'is_assigned': is_assigned,
         'all_exercises': all_exercises,
         'current_exercise_index': current_exercise_index,
+        'current_set': current_set,
+        'entrenamiento_finalizado': entrenamiento_finalizado,
     }
     
     return render(request, 'trainings/execute_training.html', context)
